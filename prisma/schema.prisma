@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANT & USER MODELS
+// ============================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  branches          Branch[]
+  academicYears     AcademicYear[]
+  streams           Stream[]
+  classes           Class[]
+  cohorts           Cohort[]
+  sectionTemplates  SectionTemplate[]
+  sections          Section[]
+  teachers          Teacher[]
+  rooms             Room[]
+  routines          Routine[]
+  users             User[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  email     String
+  name      String
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  routinesCreated Routine[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+// ============================================
+// ACADEMIC SETUP MODELS
+// ============================================
+
+model Branch {
+  id        String       @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String?
+  address   String?
+  phone     String?
+  status    BranchStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohorts Cohort[]
+
+  @@unique([tenantId, name])
+  @@map("branches")
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model AcademicYear {
+  id        String            @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String
+  startDate DateTime
+  endDate   DateTime
+  state     AcademicYearState @default(PLANNED)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohorts Cohort[]
+
+  @@unique([tenantId, code])
+  @@map("academic_years")
+}
+
+enum AcademicYearState {
+  PLANNED
+  IN_SESSION
+  COMPLETED
+  ARCHIVED
+}
+
+model Stream {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classes Class[]
+
+  @@unique([tenantId, name])
+  @@map("streams")
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  alias     String?
+  order     Int
+  streamId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stream           Stream?           @relation(fields: [streamId], references: [id], onDelete: SetNull)
+  cohorts          Cohort[]
+  sectionTemplates SectionTemplate[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, order])
+  @@map("classes")
+}
+
+model Cohort {
+  id             String       @id @default(cuid())
+  tenantId       String
+  yearId         String
+  classId        String
+  branchId       String
+  name           String
+  status         CohortStatus @default(PLANNED)
+  enrollmentOpen Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  year   AcademicYear @relation(fields: [yearId], references: [id], onDelete: Restrict)
+  class  Class        @relation(fields: [classId], references: [id], onDelete: Restrict)
+  branch Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  sections Section[]
+
+  @@unique([tenantId, yearId, classId, branchId, name])
+  @@map("cohorts")
+}
+
+enum CohortStatus {
+  PLANNED
+  RUNNING
+  FINISHED
+  ARCHIVED
+}
+
+model SectionTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  classId   String
+  name      String
+  capacity  Int      @default(1)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, classId, name])
+  @@map("section_templates")
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  tenantId  String
+  cohortId  String
+  name      String
+  capacity  Int
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohort   Cohort    @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  routines Routine[]
+
+  @@unique([tenantId, cohortId, name])
+  @@map("sections")
+}
+
+model Teacher {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  email            String
+  phone            String?
+  availabilityJson String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  routines Routine[]
+
+  @@unique([tenantId, email])
+  @@map("teachers")
+}
+
+model Room {
+  id        String     @id @default(cuid())
+  tenantId  String
+  name      String
+  capacity  Int?
+  status    RoomStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  routines Routine[]
+
+  @@unique([tenantId, name])
+  @@map("rooms")
+}
+
+enum RoomStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Routine {
+  id              String   @id @default(cuid())
+  tenantId        String
+  sectionId       String
+  teacherId       String
+  roomId          String
+  courseId        String?
+  dayOfWeek       Int // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime       String // Format: "HH:MM"
+  endTime         String // Format: "HH:MM"
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  createdBy User    @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@map("routines")
+}
