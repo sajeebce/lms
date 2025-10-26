@@ -1,4 +1,30 @@
-export default function ClassesPage() {
+import { prisma } from '@/lib/prisma'
+import { getTenantId } from '@/lib/auth'
+import { ClassesClient } from './classes-client'
+
+export default async function ClassesPage() {
+  const tenantId = await getTenantId()
+
+  const [classes, streams] = await Promise.all([
+    prisma.class.findMany({
+      where: { tenantId },
+      include: {
+        stream: true,
+        _count: {
+          select: {
+            cohorts: true,
+            sectionTemplates: true,
+          },
+        },
+      },
+      orderBy: { order: 'asc' },
+    }),
+    prisma.stream.findMany({
+      where: { tenantId },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
@@ -7,12 +33,7 @@ export default function ClassesPage() {
           Manage academic classes and grade levels
         </p>
       </div>
-      <div className="bg-white rounded-lg border border-neutral-200 p-8 text-center">
-        <p className="text-neutral-600">Classes page - To be implemented</p>
-        <p className="text-sm text-neutral-500 mt-2">
-          Follow the pattern from branches/academic-years pages
-        </p>
-      </div>
+      <ClassesClient classes={classes} streams={streams} />
     </div>
   )
 }

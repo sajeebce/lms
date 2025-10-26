@@ -27,6 +27,46 @@ async function main() {
     },
   })
 
+  // Create sample teachers
+  const teachers = [
+    { name: 'Dr. Sarah Ahmed', email: 'sarah@example.com', phone: '01711111111' },
+    { name: 'Prof. Karim Rahman', email: 'karim@example.com', phone: '01722222222' },
+    { name: 'Ms. Fatima Khan', email: 'fatima@example.com', phone: '01733333333' },
+    { name: 'Mr. Rahim Hossain', email: 'rahim@example.com', phone: '01744444444' },
+  ]
+
+  for (const teacher of teachers) {
+    await prisma.teacher.upsert({
+      where: { tenantId_email: { tenantId: tenant.id, email: teacher.email } },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        ...teacher,
+      },
+    })
+  }
+
+  // Create sample rooms
+  const rooms = [
+    { name: 'Room 101', capacity: 40, status: 'ACTIVE' as const },
+    { name: 'Room 102', capacity: 40, status: 'ACTIVE' as const },
+    { name: 'Room 201', capacity: 50, status: 'ACTIVE' as const },
+    { name: 'Room 202', capacity: 50, status: 'ACTIVE' as const },
+    { name: 'Lab A', capacity: 30, status: 'ACTIVE' as const },
+    { name: 'Lab B', capacity: 30, status: 'ACTIVE' as const },
+  ]
+
+  for (const room of rooms) {
+    await prisma.room.upsert({
+      where: { tenantId_name: { tenantId: tenant.id, name: room.name } },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        ...room,
+      },
+    })
+  }
+
   console.log('Seed data created successfully')
 }
 

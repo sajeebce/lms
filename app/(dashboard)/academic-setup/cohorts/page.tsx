@@ -1,4 +1,37 @@
-export default function CohortsPage() {
+import { prisma } from '@/lib/prisma'
+import { getTenantId } from '@/lib/auth'
+import { CohortsClient } from './cohorts-client'
+
+export default async function CohortsPage() {
+  const tenantId = await getTenantId()
+
+  const [cohorts, branches, academicYears, classes] = await Promise.all([
+    prisma.cohort.findMany({
+      where: { tenantId },
+      include: {
+        year: true,
+        class: true,
+        branch: true,
+        _count: {
+          select: { sections: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.branch.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.academicYear.findMany({
+      where: { tenantId },
+      orderBy: { startDate: 'desc' },
+    }),
+    prisma.class.findMany({
+      where: { tenantId },
+      orderBy: { order: 'asc' },
+    }),
+  ])
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
@@ -7,12 +40,12 @@ export default function CohortsPage() {
           Manage student cohorts and enrollment
         </p>
       </div>
-      <div className="bg-white rounded-lg border border-neutral-200 p-8 text-center">
-        <p className="text-neutral-600">Cohorts page - To be implemented</p>
-        <p className="text-sm text-neutral-500 mt-2">
-          Includes enrollment toggle, filters, and status pills
-        </p>
-      </div>
+      <CohortsClient
+        cohorts={cohorts}
+        branches={branches}
+        academicYears={academicYears}
+        classes={classes}
+      />
     </div>
   )
 }

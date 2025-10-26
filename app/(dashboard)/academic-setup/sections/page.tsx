@@ -1,4 +1,47 @@
-export default function SectionsPage() {
+import { prisma } from '@/lib/prisma'
+import { getTenantId } from '@/lib/auth'
+import { SectionsClient } from './sections-client'
+
+export default async function SectionsPage() {
+  const tenantId = await getTenantId()
+
+  const [sections, branches, academicYears, classes, cohorts] = await Promise.all([
+    prisma.section.findMany({
+      where: { tenantId },
+      include: {
+        cohort: {
+          include: {
+            year: true,
+            class: true,
+            branch: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.branch.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.academicYear.findMany({
+      where: { tenantId },
+      orderBy: { startDate: 'desc' },
+    }),
+    prisma.class.findMany({
+      where: { tenantId },
+      orderBy: { order: 'asc' },
+    }),
+    prisma.cohort.findMany({
+      where: { tenantId },
+      include: {
+        year: true,
+        class: true,
+        branch: true,
+      },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
@@ -7,12 +50,13 @@ export default function SectionsPage() {
           Manage cohort sections and student assignments
         </p>
       </div>
-      <div className="bg-white rounded-lg border border-neutral-200 p-8 text-center">
-        <p className="text-neutral-600">Sections page - To be implemented</p>
-        <p className="text-sm text-neutral-500 mt-2">
-          Includes filters by Branch, Academic Year, Class, Cohort
-        </p>
-      </div>
+      <SectionsClient
+        sections={sections}
+        branches={branches}
+        academicYears={academicYears}
+        classes={classes}
+        cohorts={cohorts}
+      />
     </div>
   )
 }

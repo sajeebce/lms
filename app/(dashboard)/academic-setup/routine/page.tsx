@@ -1,4 +1,55 @@
-export default function RoutinePage() {
+import { prisma } from '@/lib/prisma'
+import { getTenantId } from '@/lib/auth'
+import { RoutineClient } from './routine-client'
+
+export default async function RoutinePage() {
+  const tenantId = await getTenantId()
+
+  const [routines, branches, sections, teachers, rooms] = await Promise.all([
+    prisma.routine.findMany({
+      where: { tenantId },
+      include: {
+        section: {
+          include: {
+            cohort: {
+              include: {
+                branch: true,
+                class: true,
+              },
+            },
+          },
+        },
+        teacher: true,
+        room: true,
+      },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    }),
+    prisma.branch.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.section.findMany({
+      where: { tenantId },
+      include: {
+        cohort: {
+          include: {
+            branch: true,
+            class: true,
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.teacher.findMany({
+      where: { tenantId },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.room.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
@@ -7,12 +58,13 @@ export default function RoutinePage() {
           Manage class schedules and timetables
         </p>
       </div>
-      <div className="bg-white rounded-lg border border-neutral-200 p-8 text-center">
-        <p className="text-neutral-600">Routine page - To be implemented</p>
-        <p className="text-sm text-neutral-500 mt-2">
-          Includes conflict validation for teacher/room/section overlaps
-        </p>
-      </div>
+      <RoutineClient
+        routines={routines}
+        branches={branches}
+        sections={sections}
+        teachers={teachers}
+        rooms={rooms}
+      />
     </div>
   )
 }

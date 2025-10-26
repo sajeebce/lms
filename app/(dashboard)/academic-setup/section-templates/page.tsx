@@ -1,4 +1,24 @@
-export default function SectionTemplatesPage() {
+import { prisma } from '@/lib/prisma'
+import { getTenantId } from '@/lib/auth'
+import { SectionTemplatesClient } from './section-templates-client'
+
+export default async function SectionTemplatesPage() {
+  const tenantId = await getTenantId()
+
+  const [templates, classes] = await Promise.all([
+    prisma.sectionTemplate.findMany({
+      where: { tenantId },
+      include: {
+        class: true,
+      },
+      orderBy: [{ class: { order: 'asc' } }, { name: 'asc' }],
+    }),
+    prisma.class.findMany({
+      where: { tenantId },
+      orderBy: { order: 'asc' },
+    }),
+  ])
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
@@ -7,12 +27,7 @@ export default function SectionTemplatesPage() {
           Define section templates for automatic cohort generation
         </p>
       </div>
-      <div className="bg-white rounded-lg border border-neutral-200 p-8 text-center">
-        <p className="text-neutral-600">Section Templates page - To be implemented</p>
-        <p className="text-sm text-neutral-500 mt-2">
-          Used by Year Wizard to clone sections
-        </p>
-      </div>
+      <SectionTemplatesClient templates={templates} classes={classes} />
     </div>
   )
 }
