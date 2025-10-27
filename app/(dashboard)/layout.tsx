@@ -16,6 +16,7 @@ export default async function DashboardLayout({
 
   // Default theme if not set
   const theme = themeSettings || {
+    mode: 'light',
     activeFrom: '#ec4899',
     activeTo: '#f97316',
     hoverFrom: '#fdf2f8',
@@ -23,7 +24,17 @@ export default async function DashboardLayout({
     borderColor: '#fbcfe8',
     buttonFrom: '#ec4899',
     buttonTo: '#f97316',
+    hoverTextColor: null,
   }
+
+  // Determine if dark mode should be applied
+  const isDarkMode = theme.mode === 'dark'
+
+  // Calculate hover text color
+  // If custom hoverTextColor is set, use it
+  // Otherwise, use bright accent color for dark mode, dark color for light mode
+  const hoverTextColor = theme.hoverTextColor ||
+    (isDarkMode ? '#f1f5f9' : theme.activeFrom)
 
   return (
     <>
@@ -38,10 +49,13 @@ export default async function DashboardLayout({
             --theme-border: ${theme.borderColor};
             --theme-button-from: ${theme.buttonFrom};
             --theme-button-to: ${theme.buttonTo};
+            --theme-hover-text: ${hoverTextColor};
           }
         `
       }} />
-      <DashboardClient>{children}</DashboardClient>
+      <div className={isDarkMode ? 'dark' : ''}>
+        <DashboardClient>{children}</DashboardClient>
+      </div>
     </>
   )
 }

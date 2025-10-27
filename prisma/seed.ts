@@ -33,6 +33,7 @@ async function main() {
     update: {},
     create: {
       tenantId: tenant.id,
+      mode: 'light',
       themeName: 'pink-orange',
       isCustom: false,
       activeFrom: '#ec4899',

@@ -280,6 +280,9 @@ model ThemeSettings {
   id          String   @id @default(cuid())
   tenantId    String   @unique
 
+  // Theme mode (light/dark/auto)
+  mode        String   @default("light") // "light" | "dark" | "auto"
+
   // Predefined theme or custom
   themeName   String   @default("pink-orange") // "pink-orange", "blue-ocean", "green-forest", "purple-dream", "custom"
   isCustom    Boolean  @default(false)
@@ -298,6 +301,9 @@ model ThemeSettings {
   // Button colors
   buttonFrom  String   @default("#ec4899") // pink-500
   buttonTo    String   @default("#f97316") // orange-500
+
+  // Text color override (optional, for custom themes or dark mode)
+  hoverTextColor String? // Optional: override hover text color
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
