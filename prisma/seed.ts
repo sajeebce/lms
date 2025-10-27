@@ -27,6 +27,24 @@ async function main() {
     },
   })
 
+  // Create default theme settings
+  await prisma.themeSettings.upsert({
+    where: { tenantId: tenant.id },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      themeName: 'pink-orange',
+      isCustom: false,
+      activeFrom: '#ec4899',
+      activeTo: '#f97316',
+      hoverFrom: '#fdf2f8',
+      hoverTo: '#fff7ed',
+      borderColor: '#fbcfe8',
+      buttonFrom: '#ec4899',
+      buttonTo: '#f97316',
+    },
+  })
+
   // Create sample teachers
   const teachers = [
     { name: 'Dr. Sarah Ahmed', email: 'sarah@example.com', phone: '01711111111' },

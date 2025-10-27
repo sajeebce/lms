@@ -107,8 +107,8 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group',
             pathname === '/dashboard'
-              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600',
+              ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]',
             isCollapsed && 'justify-center'
           )}
           title={isCollapsed ? 'Dashboard' : ''}
@@ -131,8 +131,8 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group justify-center',
               pathname === '/students'
-                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-                : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600'
+                ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]'
             )}
             title="Student Management"
           >
@@ -147,7 +147,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           </Link>
         ) : (
           <Collapsible open={false}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-neutral-700 rounded-lg hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600 transition-all group">
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-neutral-700 rounded-lg hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)] transition-all group">
               <div className="flex items-center gap-3">
                 <div className="p-1.5 rounded-md bg-gradient-to-br from-emerald-400 to-teal-500 group-hover:from-emerald-500 group-hover:to-teal-600">
                   <Users className="h-4 w-4 flex-shrink-0 text-white" />
@@ -156,14 +156,14 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
               </div>
               <ChevronDown className="h-4 w-4 transition-transform duration-200" />
             </CollapsibleTrigger>
-            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-gradient-to-b from-emerald-300 to-teal-300 pl-3">
+            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-[var(--theme-border)] pl-3">
               <Link
                 href="/students"
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group',
                   pathname === '/students'
-                    ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-                    : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600'
+                    ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                    : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]'
                 )}
               >
                 <div className={cn(
@@ -187,8 +187,8 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group justify-center',
               isAcademicSetupActive
-                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-                : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600'
+                ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]'
             )}
             title="Academic Setup"
           >
@@ -203,7 +203,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           </Link>
         ) : (
           <Collapsible open={isAcademicSetupOpen} onOpenChange={setIsAcademicSetupOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-neutral-700 rounded-lg hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600 transition-all group">
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-neutral-700 rounded-lg hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)] transition-all group">
               <div className="flex items-center gap-3">
                 <div className="p-1.5 rounded-md bg-gradient-to-br from-violet-400 to-purple-500 group-hover:from-violet-500 group-hover:to-purple-600">
                   <Settings className="h-4 w-4 flex-shrink-0 text-white" />
@@ -217,7 +217,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
                 )}
               />
             </CollapsibleTrigger>
-            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-pink-300 pl-3">
+            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-[var(--theme-border)] pl-3">
               {academicSetupItems.map((item, index) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
@@ -255,8 +255,8 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
                     className={cn(
                       'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group',
                       isActive
-                        ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-                        : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600'
+                        ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                        : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]'
                     )}
                   >
                     <div className={cn(
@@ -281,8 +281,8 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group',
             pathname === '/reports'
-              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600',
+              ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]',
             isCollapsed && 'justify-center'
           )}
           title={isCollapsed ? 'Reports & Analytics' : ''}
@@ -303,16 +303,16 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           href="/settings"
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group',
-            pathname === '/settings'
-              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
-              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 hover:text-pink-600',
+            pathname.startsWith('/settings')
+              ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+              : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-active-from)]',
             isCollapsed && 'justify-center'
           )}
           title={isCollapsed ? 'Settings' : ''}
         >
           <div className={cn(
             'p-1.5 rounded-md',
-            pathname === '/settings'
+            pathname.startsWith('/settings')
               ? 'bg-white/20'
               : 'bg-gradient-to-br from-slate-400 to-gray-500 group-hover:from-slate-500 group-hover:to-gray-600'
           )}>
