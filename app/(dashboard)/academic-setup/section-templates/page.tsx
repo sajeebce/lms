@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { SectionTemplatesClient } from './section-templates-client'
+import { PageHeader } from '@/components/page-header'
+import { FileText } from 'lucide-react'
 
 export default async function SectionTemplatesPage() {
   const tenantId = await getTenantId()
@@ -21,12 +23,13 @@ export default async function SectionTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Section Templates</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Define section templates for automatic cohort generation
-        </p>
-      </div>
+      <PageHeader
+        title="Section Templates"
+        description="Define section templates for automatic cohort generation"
+        icon={FileText}
+        bgColor="bg-violet-50"
+        iconBgColor="bg-violet-600"
+      />
       <SectionTemplatesClient templates={templates} classes={classes} />
     </div>
   )

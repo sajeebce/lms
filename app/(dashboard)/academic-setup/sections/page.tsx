@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { SectionsClient } from './sections-client'
+import { PageHeader } from '@/components/page-header'
+import { Grid3x3 } from 'lucide-react'
 
 export default async function SectionsPage() {
   const tenantId = await getTenantId()
@@ -44,12 +46,13 @@ export default async function SectionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Sections</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Manage cohort sections and student assignments
-        </p>
-      </div>
+      <PageHeader
+        title="Sections"
+        description="Manage sections within classes"
+        icon={Grid3x3}
+        bgColor="bg-cyan-50"
+        iconBgColor="bg-blue-600"
+      />
       <SectionsClient
         sections={sections}
         branches={branches}

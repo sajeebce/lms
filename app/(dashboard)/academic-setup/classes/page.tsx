@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { ClassesClient } from './classes-client'
+import { PageHeader } from '@/components/page-header'
+import { Layers } from 'lucide-react'
 
 export default async function ClassesPage() {
   const tenantId = await getTenantId()
@@ -27,12 +29,13 @@ export default async function ClassesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Classes</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Manage academic classes and grade levels
-        </p>
-      </div>
+      <PageHeader
+        title="Classes / Grades"
+        description="Manage academic classes and grade levels"
+        icon={Layers}
+        bgColor="bg-blue-50"
+        iconBgColor="bg-blue-600"
+      />
       <ClassesClient classes={classes} streams={streams} />
     </div>
   )

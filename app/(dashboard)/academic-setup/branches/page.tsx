@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { BranchesClient } from './branches-client'
+import { PageHeader } from '@/components/page-header'
+import { Building2 } from 'lucide-react'
 
 export default async function BranchesPage() {
   const tenantId = await getTenantId()
@@ -13,12 +15,13 @@ export default async function BranchesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Branches</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Manage school branches and locations
-        </p>
-      </div>
+      <PageHeader
+        title="Branches"
+        description="Manage school branches and locations"
+        icon={Building2}
+        bgColor="bg-violet-50"
+        iconBgColor="bg-violet-600"
+      />
 
       {/* Content */}
       <BranchesClient branches={branches} />

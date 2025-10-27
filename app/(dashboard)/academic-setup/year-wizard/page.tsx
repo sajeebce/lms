@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { YearWizardClient } from './year-wizard-client'
+import { PageHeader } from '@/components/page-header'
+import { Wand2 } from 'lucide-react'
 
 export default async function YearWizardPage() {
   const tenantId = await getTenantId()
@@ -22,12 +24,13 @@ export default async function YearWizardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Year Wizard 🪄</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Bulk create cohorts and sections for a new academic year
-        </p>
-      </div>
+      <PageHeader
+        title="Year Wizard"
+        description="Bulk create cohorts and sections for a new academic year"
+        icon={Wand2}
+        bgColor="bg-violet-50"
+        iconBgColor="bg-violet-600"
+      />
       <YearWizardClient
         branches={branches}
         academicYears={academicYears}

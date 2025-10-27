@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { CohortsClient } from './cohorts-client'
+import { PageHeader } from '@/components/page-header'
+import { Users } from 'lucide-react'
 
 export default async function CohortsPage() {
   const tenantId = await getTenantId()
@@ -34,12 +36,13 @@ export default async function CohortsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Cohorts</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Manage student cohorts and enrollment
-        </p>
-      </div>
+      <PageHeader
+        title="Cohorts"
+        description="Manage student cohorts by year and class"
+        icon={Users}
+        bgColor="bg-pink-50"
+        iconBgColor="bg-pink-600"
+      />
       <CohortsClient
         cohorts={cohorts}
         branches={branches}

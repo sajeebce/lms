@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { RoutineClient } from './routine-client'
+import { PageHeader } from '@/components/page-header'
+import { CalendarClock } from 'lucide-react'
 
 export default async function RoutinePage() {
   const tenantId = await getTenantId()
@@ -52,12 +54,13 @@ export default async function RoutinePage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-lg p-6 border border-violet-100">
-        <h1 className="text-2xl font-bold text-neutral-900">Routine / Timetable</h1>
-        <p className="text-sm text-neutral-600 mt-1">
-          Manage class schedules and timetables
-        </p>
-      </div>
+      <PageHeader
+        title="Routine / Timetable"
+        description="Manage class schedules and timetables"
+        icon={CalendarClock}
+        bgColor="bg-lime-50"
+        iconBgColor="bg-green-600"
+      />
       <RoutineClient
         routines={routines}
         branches={branches}
