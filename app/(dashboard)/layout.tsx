@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getTenantId } from '@/lib/auth'
 import { DashboardClient } from './dashboard-client'
+import { ThemeProvider } from './theme-provider'
+import { convertToDarkHover, darkenBorder } from '@/lib/theme-utils'
 
 export default async function DashboardLayout({
   children,
@@ -30,11 +32,26 @@ export default async function DashboardLayout({
   // Determine if dark mode should be applied
   const isDarkMode = theme.mode === 'dark'
 
+  // Auto-generate dark mode colors from light mode colors
+  // Light mode: Use original colors from database
+  // Dark mode: Convert light backgrounds to dark backgrounds
+  const hoverFrom = isDarkMode
+    ? convertToDarkHover(theme.hoverFrom)
+    : theme.hoverFrom
+
+  const hoverTo = isDarkMode
+    ? convertToDarkHover(theme.hoverTo)
+    : theme.hoverTo
+
+  const borderColor = isDarkMode
+    ? darkenBorder(theme.borderColor)
+    : theme.borderColor
+
   // Calculate hover text color
   // If custom hoverTextColor is set, use it
-  // Otherwise, use bright accent color for dark mode, dark color for light mode
+  // Otherwise, use white for dark mode (maximum contrast), theme color for light mode
   const hoverTextColor = theme.hoverTextColor ||
-    (isDarkMode ? '#f1f5f9' : theme.activeFrom)
+    (isDarkMode ? '#ffffff' : theme.activeFrom)
 
   return (
     <>
@@ -44,18 +61,18 @@ export default async function DashboardLayout({
           :root {
             --theme-active-from: ${theme.activeFrom};
             --theme-active-to: ${theme.activeTo};
-            --theme-hover-from: ${theme.hoverFrom};
-            --theme-hover-to: ${theme.hoverTo};
-            --theme-border: ${theme.borderColor};
+            --theme-hover-from: ${hoverFrom};
+            --theme-hover-to: ${hoverTo};
+            --theme-border: ${borderColor};
             --theme-button-from: ${theme.buttonFrom};
             --theme-button-to: ${theme.buttonTo};
             --theme-hover-text: ${hoverTextColor};
           }
         `
       }} />
-      <div className={isDarkMode ? 'dark' : ''}>
+      <ThemeProvider mode={theme.mode}>
         <DashboardClient>{children}</DashboardClient>
-      </div>
+      </ThemeProvider>
     </>
   )
 }

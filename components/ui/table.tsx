@@ -58,6 +58,9 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
       data-slot="table-row"
       className={cn(
         "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        // If row contains only one cell with text-muted-foreground (empty state),
+        // disable hover to prevent gray-on-gray unreadable text in dark mode
+        "[&:has(td.text-muted-foreground:only-child)]:hover:bg-transparent",
         className
       )}
       {...props}

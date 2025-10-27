@@ -95,6 +95,7 @@ model AcademicYear {
   startDate DateTime
   endDate   DateTime
   state     AcademicYearState @default(PLANNED)
+  isCurrent Boolean           @default(false)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
@@ -107,6 +108,7 @@ model AcademicYear {
 
 enum AcademicYearState {
   PLANNED
+  ENROLLING
   IN_SESSION
   COMPLETED
   ARCHIVED

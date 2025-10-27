@@ -137,9 +137,9 @@ export function ClassesClient({
     cohortCount > 0 || templateCount > 0
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200">
-      <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-900">All Classes</h2>
+    <div className="bg-card rounded-lg border border-border">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-card-foreground">All Classes</h2>
         <Dialog
           open={open}
           onOpenChange={(o) => {
@@ -239,7 +239,7 @@ export function ClassesClient({
 
       <Table>
         <TableHeader>
-          <TableRow className="bg-violet-50/50">
+          <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
             <TableHead>
               <div className="flex items-center gap-1">
                 Order <ArrowUp className="h-3 w-3" />
@@ -255,7 +255,7 @@ export function ClassesClient({
         <TableBody>
           {classes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-neutral-500 py-8">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                 No classes found. Create your first class to get started.
               </TableCell>
             </TableRow>
@@ -281,7 +281,7 @@ export function ClassesClient({
                   </TableCell>
                   <TableCell>
                     {classItem.stream ? (
-                      <Badge className="bg-teal-50 text-teal-700 hover:bg-teal-50">
+                      <Badge className="bg-teal-50 text-teal-700 hover:bg-teal-50 dark:bg-teal-900/30 dark:text-teal-300">
                         {classItem.stream.name}
                       </Badge>
                     ) : (
@@ -291,12 +291,12 @@ export function ClassesClient({
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       {classItem._count.cohorts > 0 && (
-                        <span className="text-xs text-neutral-600">
+                        <span className="text-xs text-muted-foreground">
                           {classItem._count.cohorts} cohort(s)
                         </span>
                       )}
                       {classItem._count.sectionTemplates > 0 && (
-                        <span className="text-xs text-neutral-600">
+                        <span className="text-xs text-muted-foreground">
                           {classItem._count.sectionTemplates} template(s)
                         </span>
                       )}

@@ -170,10 +170,10 @@ export function CohortsClient({
 
   const getStatusBadge = (status: Cohort['status']) => {
     const styles = {
-      PLANNED: 'bg-neutral-100 text-neutral-600',
-      RUNNING: 'bg-emerald-50 text-emerald-700',
-      FINISHED: 'bg-violet-50 text-violet-600',
-      ARCHIVED: 'bg-neutral-200 text-neutral-500',
+      PLANNED: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400',
+      RUNNING: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+      FINISHED: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300',
+      ARCHIVED: 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400',
     }
     return (
       <Badge className={`${styles[status]} hover:${styles[status]}`}>
@@ -185,7 +185,7 @@ export function CohortsClient({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-neutral-200 p-4">
+      <div className="bg-card rounded-lg border border-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <Label className="text-xs">Branch</Label>
@@ -288,9 +288,9 @@ export function CohortsClient({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-neutral-200">
-        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="bg-card rounded-lg border border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground">
             All Cohorts ({filteredCohorts.length})
           </h2>
           <Dialog
@@ -439,7 +439,7 @@ export function CohortsClient({
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-violet-50/50">
+            <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
               <TableHead>Cohort Name</TableHead>
               <TableHead>Academic Year</TableHead>
               <TableHead>Class</TableHead>
@@ -452,7 +452,7 @@ export function CohortsClient({
           <TableBody>
             {filteredCohorts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-neutral-500 py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No cohorts found. Create your first cohort to get started.
                 </TableCell>
               </TableRow>
@@ -475,8 +475,8 @@ export function CohortsClient({
                       <Badge
                         className={
                           cohort.enrollmentOpen
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-                            : 'bg-amber-50 text-amber-700 hover:bg-amber-50'
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300'
+                            : 'bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-900/30 dark:text-amber-300'
                         }
                       >
                         {cohort.enrollmentOpen ? 'Open' : 'Closed'}

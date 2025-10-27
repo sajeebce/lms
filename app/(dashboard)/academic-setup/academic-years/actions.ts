@@ -10,7 +10,7 @@ const academicYearSchema = z.object({
   code: z.string().min(1, 'Code is required'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  state: z.enum(['PLANNED', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']).default('PLANNED'),
+  state: z.enum(['PLANNED', 'ENROLLING', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']).default('PLANNED'),
 })
 
 export async function createAcademicYear(data: z.infer<typeof academicYearSchema>) {
@@ -117,3 +117,42 @@ export async function archiveAcademicYear(id: string) {
   }
 }
 
+export async function setAsCurrent(id: string) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+
+    await prisma.academicYear.update({
+      where: { id, tenantId },
+      data: { isCurrent: true },
+    })
+
+    revalidatePath('/academic-setup/academic-years')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to set as current' }
+  }
+}
+
+export async function removeFromCurrent(id: string) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+
+    await prisma.academicYear.update({
+      where: { id, tenantId },
+      data: { isCurrent: false },
+    })
+
+    revalidatePath('/academic-setup/academic-years')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to remove from current' }
+  }
+}

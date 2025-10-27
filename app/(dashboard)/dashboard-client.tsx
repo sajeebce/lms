@@ -25,7 +25,7 @@ export function DashboardClient({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">Admin User</span>
+              <span className="text-sm text-foreground/80">Admin User</span>
             </div>
           </div>
         </div>

@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Lock } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -19,10 +22,26 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { toast } from 'sonner'
 import { createStream, updateStream, deleteStream } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Stream name is required'),
+  note: z.string().optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Stream = {
   id: string
@@ -36,17 +55,20 @@ type Stream = {
 export function StreamsClient({ streams }: { streams: Stream[] }) {
   const [open, setOpen] = useState(false)
   const [editingStream, setEditingStream] = useState<Stream | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    note: '',
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      note: '',
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingStream
-      ? await updateStream(editingStream.id, formData)
-      : await createStream(formData)
+      ? await updateStream(editingStream.id, values)
+      : await createStream(values)
 
     if (result.success) {
       toast.success(
@@ -79,7 +101,7 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
 
   const handleEdit = (stream: Stream) => {
     setEditingStream(stream)
-    setFormData({
+    form.reset({
       name: stream.name,
       note: stream.note || '',
     })
@@ -88,16 +110,16 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
 
   const resetForm = () => {
     setEditingStream(null)
-    setFormData({
+    form.reset({
       name: '',
       note: '',
     })
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200">
-      <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-900">All Streams</h2>
+    <div className="bg-card rounded-lg border border-border">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-card-foreground">All Streams</h2>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
             <Button>
@@ -105,56 +127,78 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
               Add Stream
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {editingStream ? 'Edit Stream' : 'Add New Stream'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Stream Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  placeholder="e.g., Science, Commerce, Arts"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Stream Name */}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stream Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Science, Commerce, Arts" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Enter the academic stream or department name
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="note">Note</Label>
-                <Textarea
-                  id="note"
-                  value={formData.note}
-                  onChange={(e) =>
-                    setFormData({ ...formData, note: e.target.value })
-                  }
-                  placeholder="Optional description"
+
+                {/* Note */}
+                <FormField
+                  control={form.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Note (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Optional description about this stream"
+                          className="resize-none"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
-                  {editingStream ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="bg-violet-600 hover:bg-violet-700"
+                  >
+                    {form.formState.isSubmitting ? 'Saving...' : editingStream ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Table>
         <TableHeader>
-          <TableRow className="bg-violet-50/50">
+          <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
             <TableHead>Stream Name</TableHead>
             <TableHead>Note</TableHead>
             <TableHead>Classes</TableHead>
@@ -164,7 +208,7 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
         <TableBody>
           {streams.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-neutral-500 py-8">
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                 No streams found. Create your first stream to get started.
               </TableCell>
             </TableRow>
@@ -172,9 +216,9 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
             streams.map((stream) => (
               <TableRow key={stream.id}>
                 <TableCell className="font-medium">{stream.name}</TableCell>
-                <TableCell className="text-neutral-600">{stream.note || '-'}</TableCell>
+                <TableCell className="text-muted-foreground">{stream.note || '-'}</TableCell>
                 <TableCell>
-                  <span className="text-sm text-neutral-600">
+                  <span className="text-sm text-muted-foreground">
                     {stream._count.classes} {stream._count.classes === 1 ? 'class' : 'classes'}
                   </span>
                 </TableCell>

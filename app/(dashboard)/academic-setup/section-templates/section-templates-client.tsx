@@ -142,9 +142,9 @@ export function SectionTemplatesClient({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-neutral-200">
-        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="bg-card rounded-lg border border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground">
             All Templates ({templates.length})
           </h2>
           <Dialog
@@ -249,7 +249,7 @@ export function SectionTemplatesClient({
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-violet-50/50">
+            <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
               <TableHead>Class</TableHead>
               <TableHead>Template Name</TableHead>
               <TableHead>Capacity</TableHead>
@@ -260,7 +260,7 @@ export function SectionTemplatesClient({
           <TableBody>
             {templates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-neutral-500 py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No templates found. Create your first template to get started.
                 </TableCell>
               </TableRow>
@@ -268,7 +268,7 @@ export function SectionTemplatesClient({
               templates.map((template) => (
                 <TableRow key={template.id}>
                   <TableCell>
-                    <Badge className="bg-violet-50 text-violet-700 hover:bg-violet-50">
+                    <Badge className="bg-violet-50 text-violet-700 hover:bg-violet-50 dark:bg-violet-900/30 dark:text-violet-300">
                       {template.class.name}
                     </Badge>
                   </TableCell>

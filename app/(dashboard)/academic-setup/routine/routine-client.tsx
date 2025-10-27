@@ -168,7 +168,7 @@ export function RoutineClient({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-neutral-200 p-4">
+      <div className="bg-card rounded-lg border border-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label className="text-xs">Branch</Label>
@@ -233,9 +233,9 @@ export function RoutineClient({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-neutral-200">
-        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="bg-card rounded-lg border border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground">
             Schedule ({filteredRoutines.length})
           </h2>
           <Dialog
@@ -388,7 +388,7 @@ export function RoutineClient({
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-violet-50/50">
+            <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
               <TableHead>Day</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Section</TableHead>
@@ -400,7 +400,7 @@ export function RoutineClient({
           <TableBody>
             {filteredRoutines.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-neutral-500 py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No routines found. Create your first session to get started.
                 </TableCell>
               </TableRow>
@@ -412,22 +412,22 @@ export function RoutineClient({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
-                      <Clock className="h-3 w-3 text-neutral-500" />
+                      <Clock className="h-3 w-3 text-muted-foreground" />
                       {routine.startTime} - {routine.endTime}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                    <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300">
                       {routine.section.name}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-violet-50 text-violet-700 hover:bg-violet-50">
+                    <Badge className="bg-violet-50 text-violet-700 hover:bg-violet-50 dark:bg-violet-900/30 dark:text-violet-300">
                       {routine.teacher.name}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50">
+                    <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300">
                       {routine.room.name}
                     </Badge>
                   </TableCell>

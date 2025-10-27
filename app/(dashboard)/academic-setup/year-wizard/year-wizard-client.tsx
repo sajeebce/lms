@@ -117,15 +117,15 @@ export function YearWizardClient({
   return (
     <div className="space-y-6">
       {/* Form Card */}
-      <Card className="border-violet-200 bg-gradient-to-br from-white to-violet-50/30">
-        <CardHeader className="bg-gradient-to-r from-violet-100 to-indigo-100 rounded-t-lg">
+      <Card className="border-violet-200 dark:border-violet-800/30 bg-gradient-to-br from-white to-violet-50/30 dark:from-card dark:to-violet-950/20">
+        <CardHeader className="bg-gradient-to-r from-violet-100 to-indigo-100 dark:from-violet-950/30 dark:to-indigo-950/30 rounded-t-lg">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-violet-600 rounded-lg">
+            <div className="p-2 bg-violet-600 dark:bg-violet-700 rounded-lg">
               <Wand2 className="h-5 w-5 text-white" />
             </div>
             <div>
               <CardTitle className="text-xl">Year Wizard</CardTitle>
-              <CardDescription className="text-violet-900">
+              <CardDescription className="text-violet-900 dark:text-violet-300">
                 Select academic year, branch, and classes to auto-generate cohorts and
                 sections
               </CardDescription>
@@ -188,8 +188,8 @@ export function YearWizardClient({
                   onClick={() => toggleClass(cls.id)}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     formData.classIds.includes(cls.id)
-                      ? 'border-violet-600 bg-violet-50 text-violet-900'
-                      : 'border-neutral-200 bg-white hover:border-violet-300'
+                      ? 'border-violet-600 dark:border-violet-500 bg-violet-50 dark:bg-violet-950/30 text-violet-900 dark:text-violet-200'
+                      : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card hover:border-violet-300 dark:hover:border-violet-600 text-foreground'
                   }`}
                 >
                   <div className="font-medium">{cls.name}</div>
@@ -212,12 +212,12 @@ export function YearWizardClient({
 
       {/* Preview Table */}
       {preview && previewMeta && (
-        <Card className="border-indigo-200">
-          <CardHeader className="bg-indigo-50">
+        <Card className="border-indigo-200 dark:border-indigo-800/30">
+          <CardHeader className="bg-indigo-50 dark:bg-indigo-950/30">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Preview</CardTitle>
-                <CardDescription>
+                <CardDescription className="dark:text-neutral-300">
                   {previewMeta.year} at {previewMeta.branch}
                 </CardDescription>
               </div>
@@ -234,7 +234,7 @@ export function YearWizardClient({
           <CardContent className="pt-6">
             <Table>
               <TableHeader>
-                <TableRow className="bg-violet-50/50">
+                <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
                   <TableHead>Class</TableHead>
                   <TableHead>Cohort Name</TableHead>
                   <TableHead>Sections</TableHead>
@@ -248,7 +248,7 @@ export function YearWizardClient({
                     <TableCell>{item.cohortName}</TableCell>
                     <TableCell>
                       {item.sections.length === 0 ? (
-                        <span className="text-neutral-500 text-sm">
+                        <span className="text-muted-foreground text-sm">
                           No templates defined
                         </span>
                       ) : (
@@ -267,12 +267,12 @@ export function YearWizardClient({
                     </TableCell>
                     <TableCell>
                       {item.exists ? (
-                        <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50">
+                        <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-900/30 dark:text-amber-300">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           Already Exists
                         </Badge>
                       ) : (
-                        <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                        <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300">
                           Will Create
                         </Badge>
                       )}

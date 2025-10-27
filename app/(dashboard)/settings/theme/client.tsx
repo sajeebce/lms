@@ -105,20 +105,19 @@ const PREDEFINED_THEMES = [
   {
     id: 'midnight-dark',
     name: 'Midnight Dark',
-    description: 'Professional dark mode',
-    preview: 'linear-gradient(to right, #3b82f6, #8b5cf6)',
+    description: 'Deep midnight professional theme',
+    preview: 'linear-gradient(to right, #1e1b4b, #312e81)',
     mode: 'dark' as const,
     colors: {
-      // Bright accent colors for active state
-      activeFrom: '#3b82f6',
-      activeTo: '#8b5cf6',
-      // Dark hover backgrounds
-      hoverFrom: '#1e293b',
-      hoverTo: '#334155',
-      borderColor: '#475569',
-      // Bright buttons
-      buttonFrom: '#3b82f6',
-      buttonTo: '#8b5cf6',
+      // Light mode: Darker "midnight" colors for brand consistency
+      // Dark mode: These will be used as-is for active states, hover will be auto-generated
+      activeFrom: '#1e3a8a',      // blue-900 (deep midnight blue)
+      activeTo: '#581c87',        // purple-900 (deep midnight purple)
+      hoverFrom: '#dbeafe',       // blue-50 (light mode hover)
+      hoverTo: '#f3e8ff',         // purple-50 (light mode hover)
+      borderColor: '#93c5fd',     // blue-300 (light mode border)
+      buttonFrom: '#1e3a8a',      // blue-900 (deep midnight)
+      buttonTo: '#581c87',        // purple-900 (deep midnight)
     }
   },
 ]

@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -20,7 +23,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import {
   Select,
   SelectContent,
@@ -30,6 +41,17 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createBranch, updateBranch, deleteBranch } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Branch name is required'),
+  code: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Branch = {
   id: string
@@ -42,20 +64,23 @@ type Branch = {
 export function BranchesClient({ branches }: { branches: Branch[] }) {
   const [open, setOpen] = useState(false)
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    address: '',
-    phone: '',
-    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      code: '',
+      address: '',
+      phone: '',
+      status: 'ACTIVE',
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingBranch
-      ? await updateBranch(editingBranch.id, formData)
-      : await createBranch(formData)
+      ? await updateBranch(editingBranch.id, values)
+      : await createBranch(values)
 
     if (result.success) {
       toast.success(
@@ -81,7 +106,7 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
 
   const handleEdit = (branch: Branch) => {
     setEditingBranch(branch)
-    setFormData({
+    form.reset({
       name: branch.name,
       code: branch.code || '',
       address: '',
@@ -93,7 +118,7 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
 
   const resetForm = () => {
     setEditingBranch(null)
-    setFormData({
+    form.reset({
       name: '',
       code: '',
       address: '',
@@ -103,9 +128,9 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200">
-      <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-neutral-900">All Branches</h2>
+    <div className="bg-card rounded-lg border border-border">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-card-foreground">All Branches</h2>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
             <Button>
@@ -113,91 +138,130 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
               Add Branch
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {editingBranch ? 'Edit Branch' : 'Add New Branch'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Branch Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Branch Name */}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Branch Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Main Campus" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Enter the branch or campus name
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="code">Code</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value })
-                  }
+
+                {/* Code + Phone (Side by Side) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Code (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., MC-01" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., +880 1234567890" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Address */}
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 123 Main Street, Dhaka" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
+
+                {/* Status */}
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">✅ Active</SelectItem>
+                          <SelectItem value="INACTIVE">⏸️ Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Active branches can accept new enrollments
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: 'ACTIVE' | 'INACTIVE') =>
-                    setFormData({ ...formData, status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
-                  {editingBranch ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="bg-violet-600 hover:bg-violet-700"
+                  >
+                    {form.formState.isSubmitting ? 'Saving...' : editingBranch ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
 
       <Table>
         <TableHeader>
-          <TableRow className="bg-violet-50/50">
+          <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
             <TableHead>Branch Name</TableHead>
             <TableHead>Code</TableHead>
             <TableHead>Status</TableHead>
@@ -208,7 +272,7 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
         <TableBody>
           {branches.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-neutral-500 py-8">
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                 No branches found. Create your first branch to get started.
               </TableCell>
             </TableRow>
@@ -221,8 +285,8 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                   <Badge
                     className={
                       branch.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50'
-                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-100'
+                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/30 dark:text-neutral-400'
                     }
                   >
                     {branch.status}

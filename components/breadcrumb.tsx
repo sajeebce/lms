@@ -42,21 +42,21 @@ export function Breadcrumb() {
   })
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-neutral-600">
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
       {breadcrumbItems.map((item, index) => {
         const isLast = index === breadcrumbItems.length - 1
-        
+
         return (
           <div key={item.href} className="flex items-center">
             {index > 0 && (
-              <ChevronRight className="h-4 w-4 mx-1 text-neutral-400" />
+              <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/60" />
             )}
             {isLast ? (
-              <span className="font-medium text-neutral-900">{item.label}</span>
+              <span className="font-medium text-foreground">{item.label}</span>
             ) : (
               <Link
                 href={item.href}
-                className="hover:text-violet-600 transition-colors"
+                className="hover:text-primary transition-colors"
               >
                 {item.label}
               </Link>

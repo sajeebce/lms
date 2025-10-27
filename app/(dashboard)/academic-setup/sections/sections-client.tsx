@@ -169,7 +169,7 @@ export function SectionsClient({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-neutral-200 p-4">
+      <div className="bg-card rounded-lg border border-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <Label className="text-xs">Branch</Label>
@@ -257,9 +257,9 @@ export function SectionsClient({
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-neutral-200">
-        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="bg-card rounded-lg border border-border">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground">
             All Sections ({filteredSections.length})
           </h2>
           <Dialog
@@ -361,7 +361,7 @@ export function SectionsClient({
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-violet-50/50">
+            <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
               <TableHead>Section Name</TableHead>
               <TableHead>Cohort</TableHead>
               <TableHead>Class</TableHead>
@@ -373,7 +373,7 @@ export function SectionsClient({
           <TableBody>
             {filteredSections.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-neutral-500 py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No sections found. Create your first section to get started.
                 </TableCell>
               </TableRow>
@@ -382,7 +382,7 @@ export function SectionsClient({
                 <TableRow key={section.id}>
                   <TableCell className="font-medium">{section.name}</TableCell>
                   <TableCell>
-                    <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50">
+                    <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300">
                       {section.cohort.name}
                     </Badge>
                   </TableCell>
