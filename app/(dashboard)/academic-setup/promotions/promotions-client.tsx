@@ -54,7 +54,6 @@ export function PromotionsClient() {
 
           <Button
             onClick={handlePromote}
-            className="bg-violet-600 hover:bg-violet-700"
             disabled
           >
             <Lock className="h-4 w-4 mr-2" />

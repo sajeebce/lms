@@ -108,7 +108,7 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
         <h2 className="text-lg font-semibold text-neutral-900">All Branches</h2>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-violet-600 hover:bg-violet-700">
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Branch
             </Button>

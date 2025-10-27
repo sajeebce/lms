@@ -246,7 +246,7 @@ export function RoutineClient({
             }}
           >
             <DialogTrigger asChild>
-              <Button className="bg-violet-600 hover:bg-violet-700">
+              <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Session
               </Button>
@@ -377,7 +377,7 @@ export function RoutineClient({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
+                  <Button type="submit">
                     {editingRoutine ? 'Update' : 'Create'}
                   </Button>
                 </div>

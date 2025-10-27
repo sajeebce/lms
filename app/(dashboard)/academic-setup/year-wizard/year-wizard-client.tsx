@@ -202,7 +202,6 @@ export function YearWizardClient({
             <Button
               onClick={handlePreview}
               disabled={loading}
-              className="bg-violet-600 hover:bg-violet-700"
             >
               <Eye className="h-4 w-4 mr-2" />
               {loading ? 'Generating...' : 'Preview'}

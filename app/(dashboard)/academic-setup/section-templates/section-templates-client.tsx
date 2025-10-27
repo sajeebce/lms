@@ -155,7 +155,7 @@ export function SectionTemplatesClient({
             }}
           >
             <DialogTrigger asChild>
-              <Button className="bg-violet-600 hover:bg-violet-700">
+              <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Template
               </Button>
@@ -238,7 +238,7 @@ export function SectionTemplatesClient({
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
+                  <Button type="submit">
                     {editingTemplate ? 'Update' : 'Create'}
                   </Button>
                 </div>

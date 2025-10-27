@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { updateThemeSettings } from './actions'
 import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface ThemeSettings {
   themeName: string
@@ -92,6 +93,21 @@ const PREDEFINED_THEMES = [
       borderColor: '#fcd34d',
       buttonFrom: '#f59e0b',
       buttonTo: '#ef4444',
+    }
+  },
+  {
+    id: 'midnight-dark',
+    name: 'Midnight Dark',
+    description: 'Professional dark mode',
+    preview: 'linear-gradient(to right, #1e293b, #0f172a)',
+    colors: {
+      activeFrom: '#1e293b',
+      activeTo: '#0f172a',
+      hoverFrom: '#334155',
+      hoverTo: '#1e293b',
+      borderColor: '#475569',
+      buttonFrom: '#1e293b',
+      buttonTo: '#0f172a',
     }
   },
 ]
@@ -343,18 +359,13 @@ export function ThemeSettingsClient({
 
         {/* Apply Custom Theme Button */}
         <div className="mt-6 pt-6 border-t border-neutral-200">
-          <button
+          <Button
             onClick={handleApplyCustomTheme}
             disabled={isSaving}
-            className={cn(
-              'w-full md:w-auto px-6 py-3 rounded-lg font-medium transition-all',
-              'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
-              'hover:from-violet-700 hover:to-purple-700 shadow-md hover:shadow-lg',
-              isSaving && 'opacity-50 cursor-not-allowed'
-            )}
+            size="lg"
           >
             {isSaving ? 'Applying...' : 'Apply Custom Theme'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

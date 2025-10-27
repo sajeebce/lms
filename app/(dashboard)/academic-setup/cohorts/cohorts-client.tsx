@@ -301,7 +301,7 @@ export function CohortsClient({
             }}
           >
             <DialogTrigger asChild>
-              <Button className="bg-violet-600 hover:bg-violet-700">
+              <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Cohort
               </Button>
