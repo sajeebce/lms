@@ -67,10 +67,14 @@ import {
   removeFromCurrent
 } from './actions'
 
-// Form validation schema
+// Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string().min(1, 'Year name is required'),
-  code: z.string().min(1, 'Code is required'),
+  name: z.string()
+    .min(1, 'Year name is required')
+    .max(100, 'Year name must be 100 characters or less'),
+  code: z.string()
+    .min(1, 'Code is required')
+    .max(20, 'Code must be 20 characters or less'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   state: z.enum(['PLANNED', 'ENROLLING', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']),
@@ -296,10 +300,14 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                     <FormItem>
                       <FormLabel>Year Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., 2025-26" {...field} />
+                        <Input
+                          placeholder="e.g., 2025-26"
+                          maxLength={100}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Enter the academic year name
+                        Enter the academic year name (max 100 characters)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -314,10 +322,14 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                     <FormItem>
                       <FormLabel>Code *</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., AY-25-26" {...field} />
+                        <Input
+                          placeholder="e.g., AY-25-26"
+                          maxLength={20}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Short code for the academic year
+                        Short code for the academic year (max 20 characters)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

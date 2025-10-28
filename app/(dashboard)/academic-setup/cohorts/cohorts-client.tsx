@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Lock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Lock, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Form,
   FormControl,
@@ -49,14 +59,18 @@ import {
   toggleEnrollmentOpen,
 } from './actions'
 
-// Form validation schema
+// Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string().min(1, 'Cohort name is required'),
+  name: z.string()
+    .min(1, 'Cohort name is required')
+    .max(100, 'Cohort name must be 100 characters or less'),
   yearId: z.string().min(1, 'Academic year is required'),
   classId: z.string().min(1, 'Class is required'),
+  streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
   status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
+  startDate: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -66,8 +80,10 @@ type Cohort = {
   name: string
   status: 'PLANNED' | 'RUNNING' | 'FINISHED' | 'ARCHIVED'
   enrollmentOpen: boolean
+  startDate: Date | null
   year: { id: string; name: string }
   class: { id: string; name: string }
+  stream: { id: string; name: string } | null
   branch: { id: string; name: string }
   _count: { sections: number }
 }
@@ -75,20 +91,25 @@ type Cohort = {
 type Branch = { id: string; name: string }
 type AcademicYear = { id: string; name: string }
 type Class = { id: string; name: string }
+type Stream = { id: string; name: string }
 
 export function CohortsClient({
   cohorts,
   branches,
   academicYears,
   classes,
+  streams,
 }: {
   cohorts: Cohort[]
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
+  streams: Stream[]
 }) {
   const [open, setOpen] = useState(false)
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [cohortToDelete, setCohortToDelete] = useState<Cohort | null>(null)
 
   // React Hook Form
   const form = useForm<FormValues>({
@@ -97,9 +118,11 @@ export function CohortsClient({
       name: '',
       yearId: '',
       classId: '',
+      streamId: '',
       branchId: '',
       status: 'PLANNED',
       enrollmentOpen: false,
+      startDate: '',
     },
   })
 
@@ -125,9 +148,15 @@ export function CohortsClient({
   }, [cohorts, filters])
 
   const onSubmit = async (values: FormValues) => {
+    // Convert __none__ to empty string for streamId
+    const submissionData = {
+      ...values,
+      streamId: values.streamId === '__none__' ? '' : values.streamId,
+    }
+
     const result = editingCohort
-      ? await updateCohort(editingCohort.id, values)
-      : await createCohort(values)
+      ? await updateCohort(editingCohort.id, submissionData)
+      : await createCohort(submissionData)
 
     if (result.success) {
       toast.success(
@@ -152,22 +181,17 @@ export function CohortsClient({
     }
   }
 
-  const handleDelete = async (id: string, sectionCount: number) => {
-    if (sectionCount > 0) {
-      toast.error('Cannot delete', {
-        description: `${sectionCount} section(s) linked to this cohort`,
-      })
-      return
-    }
+  const confirmDelete = async () => {
+    if (!cohortToDelete) return
 
-    if (!confirm('Are you sure you want to delete this cohort?')) return
-
-    const result = await deleteCohort(id)
+    const result = await deleteCohort(cohortToDelete.id)
     if (result.success) {
       toast.success('Cohort deleted successfully')
     } else {
       toast.error(result.error || 'Failed to delete cohort')
     }
+    setDeleteDialogOpen(false)
+    setCohortToDelete(null)
   }
 
   const handleEdit = (cohort: Cohort) => {
@@ -176,9 +200,11 @@ export function CohortsClient({
       name: cohort.name,
       yearId: cohort.year.id,
       classId: cohort.class.id,
+      streamId: cohort.stream?.id || '__none__',
       branchId: cohort.branch.id,
       status: cohort.status,
       enrollmentOpen: cohort.enrollmentOpen,
+      startDate: cohort.startDate ? new Date(cohort.startDate).toISOString().split('T')[0] : '',
     })
     setOpen(true)
   }
@@ -189,9 +215,11 @@ export function CohortsClient({
       name: '',
       yearId: '',
       classId: '',
+      streamId: '__none__',
       branchId: '',
       status: 'PLANNED',
       enrollmentOpen: false,
+      startDate: '',
     })
   }
 
@@ -349,10 +377,14 @@ export function CohortsClient({
                       <FormItem>
                         <FormLabel>Cohort Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 2025 Intake, Morning Batch" {...field} />
+                          <Input
+                            placeholder="e.g., 2025 Intake, Morning Batch"
+                            maxLength={100}
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
-                          Enter the cohort name
+                          Enter the cohort name (max 100 characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -412,27 +444,82 @@ export function CohortsClient({
                     />
                   </div>
 
-                  {/* Branch */}
+                  {/* Stream + Branch (Side by Side) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="streamId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stream (Optional)</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || undefined}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="No stream" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="__none__">No Stream</SelectItem>
+                              {streams.map((stream) => (
+                                <SelectItem key={stream.id} value={stream.id}>
+                                  {stream.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription className="text-xs">
+                            For Class 9-12 (Science/Commerce/Arts)
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="branchId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Branch *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select branch" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {branches.map((branch) => (
+                                <SelectItem key={branch.id} value={branch.id}>
+                                  {branch.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Start Date (Optional) */}
                   <FormField
                     control={form.control}
-                    name="branchId"
+                    name="startDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Branch *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {branches.map((branch) => (
-                              <SelectItem key={branch.id} value={branch.id}>
-                                {branch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Start Date (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          When did this cohort start?
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -501,6 +588,7 @@ export function CohortsClient({
               <TableHead>Cohort Name</TableHead>
               <TableHead>Academic Year</TableHead>
               <TableHead>Class</TableHead>
+              <TableHead>Stream</TableHead>
               <TableHead>Branch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Enrollment</TableHead>
@@ -510,7 +598,7 @@ export function CohortsClient({
           <TableBody>
             {filteredCohorts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No cohorts found. Create your first cohort to get started.
                 </TableCell>
               </TableRow>
@@ -520,6 +608,15 @@ export function CohortsClient({
                   <TableCell className="font-medium">{cohort.name}</TableCell>
                   <TableCell>{cohort.year.name}</TableCell>
                   <TableCell>{cohort.class.name}</TableCell>
+                  <TableCell>
+                    {cohort.stream ? (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300">
+                        {cohort.stream.name}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>{cohort.branch.name}</TableCell>
                   <TableCell>{getStatusBadge(cohort.status)}</TableCell>
                   <TableCell>
@@ -553,9 +650,16 @@ export function CohortsClient({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          handleDelete(cohort.id, cohort._count.sections)
-                        }
+                        onClick={() => {
+                          if (cohort._count.sections > 0) {
+                            toast.error('Cannot delete', {
+                              description: `${cohort._count.sections} section(s) linked to this cohort`,
+                            })
+                            return
+                          }
+                          setCohortToDelete(cohort)
+                          setDeleteDialogOpen(true)
+                        }}
                         disabled={cohort._count.sections > 0}
                         title={
                           cohort._count.sections > 0
@@ -577,7 +681,32 @@ export function CohortsClient({
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Cohort</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete <span className="font-semibold text-foreground">{cohortToDelete?.name}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-

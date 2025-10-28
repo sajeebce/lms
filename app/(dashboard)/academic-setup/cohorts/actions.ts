@@ -6,12 +6,16 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const cohortSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
   yearId: z.string().min(1, 'Academic year is required'),
   classId: z.string().min(1, 'Class is required'),
+  streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
   status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
+  startDate: z.string().optional(),
 })
 
 export async function createCohort(data: z.infer<typeof cohortSchema>) {
@@ -26,6 +30,7 @@ export async function createCohort(data: z.infer<typeof cohortSchema>) {
         tenantId,
         yearId: validated.yearId,
         classId: validated.classId,
+        streamId: validated.streamId || null,
         branchId: validated.branchId,
         name: validated.name,
       },
@@ -36,7 +41,12 @@ export async function createCohort(data: z.infer<typeof cohortSchema>) {
     }
 
     await prisma.cohort.create({
-      data: { ...validated, tenantId },
+      data: {
+        ...validated,
+        tenantId,
+        streamId: validated.streamId || null,
+        startDate: validated.startDate ? new Date(validated.startDate) : null,
+      },
     })
 
     revalidatePath('/academic-setup/cohorts')
@@ -63,7 +73,11 @@ export async function updateCohort(
 
     await prisma.cohort.update({
       where: { id, tenantId },
-      data: validated,
+      data: {
+        ...validated,
+        streamId: validated.streamId || null,
+        startDate: validated.startDate ? new Date(validated.startDate) : null,
+      },
     })
 
     revalidatePath('/academic-setup/cohorts')

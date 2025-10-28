@@ -6,10 +6,18 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const branchSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  code: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  code: z.string()
+    .max(20, 'Code must be 20 characters or less')
+    .optional(),
+  address: z.string()
+    .max(200, 'Address must be 200 characters or less')
+    .optional(),
+  phone: z.string()
+    .max(20, 'Phone must be 20 characters or less')
+    .optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
 })
 

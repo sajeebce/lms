@@ -6,8 +6,12 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const streamSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  note: z.string().optional(),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  note: z.string()
+    .max(500, 'Note must be 500 characters or less')
+    .optional(),
 })
 
 export async function createStream(data: z.infer<typeof streamSchema>) {

@@ -122,8 +122,9 @@ model Stream {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   classes Class[]
+  cohorts Cohort[]
 
   @@unique([tenantId, name])
   @@map("streams")
@@ -154,21 +155,26 @@ model Cohort {
   tenantId       String
   yearId         String
   classId        String
+  streamId       String?
   branchId       String
   name           String
   status         CohortStatus @default(PLANNED)
   enrollmentOpen Boolean      @default(false)
+  startDate      DateTime?
+  endDate        DateTime?
+  archivedAt     DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   year   AcademicYear @relation(fields: [yearId], references: [id], onDelete: Restrict)
   class  Class        @relation(fields: [classId], references: [id], onDelete: Restrict)
+  stream Stream?      @relation(fields: [streamId], references: [id], onDelete: SetNull)
   branch Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
   sections Section[]
 
-  @@unique([tenantId, yearId, classId, branchId, name])
+  @@unique([tenantId, yearId, classId, streamId, branchId, name])
   @@map("cohorts")
 }
 

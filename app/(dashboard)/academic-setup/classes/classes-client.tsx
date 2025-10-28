@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Lock, ArrowUp } from 'lucide-react'
+import { Plus, Pencil, Trash2, Lock, ArrowUp, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Form,
   FormControl,
@@ -42,12 +52,18 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createClass, updateClass, deleteClass } from './actions'
 
-// Form validation schema
+// Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string().min(1, 'Class name is required'),
-  alias: z.string().optional(),
+  name: z.string()
+    .min(1, 'Class name is required')
+    .max(100, 'Class name must be 100 characters or less'),
+  alias: z.string()
+    .max(50, 'Alias must be 50 characters or less')
+    .optional(),
   streamId: z.string().optional(),
-  order: z.number().min(1, 'Order must be at least 1'),
+  order: z.number()
+    .min(1, 'Order must be at least 1')
+    .max(9999, 'Order must be 9999 or less'),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -78,6 +94,8 @@ export function ClassesClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [classToDelete, setClassToDelete] = useState<ClassItem | null>(null)
 
   // React Hook Form
   const form = useForm<FormValues>({
@@ -114,26 +132,17 @@ export function ClassesClient({
     }
   }
 
-  const handleDelete = async (
-    id: string,
-    cohortCount: number,
-    templateCount: number
-  ) => {
-    if (cohortCount > 0 || templateCount > 0) {
-      toast.error('In Use', {
-        description: `Cannot delete: ${cohortCount} cohort(s), ${templateCount} template(s) linked`,
-      })
-      return
-    }
+  const confirmDelete = async () => {
+    if (!classToDelete) return
 
-    if (!confirm('Are you sure you want to delete this class?')) return
-
-    const result = await deleteClass(id)
+    const result = await deleteClass(classToDelete.id)
     if (result.success) {
       toast.success('Class deleted successfully')
     } else {
       toast.error(result.error || 'Failed to delete class')
     }
+    setDeleteDialogOpen(false)
+    setClassToDelete(null)
   }
 
   const handleEdit = (classItem: ClassItem) => {
@@ -193,10 +202,14 @@ export function ClassesClient({
                     <FormItem>
                       <FormLabel>Class Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Class 11, Grade 10" {...field} />
+                        <Input
+                          placeholder="e.g., Class 11, Grade 10"
+                          maxLength={100}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Enter the class name
+                        Enter the class name (max 100 characters)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -211,10 +224,14 @@ export function ClassesClient({
                     <FormItem>
                       <FormLabel>Alias (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Grade 11" {...field} />
+                        <Input
+                          placeholder="e.g., Grade 11"
+                          maxLength={50}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Alternative name for the class
+                        Alternative name for the class (max 50 characters)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -262,12 +279,13 @@ export function ClassesClient({
                         <Input
                           type="number"
                           min="1"
+                          max="9999"
                           {...field}
                           onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                         />
                       </FormControl>
                       <FormDescription>
-                        Lower numbers come first. Must be unique.
+                        Lower numbers come first. Must be unique (1-9999).
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -374,13 +392,16 @@ export function ClassesClient({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          handleDelete(
-                            classItem.id,
-                            classItem._count.cohorts,
-                            classItem._count.sectionTemplates
-                          )
-                        }
+                        onClick={() => {
+                          if (inUse) {
+                            toast.error('In Use', {
+                              description: `Cannot delete: ${classItem._count.cohorts} cohort(s), ${classItem._count.sectionTemplates} template(s) linked`,
+                            })
+                            return
+                          }
+                          setClassToDelete(classItem)
+                          setDeleteDialogOpen(true)
+                        }}
                         disabled={inUse}
                         title={inUse ? 'In Use' : 'Delete class'}
                       >
@@ -398,7 +419,32 @@ export function ClassesClient({
           )}
         </TableBody>
       </Table>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Class</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete <span className="font-semibold text-foreground">{classToDelete?.name}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-

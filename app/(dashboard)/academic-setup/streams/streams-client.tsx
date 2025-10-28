@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Lock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Lock, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -35,10 +45,14 @@ import {
 import { toast } from 'sonner'
 import { createStream, updateStream, deleteStream } from './actions'
 
-// Form validation schema
+// Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string().min(1, 'Stream name is required'),
-  note: z.string().optional(),
+  name: z.string()
+    .min(1, 'Stream name is required')
+    .max(100, 'Stream name must be 100 characters or less'),
+  note: z.string()
+    .max(500, 'Note must be 500 characters or less')
+    .optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -55,6 +69,8 @@ type Stream = {
 export function StreamsClient({ streams }: { streams: Stream[] }) {
   const [open, setOpen] = useState(false)
   const [editingStream, setEditingStream] = useState<Stream | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [streamToDelete, setStreamToDelete] = useState<Stream | null>(null)
 
   // React Hook Form
   const form = useForm<FormValues>({
@@ -81,22 +97,17 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
     }
   }
 
-  const handleDelete = async (id: string, hasClasses: boolean) => {
-    if (hasClasses) {
-      toast.error('Used in Classes', {
-        description: 'Cannot delete stream that is used in classes',
-      })
-      return
-    }
+  const confirmDelete = async () => {
+    if (!streamToDelete) return
 
-    if (!confirm('Are you sure you want to delete this stream?')) return
-
-    const result = await deleteStream(id)
+    const result = await deleteStream(streamToDelete.id)
     if (result.success) {
       toast.success('Stream deleted successfully')
     } else {
       toast.error(result.error || 'Failed to delete stream')
     }
+    setDeleteDialogOpen(false)
+    setStreamToDelete(null)
   }
 
   const handleEdit = (stream: Stream) => {
@@ -143,10 +154,14 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
                     <FormItem>
                       <FormLabel>Stream Name *</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Science, Commerce, Arts" {...field} />
+                        <Input
+                          placeholder="e.g., Science, Commerce, Arts"
+                          maxLength={100}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Enter the academic stream or department name
+                        Enter the academic stream or department name (max 100 characters)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -165,28 +180,26 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
                           placeholder="Optional description about this stream"
                           className="resize-none"
                           rows={3}
+                          maxLength={500}
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>
+                        Max 500 characters
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Buttons */}
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
+                {/* Submit Button Only */}
+                <div className="flex justify-end pt-4">
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting}
+                    className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
                   >
-                    {form.formState.isSubmitting ? 'Saving...' : editingStream ? 'Update' : 'Create'}
+                    {form.formState.isSubmitting ? 'Saving...' : editingStream ? 'Update Stream' : 'Create Stream'}
                   </Button>
                 </div>
               </form>
@@ -233,7 +246,16 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(stream.id, stream._count.classes > 0)}
+                      onClick={() => {
+                        if (stream._count.classes > 0) {
+                          toast.error('Used in Classes', {
+                            description: 'Cannot delete stream that is used in classes',
+                          })
+                          return
+                        }
+                        setStreamToDelete(stream)
+                        setDeleteDialogOpen(true)
+                      }}
                       disabled={stream._count.classes > 0}
                       title={stream._count.classes > 0 ? 'Used in Classes' : 'Delete stream'}
                     >
@@ -250,7 +272,32 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
           )}
         </TableBody>
       </Table>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Stream</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete <span className="font-semibold text-foreground">{streamToDelete?.name}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-

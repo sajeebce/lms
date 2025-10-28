@@ -6,10 +6,14 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const classSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  alias: z.string().optional(),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  alias: z.string()
+    .max(50, 'Alias must be 50 characters or less')
+    .optional(),
   streamId: z.string().optional(),
-  order: z.number().int().min(1, 'Order must be at least 1'),
+  order: z.number().int().min(1, 'Order must be at least 1').max(9999, 'Order must be 9999 or less'),
 })
 
 export async function createClass(data: z.infer<typeof classSchema>) {

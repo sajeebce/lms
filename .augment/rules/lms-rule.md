@@ -334,3 +334,268 @@ Promotions page shows future/gamified style lock state.
 No TypeScript or ESLint errors.
 
 Color accents follow your chosen modern gaming / learning dashboard identity. Do NOT force everything to be purple unless you actually decide purple is best.
+
+---
+
+## 📏 MANDATORY FORM STANDARDS (APPLY TO ALL FUTURE FORMS)
+
+### **1. Character Limits (Security + UX)**
+
+All forms MUST implement character limits at BOTH client and server level:
+
+**Standard Limits:**
+- **Name fields** (Branch, Class, Stream, Cohort, Section, etc.): 100 characters
+- **Code fields**: 20 characters
+- **Alias fields**: 50 characters
+- **Phone fields**: 20 characters
+- **Address fields**: 200 characters
+- **Note/Description fields**: 500 characters
+- **Capacity fields**: 0-9999 (numeric)
+- **Order fields**: 1-9999 (numeric)
+
+**Implementation Pattern:**
+
+**Server Actions (Zod Schema):**
+```typescript
+const schema = z.object({
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  code: z.string()
+    .max(20, 'Code must be 20 characters or less')
+    .optional(),
+  note: z.string()
+    .max(500, 'Note must be 500 characters or less')
+    .optional(),
+  capacity: z.number()
+    .min(0, 'Capacity must be 0 or greater')
+    .max(9999, 'Capacity must be 9999 or less'),
+})
+```
+
+**Client Components (Form Inputs):**
+```tsx
+<Input
+  placeholder="Enter name"
+  maxLength={100}  // ✅ Prevents typing beyond limit
+  {...field}
+/>
+<FormDescription>
+  Enter the name (max 100 characters)  // ✅ User hint
+</FormDescription>
+```
+
+**Why Both Layers:**
+- **Client `maxLength`**: Prevents user from typing beyond limit (UX)
+- **Server Zod validation**: Prevents malicious API calls (Security)
+- **FormDescription**: Informs user of limits (Transparency)
+
+---
+
+### **2. Delete Confirmation Modals**
+
+All delete actions MUST use modern AlertDialog confirmation (NOT browser `confirm()`):
+
+**Pattern:**
+```tsx
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+
+// State
+const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+const [itemToDelete, setItemToDelete] = useState<Item | null>(null)
+
+// Handler
+const confirmDelete = async () => {
+  if (!itemToDelete) return
+  const result = await deleteItem(itemToDelete.id)
+  if (result.success) {
+    toast.success('Item deleted successfully')
+  } else {
+    toast.error(result.error || 'Failed to delete item')
+  }
+  setDeleteDialogOpen(false)
+  setItemToDelete(null)
+}
+
+// UI
+<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete Item</AlertDialogTitle>
+      <AlertDialogDescription>
+        Are you sure you want to delete this item? This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={confirmDelete}
+        className="bg-red-600 hover:bg-red-700 text-white"
+      >
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+**Design Requirements:**
+- Clean white modal (light mode) / dark modal (dark mode)
+- Clear title and description
+- Cancel button (left, default style)
+- Delete button (right, red background)
+- No browser `confirm()` or `alert()`
+
+---
+
+### **3. Form Component Pattern**
+
+All forms MUST use React Hook Form + shadcn Form components (NO manual `useState`):
+
+**Required Pattern:**
+```tsx
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+})
+
+const form = useForm<z.infer<typeof formSchema>>({
+  resolver: zodResolver(formSchema),
+  defaultValues: { name: '' },
+})
+
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Name *</FormLabel>
+          <FormControl>
+            <Input maxLength={100} {...field} />
+          </FormControl>
+          <FormDescription>Max 100 characters</FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  </form>
+</Form>
+```
+
+**Benefits:**
+- Type-safe validation
+- Automatic error handling
+- Consistent UI/UX
+- Better accessibility
+- Less boilerplate
+
+---
+
+### **4. Submit Button Pattern**
+
+Forms should have ONLY submit button (NO separate Cancel button):
+
+**Pattern:**
+```tsx
+<div className="flex justify-end pt-4">
+  <Button
+    type="submit"
+    disabled={form.formState.isSubmitting}
+    className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
+  >
+    {form.formState.isSubmitting ? 'Saving...' : editingItem ? 'Update' : 'Create'}
+  </Button>
+</div>
+```
+
+**Why:**
+- Clicking outside modal auto-closes (built-in cancel)
+- Keyboard Enter submits form
+- Cleaner UI
+- Follows modern UX patterns
+
+---
+
+### **5. Validation Error Display**
+
+All validation errors MUST be shown inline (NOT browser alerts):
+
+**Pattern:**
+```tsx
+<FormMessage />  // ✅ Shows Zod validation errors automatically
+
+// Server errors shown via toast
+if (result.success) {
+  toast.success('Item created successfully')
+} else {
+  toast.error(result.error || 'Failed to create item')
+}
+```
+
+**Never Use:**
+- `alert()` - Browser alert
+- `confirm()` - Browser confirm
+- `prompt()` - Browser prompt
+
+**Always Use:**
+- `<FormMessage />` - Inline field errors
+- `toast.success()` / `toast.error()` - Action feedback
+- `<AlertDialog>` - Confirmations
+
+---
+
+## 🔒 SECURITY REQUIREMENTS
+
+1. **Always validate at server level** - Client validation can be bypassed
+2. **Always filter by tenantId** - Multi-tenant isolation
+3. **Always check RBAC** - Role-based access control
+4. **Always sanitize inputs** - Prevent injection attacks
+5. **Always use Zod schemas** - Type-safe validation
+
+---
+
+## 📝 CHECKLIST FOR NEW FORMS
+
+When creating any new form in Academic Setup (or similar modules):
+
+- [ ] Zod schema with character limits (server actions)
+- [ ] Zod schema with character limits (client component)
+- [ ] `maxLength` attribute on all text inputs
+- [ ] FormDescription hints for character limits
+- [ ] React Hook Form + shadcn Form components
+- [ ] Delete confirmation using AlertDialog
+- [ ] Only submit button (no cancel button)
+- [ ] Toast notifications for success/error
+- [ ] RBAC guards on server actions
+- [ ] TenantId filtering on all queries
+- [ ] Dark mode support
+- [ ] Responsive design
+- [ ] Loading states on buttons
+- [ ] Proper TypeScript types
+
+---
+
+**IMPORTANT:** These standards are MANDATORY for all future forms. Do NOT create forms without these features.

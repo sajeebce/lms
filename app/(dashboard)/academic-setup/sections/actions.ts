@@ -6,10 +6,16 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const sectionSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
   cohortId: z.string().min(1, 'Cohort is required'),
-  capacity: z.number().int().min(1, 'Capacity must be at least 1'),
-  note: z.string().optional(),
+  capacity: z.number().int()
+    .min(0, 'Capacity must be 0 or greater')
+    .max(9999999, 'Capacity must be 9999999 or less'),
+  note: z.string()
+    .max(500, 'Note must be 500 characters or less')
+    .optional(),
 })
 
 export async function createSection(data: z.infer<typeof sectionSchema>) {

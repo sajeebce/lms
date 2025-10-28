@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Info } from 'lucide-react'
+import { Plus, Pencil, Trash2, Info, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Form,
   FormControl,
@@ -48,12 +58,18 @@ import {
   deleteSectionTemplate,
 } from './actions'
 
-// Form validation schema
+// Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string().min(1, 'Template name is required'),
+  name: z.string()
+    .min(1, 'Template name is required')
+    .max(100, 'Template name must be 100 characters or less'),
   classId: z.string().min(1, 'Class is required'),
-  capacity: z.number().min(0, 'Capacity must be 0 or greater'),
-  note: z.string().optional(),
+  capacity: z.number()
+    .min(0, 'Capacity must be 0 or greater')
+    .max(9999999, 'Capacity must be 9999999 or less'),
+  note: z.string()
+    .max(500, 'Note must be 500 characters or less')
+    .optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -77,6 +93,8 @@ export function SectionTemplatesClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null)
 
   // React Hook Form
   const form = useForm<FormValues>({
@@ -113,20 +131,17 @@ export function SectionTemplatesClient({
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this template? This only affects future cohort generation.'
-      )
-    )
-      return
+  const confirmDelete = async () => {
+    if (!templateToDelete) return
 
-    const result = await deleteSectionTemplate(id)
+    const result = await deleteSectionTemplate(templateToDelete.id)
     if (result.success) {
       toast.success('Template deleted successfully')
     } else {
       toast.error(result.error || 'Failed to delete template')
     }
+    setDeleteDialogOpen(false)
+    setTemplateToDelete(null)
   }
 
   const handleEdit = (template: Template) => {
@@ -227,10 +242,14 @@ export function SectionTemplatesClient({
                       <FormItem>
                         <FormLabel>Template Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Section A, Section B" {...field} />
+                          <Input
+                            placeholder="e.g., Section A, Section B"
+                            maxLength={100}
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
-                          Enter the template name
+                          Enter the template name (max 100 characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -248,12 +267,13 @@ export function SectionTemplatesClient({
                           <Input
                             type="number"
                             min="0"
+                            max="9999999"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum students per section (0 = unlimited for online courses)
+                          Maximum students per section (0 = unlimited, max 9999999)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -268,10 +288,16 @@ export function SectionTemplatesClient({
                       <FormItem>
                         <FormLabel>Note (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Optional description" {...field} />
+                          <Textarea
+                            placeholder="Optional description"
+                            maxLength={500}
+                            rows={3}
+                            className="resize-none"
+                            {...field}
+                          />
                         </FormControl>
                         <FormDescription>
-                          Additional information about this template
+                          Additional information about this template (max 500 characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -339,7 +365,10 @@ export function SectionTemplatesClient({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(template.id)}
+                        onClick={() => {
+                          setTemplateToDelete(template)
+                          setDeleteDialogOpen(true)
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
@@ -351,7 +380,32 @@ export function SectionTemplatesClient({
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Template</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete <span className="font-semibold text-foreground">{templateToDelete?.name}</span>? This only affects future cohort generation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-

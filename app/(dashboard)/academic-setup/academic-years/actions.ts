@@ -6,8 +6,12 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 
 const academicYearSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  code: z.string().min(1, 'Code is required'),
+  name: z.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  code: z.string()
+    .min(1, 'Code is required')
+    .max(20, 'Code must be 20 characters or less'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   state: z.enum(['PLANNED', 'ENROLLING', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']).default('PLANNED'),

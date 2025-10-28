@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Clock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Clock, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,6 +21,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Form,
   FormControl,
@@ -101,6 +111,8 @@ export function RoutineClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null)
 
   // React Hook Form
   const form = useForm<FormValues>({
@@ -156,15 +168,17 @@ export function RoutineClient({
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this routine?')) return
+  const confirmDelete = async () => {
+    if (!routineToDelete) return
 
-    const result = await deleteRoutine(id)
+    const result = await deleteRoutine(routineToDelete.id)
     if (result.success) {
       toast.success('Routine deleted successfully')
     } else {
       toast.error(result.error || 'Failed to delete routine')
     }
+    setDeleteDialogOpen(false)
+    setRoutineToDelete(null)
   }
 
   const handleEdit = (routine: Routine) => {
@@ -494,7 +508,10 @@ export function RoutineClient({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(routine.id)}
+                        onClick={() => {
+                          setRoutineToDelete(routine)
+                          setDeleteDialogOpen(true)
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
@@ -506,7 +523,32 @@ export function RoutineClient({
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Routine</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete this routine session? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
-
