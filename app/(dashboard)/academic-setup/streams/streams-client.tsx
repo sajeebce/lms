@@ -185,7 +185,6 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting}
-                    className="bg-violet-600 hover:bg-violet-700"
                   >
                     {form.formState.isSubmitting ? 'Saving...' : editingStream ? 'Update' : 'Create'}
                   </Button>

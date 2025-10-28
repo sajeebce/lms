@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, Lock } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -18,6 +21,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import {
   Select,
   SelectContent,
@@ -36,6 +48,18 @@ import {
   deleteCohort,
   toggleEnrollmentOpen,
 } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Cohort name is required'),
+  yearId: z.string().min(1, 'Academic year is required'),
+  classId: z.string().min(1, 'Class is required'),
+  branchId: z.string().min(1, 'Branch is required'),
+  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  enrollmentOpen: z.boolean(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Cohort = {
   id: string
@@ -65,13 +89,18 @@ export function CohortsClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    yearId: '',
-    classId: '',
-    branchId: '',
-    status: 'PLANNED' as const,
-    enrollmentOpen: false,
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      yearId: '',
+      classId: '',
+      branchId: '',
+      status: 'PLANNED',
+      enrollmentOpen: false,
+    },
   })
 
   // Filters
@@ -95,12 +124,10 @@ export function CohortsClient({
     })
   }, [cohorts, filters])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingCohort
-      ? await updateCohort(editingCohort.id, formData)
-      : await createCohort(formData)
+      ? await updateCohort(editingCohort.id, values)
+      : await createCohort(values)
 
     if (result.success) {
       toast.success(
@@ -145,7 +172,7 @@ export function CohortsClient({
 
   const handleEdit = (cohort: Cohort) => {
     setEditingCohort(cohort)
-    setFormData({
+    form.reset({
       name: cohort.name,
       yearId: cohort.year.id,
       classId: cohort.class.id,
@@ -158,7 +185,7 @@ export function CohortsClient({
 
   const resetForm = () => {
     setEditingCohort(null)
-    setFormData({
+    form.reset({
       name: '',
       yearId: '',
       classId: '',
@@ -312,127 +339,158 @@ export function CohortsClient({
                   {editingCohort ? 'Edit Cohort' : 'Add New Cohort'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Cohort Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                    placeholder="e.g., 2025 Intake, Morning Batch"
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Cohort Name */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cohort Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 2025 Intake, Morning Batch" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the cohort name
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Academic Year *</Label>
-                    <Select
-                      value={formData.yearId}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, yearId: value })
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {academicYears.map((year) => (
-                          <SelectItem key={year.id} value={year.id}>
-                            {year.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+
+                  {/* Academic Year + Class (Side by Side) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="yearId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Academic Year *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select year" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {academicYears.map((year) => (
+                                <SelectItem key={year.id} value={year.id}>
+                                  {year.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="classId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Class *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select class" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {classes.map((cls) => (
+                                <SelectItem key={cls.id} value={cls.id}>
+                                  {cls.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <div>
-                    <Label>Class *</Label>
-                    <Select
-                      value={formData.classId}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, classId: value })
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>Branch *</Label>
-                  <Select
-                    value={formData.branchId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, branchId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Status *</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: any) =>
-                      setFormData({ ...formData, status: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PLANNED">PLANNED</SelectItem>
-                      <SelectItem value="RUNNING">RUNNING</SelectItem>
-                      <SelectItem value="FINISHED">FINISHED</SelectItem>
-                      <SelectItem value="ARCHIVED">ARCHIVED</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="enrollmentOpen">Enrollment Open</Label>
-                  <Switch
-                    id="enrollmentOpen"
-                    checked={formData.enrollmentOpen}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, enrollmentOpen: checked })
-                    }
+
+                  {/* Branch */}
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select branch" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {branches.map((branch) => (
+                              <SelectItem key={branch.id} value={branch.id}>
+                                {branch.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
-                    {editingCohort ? 'Update' : 'Create'}
-                  </Button>
-                </div>
-              </form>
+
+                  {/* Status */}
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="PLANNED">PLANNED</SelectItem>
+                            <SelectItem value="RUNNING">RUNNING</SelectItem>
+                            <SelectItem value="FINISHED">FINISHED</SelectItem>
+                            <SelectItem value="ARCHIVED">ARCHIVED</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Enrollment Open */}
+                  <FormField
+                    control={form.control}
+                    name="enrollmentOpen"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between">
+                        <FormLabel>Enrollment Open</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Submit Button Only */}
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? 'Saving...' : editingCohort ? 'Update' : 'Create'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>

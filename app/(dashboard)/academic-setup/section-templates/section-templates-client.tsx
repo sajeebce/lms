@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Info } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -19,6 +22,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,14 +39,24 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import {
   createSectionTemplate,
   updateSectionTemplate,
   deleteSectionTemplate,
 } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Template name is required'),
+  classId: z.string().min(1, 'Class is required'),
+  capacity: z.number().min(0, 'Capacity must be 0 or greater'),
+  note: z.string().optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Template = {
   id: string
@@ -55,24 +77,27 @@ export function SectionTemplatesClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    classId: '',
-    capacity: 40,
-    note: '',
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      classId: '',
+      capacity: 40,
+      note: '',
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingTemplate
       ? await updateSectionTemplate(editingTemplate.id, {
-          ...formData,
-          note: formData.note || undefined,
+          ...values,
+          note: values.note || undefined,
         })
       : await createSectionTemplate({
-          ...formData,
-          note: formData.note || undefined,
+          ...values,
+          note: values.note || undefined,
         })
 
     if (result.success) {
@@ -106,7 +131,7 @@ export function SectionTemplatesClient({
 
   const handleEdit = (template: Template) => {
     setEditingTemplate(template)
-    setFormData({
+    form.reset({
       name: template.name,
       classId: template.class.id,
       capacity: template.capacity,
@@ -117,7 +142,7 @@ export function SectionTemplatesClient({
 
   const resetForm = () => {
     setEditingTemplate(null)
-    setFormData({
+    form.reset({
       name: '',
       classId: '',
       capacity: 40,
@@ -166,83 +191,104 @@ export function SectionTemplatesClient({
                   {editingTemplate ? 'Edit Template' : 'Add New Template'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="classId">Class *</Label>
-                  <Select
-                    value={formData.classId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, classId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="name">Template Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                    placeholder="e.g., Section A, Section B"
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Class */}
+                  <FormField
+                    control={form.control}
+                    name="classId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Class *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select class" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.id}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="capacity">Capacity *</Label>
-                  <Input
-                    id="capacity"
-                    type="number"
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        capacity: parseInt(e.target.value) || 1,
-                      })
-                    }
-                    required
+
+                  {/* Template Name */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Template Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Section A, Section B" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the template name
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Maximum number of students per section
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="note">Note</Label>
-                  <Textarea
-                    id="note"
-                    value={formData.note}
-                    onChange={(e) =>
-                      setFormData({ ...formData, note: e.target.value })
-                    }
-                    placeholder="Optional description"
+
+                  {/* Capacity */}
+                  <FormField
+                    control={form.control}
+                    name="capacity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Capacity *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Maximum students per section (0 = unlimited for online courses)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingTemplate ? 'Update' : 'Create'}
-                  </Button>
-                </div>
-              </form>
+
+                  {/* Note */}
+                  <FormField
+                    control={form.control}
+                    name="note"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Note (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Optional description" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Additional information about this template
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Submit Button Only */}
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? 'Saving...' : editingTemplate ? 'Update' : 'Create'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -274,7 +320,9 @@ export function SectionTemplatesClient({
                   </TableCell>
                   <TableCell className="font-medium">{template.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{template.capacity} students</Badge>
+                    <Badge variant="outline">
+                      {template.capacity === 0 ? '∞ Unlimited' : `${template.capacity} students`}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-neutral-600 text-sm">
                     {template.note || '-'}

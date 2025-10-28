@@ -248,7 +248,6 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting}
-                    className="bg-violet-600 hover:bg-violet-700"
                   >
                     {form.formState.isSubmitting ? 'Saving...' : editingBranch ? 'Update' : 'Create'}
                   </Button>

@@ -370,7 +370,6 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="PLANNED">📋 Planned</SelectItem>
-                          <SelectItem value="ENROLLING">🚀 Enrolling</SelectItem>
                           <SelectItem value="IN_SESSION">🎓 In Session</SelectItem>
                           <SelectItem value="COMPLETED">✅ Completed</SelectItem>
                           <SelectItem value="ARCHIVED">📦 Archived</SelectItem>
@@ -402,7 +401,6 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting}
-                    className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
                   >
                     {form.formState.isSubmitting ? 'Saving...' : editingYear ? 'Update Year' : 'Create Year'}
                   </Button>

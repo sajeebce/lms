@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Lock, ArrowUp } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -19,6 +22,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,10 +38,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createClass, updateClass, deleteClass } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Class name is required'),
+  alias: z.string().optional(),
+  streamId: z.string().optional(),
+  order: z.number().min(1, 'Order must be at least 1'),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type ClassItem = {
   id: string
@@ -57,26 +78,29 @@ export function ClassesClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    alias: '',
-    streamId: '',
-    order: 1,
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      alias: '',
+      streamId: '',
+      order: 1,
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingClass
       ? await updateClass(editingClass.id, {
-          ...formData,
-          streamId: formData.streamId && formData.streamId !== 'none' ? formData.streamId : undefined,
-          alias: formData.alias || undefined,
+          ...values,
+          streamId: values.streamId && values.streamId !== 'none' ? values.streamId : undefined,
+          alias: values.alias || undefined,
         })
       : await createClass({
-          ...formData,
-          streamId: formData.streamId && formData.streamId !== 'none' ? formData.streamId : undefined,
-          alias: formData.alias || undefined,
+          ...values,
+          streamId: values.streamId && values.streamId !== 'none' ? values.streamId : undefined,
+          alias: values.alias || undefined,
         })
 
     if (result.success) {
@@ -114,7 +138,7 @@ export function ClassesClient({
 
   const handleEdit = (classItem: ClassItem) => {
     setEditingClass(classItem)
-    setFormData({
+    form.reset({
       name: classItem.name,
       alias: classItem.alias || '',
       streamId: classItem.stream?.id || '',
@@ -125,7 +149,7 @@ export function ClassesClient({
 
   const resetForm = () => {
     setEditingClass(null)
-    setFormData({
+    form.reset({
       name: '',
       alias: '',
       streamId: '',
@@ -159,80 +183,108 @@ export function ClassesClient({
                 {editingClass ? 'Edit Class' : 'Add New Class'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Class Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  placeholder="e.g., Class 11, Grade 10"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Class Name */}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Class Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Class 11, Grade 10" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Enter the class name
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="alias">Alias</Label>
-                <Input
-                  id="alias"
-                  value={formData.alias}
-                  onChange={(e) =>
-                    setFormData({ ...formData, alias: e.target.value })
-                  }
-                  placeholder="e.g., Grade 11"
+
+                {/* Alias */}
+                <FormField
+                  control={form.control}
+                  name="alias"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alias (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Grade 11" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Alternative name for the class
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="stream">Stream</Label>
-                <Select
-                  value={formData.streamId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, streamId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select stream (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {streams.map((stream) => (
-                      <SelectItem key={stream.id} value={stream.id}>
-                        {stream.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="order">Order (for promotions) *</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  min="1"
-                  value={formData.order}
-                  onChange={(e) =>
-                    setFormData({ ...formData, order: parseInt(e.target.value) || 1 })
-                  }
-                  required
+
+                {/* Stream */}
+                <FormField
+                  control={form.control}
+                  name="streamId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stream (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select stream" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {streams.map((stream) => (
+                            <SelectItem key={stream.id} value={stream.id}>
+                              {stream.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Assign a stream to this class
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Lower numbers come first. Must be unique.
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingClass ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
+
+                {/* Order */}
+                <FormField
+                  control={form.control}
+                  name="order"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Order (for promotions) *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Lower numbers come first. Must be unique.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Submit Button Only */}
+                <div className="flex justify-end pt-4">
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? 'Saving...' : editingClass ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>

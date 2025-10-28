@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, Clock } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -19,6 +22,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,6 +42,18 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createRoutine, updateRoutine, deleteRoutine } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  sectionId: z.string().min(1, 'Section is required'),
+  teacherId: z.string().min(1, 'Teacher is required'),
+  roomId: z.string().min(1, 'Room is required'),
+  dayOfWeek: z.number().min(0).max(6),
+  startTime: z.string().min(1, 'Start time is required'),
+  endTime: z.string().min(1, 'End time is required'),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Routine = {
   id: string
@@ -77,13 +101,18 @@ export function RoutineClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null)
-  const [formData, setFormData] = useState({
-    sectionId: '',
-    teacherId: '',
-    roomId: '',
-    dayOfWeek: 1,
-    startTime: '09:00',
-    endTime: '10:00',
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      sectionId: '',
+      teacherId: '',
+      roomId: '',
+      dayOfWeek: 1,
+      startTime: '09:00',
+      endTime: '10:00',
+    },
   })
 
   // Filters
@@ -109,12 +138,10 @@ export function RoutineClient({
     })
   }, [routines, filters])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingRoutine
-      ? await updateRoutine(editingRoutine.id, formData)
-      : await createRoutine(formData)
+      ? await updateRoutine(editingRoutine.id, values)
+      : await createRoutine(values)
 
     if (result.success) {
       toast.success(
@@ -142,7 +169,7 @@ export function RoutineClient({
 
   const handleEdit = (routine: Routine) => {
     setEditingRoutine(routine)
-    setFormData({
+    form.reset({
       sectionId: routine.section.id,
       teacherId: routine.teacher.id,
       roomId: routine.room.id,
@@ -155,7 +182,7 @@ export function RoutineClient({
 
   const resetForm = () => {
     setEditingRoutine(null)
-    setFormData({
+    form.reset({
       sectionId: '',
       teacherId: '',
       roomId: '',
@@ -257,131 +284,155 @@ export function RoutineClient({
                   {editingRoutine ? 'Edit Session' : 'Add New Session'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="sectionId">Section *</Label>
-                  <Select
-                    value={formData.sectionId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sectionId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sections.map((section) => (
-                        <SelectItem key={section.id} value={section.id}>
-                          {section.name} ({section.cohort.class.name} -{' '}
-                          {section.cohort.branch.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="teacherId">Teacher *</Label>
-                  <Select
-                    value={formData.teacherId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, teacherId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select teacher" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teachers.map((teacher) => (
-                        <SelectItem key={teacher.id} value={teacher.id}>
-                          {teacher.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="roomId">Room *</Label>
-                  <Select
-                    value={formData.roomId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, roomId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select room" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="dayOfWeek">Day of Week *</Label>
-                  <Select
-                    value={formData.dayOfWeek.toString()}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, dayOfWeek: parseInt(value) })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map((day, idx) => (
-                        <SelectItem key={idx} value={idx.toString()}>
-                          {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startTime">Start Time *</Label>
-                    <Input
-                      id="startTime"
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startTime: e.target.value })
-                      }
-                      required
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Section */}
+                  <FormField
+                    control={form.control}
+                    name="sectionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select section" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {sections.map((section) => (
+                              <SelectItem key={section.id} value={section.id}>
+                                {section.name} ({section.cohort.class.name} -{' '}
+                                {section.cohort.branch.name})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Teacher */}
+                  <FormField
+                    control={form.control}
+                    name="teacherId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teacher *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select teacher" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {teachers.map((teacher) => (
+                              <SelectItem key={teacher.id} value={teacher.id}>
+                                {teacher.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Room */}
+                  <FormField
+                    control={form.control}
+                    name="roomId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Room *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select room" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {rooms.map((room) => (
+                              <SelectItem key={room.id} value={room.id}>
+                                {room.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Day of Week */}
+                  <FormField
+                    control={form.control}
+                    name="dayOfWeek"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Day of Week *</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {DAYS.map((day, idx) => (
+                              <SelectItem key={idx} value={idx.toString()}>
+                                {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Start Time + End Time (Side by Side) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Time *</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="endTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Time *</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="endTime">End Time *</Label>
-                    <Input
-                      id="endTime"
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) =>
-                        setFormData({ ...formData, endTime: e.target.value })
-                      }
-                      required
-                    />
+
+                  {/* Submit Button Only */}
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? 'Saving...' : editingRoutine ? 'Update' : 'Create'}
+                    </Button>
                   </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingRoutine ? 'Update' : 'Create'}
-                  </Button>
-                </div>
-              </form>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>

@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -19,6 +22,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,10 +39,20 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { createSection, updateSection, deleteSection } from './actions'
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Section name is required'),
+  cohortId: z.string().min(1, 'Cohort is required'),
+  capacity: z.number().min(0, 'Capacity must be 0 or greater'),
+  note: z.string().optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 type Section = {
   id: string
@@ -72,11 +94,16 @@ export function SectionsClient({
 }) {
   const [open, setOpen] = useState(false)
   const [editingSection, setEditingSection] = useState<Section | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    cohortId: '',
-    capacity: 40,
-    note: '',
+
+  // React Hook Form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      cohortId: '',
+      capacity: 40,
+      note: '',
+    },
   })
 
   // Filters
@@ -108,17 +135,15 @@ export function SectionsClient({
     })
   }, [sections, filters])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (values: FormValues) => {
     const result = editingSection
       ? await updateSection(editingSection.id, {
-          ...formData,
-          note: formData.note || undefined,
+          ...values,
+          note: values.note || undefined,
         })
       : await createSection({
-          ...formData,
-          note: formData.note || undefined,
+          ...values,
+          note: values.note || undefined,
         })
 
     if (result.success) {
@@ -147,7 +172,7 @@ export function SectionsClient({
 
   const handleEdit = (section: Section) => {
     setEditingSection(section)
-    setFormData({
+    form.reset({
       name: section.name,
       cohortId: section.cohort.id,
       capacity: section.capacity,
@@ -158,7 +183,7 @@ export function SectionsClient({
 
   const resetForm = () => {
     setEditingSection(null)
-    setFormData({
+    form.reset({
       name: '',
       cohortId: '',
       capacity: 40,
@@ -281,80 +306,104 @@ export function SectionsClient({
                   {editingSection ? 'Edit Section' : 'Add New Section'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="cohortId">Cohort *</Label>
-                  <Select
-                    value={formData.cohortId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, cohortId: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select cohort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cohorts.map((cohort) => (
-                        <SelectItem key={cohort.id} value={cohort.id}>
-                          {cohort.name} ({cohort.class.name} - {cohort.branch.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="name">Section Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                    placeholder="e.g., Section A, Morning Batch"
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Cohort */}
+                  <FormField
+                    control={form.control}
+                    name="cohortId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cohort *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select cohort" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {cohorts.map((cohort) => (
+                              <SelectItem key={cohort.id} value={cohort.id}>
+                                {cohort.name} ({cohort.class.name} - {cohort.branch.name})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="capacity">Capacity *</Label>
-                  <Input
-                    id="capacity"
-                    type="number"
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        capacity: parseInt(e.target.value) || 1,
-                      })
-                    }
-                    required
+
+                  {/* Section Name */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Section A, Morning Batch" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Enter the section name
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="note">Note</Label>
-                  <Textarea
-                    id="note"
-                    value={formData.note}
-                    onChange={(e) =>
-                      setFormData({ ...formData, note: e.target.value })
-                    }
-                    placeholder="Optional description"
+
+                  {/* Capacity */}
+                  <FormField
+                    control={form.control}
+                    name="capacity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Capacity *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Maximum students (0 = unlimited for online courses)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
-                    {editingSection ? 'Update' : 'Create'}
-                  </Button>
-                </div>
-              </form>
+
+                  {/* Note */}
+                  <FormField
+                    control={form.control}
+                    name="note"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Note (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Optional description" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Additional information about this section
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Submit Button Only */}
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? 'Saving...' : editingSection ? 'Update' : 'Create'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -389,7 +438,9 @@ export function SectionsClient({
                   <TableCell>{section.cohort.class.name}</TableCell>
                   <TableCell>{section.cohort.branch.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{section.capacity} students</Badge>
+                    <Badge variant="outline">
+                      {section.capacity === 0 ? '∞ Unlimited' : `${section.capacity} students`}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
