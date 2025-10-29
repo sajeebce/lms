@@ -9,6 +9,13 @@ export default async function BranchesPage() {
 
   const branches = await prisma.branch.findMany({
     where: { tenantId },
+    include: {
+      _count: {
+        select: {
+          cohorts: true,
+        },
+      },
+    },
     orderBy: { createdAt: 'desc' },
   })
 

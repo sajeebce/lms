@@ -13,6 +13,7 @@ const cohortSchema = z.object({
   classId: z.string().min(1, 'Class is required'),
   streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
+  sectionId: z.string().optional(), // Optional section to link
   status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
   startDate: z.string().optional(),
@@ -40,16 +41,33 @@ export async function createCohort(data: z.infer<typeof cohortSchema>) {
       return { success: false, error: 'Cohort with this combination already exists' }
     }
 
-    await prisma.cohort.create({
-      data: {
-        ...validated,
-        tenantId,
-        streamId: validated.streamId || null,
-        startDate: validated.startDate ? new Date(validated.startDate) : null,
-      },
+    // Use transaction to create cohort and link section if provided
+    await prisma.$transaction(async (tx) => {
+      const cohort = await tx.cohort.create({
+        data: {
+          name: validated.name,
+          yearId: validated.yearId,
+          classId: validated.classId,
+          streamId: validated.streamId || null,
+          branchId: validated.branchId,
+          status: validated.status,
+          enrollmentOpen: validated.enrollmentOpen,
+          startDate: validated.startDate ? new Date(validated.startDate) : null,
+          tenantId,
+        },
+      })
+
+      // If section selected, link it to this cohort
+      if (validated.sectionId && validated.sectionId !== '__none__') {
+        await tx.section.update({
+          where: { id: validated.sectionId, tenantId },
+          data: { cohortId: cohort.id },
+        })
+      }
     })
 
     revalidatePath('/academic-setup/cohorts')
+    revalidatePath('/academic-setup/sections')
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -71,16 +89,33 @@ export async function updateCohort(
     const tenantId = await getTenantId()
     const validated = cohortSchema.parse(data)
 
-    await prisma.cohort.update({
-      where: { id, tenantId },
-      data: {
-        ...validated,
-        streamId: validated.streamId || null,
-        startDate: validated.startDate ? new Date(validated.startDate) : null,
-      },
+    // Use transaction to update cohort and handle section linking
+    await prisma.$transaction(async (tx) => {
+      await tx.cohort.update({
+        where: { id, tenantId },
+        data: {
+          name: validated.name,
+          yearId: validated.yearId,
+          classId: validated.classId,
+          streamId: validated.streamId || null,
+          branchId: validated.branchId,
+          status: validated.status,
+          enrollmentOpen: validated.enrollmentOpen,
+          startDate: validated.startDate ? new Date(validated.startDate) : null,
+        },
+      })
+
+      // Handle section linking (optional)
+      if (validated.sectionId && validated.sectionId !== '__none__') {
+        await tx.section.update({
+          where: { id: validated.sectionId, tenantId },
+          data: { cohortId: id },
+        })
+      }
     })
 
     revalidatePath('/academic-setup/cohorts')
+    revalidatePath('/academic-setup/sections')
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {

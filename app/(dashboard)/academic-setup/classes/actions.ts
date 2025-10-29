@@ -105,7 +105,7 @@ export async function deleteClass(id: string) {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
 
-    // Check for cohorts
+    // Check for cohorts (only dependency for Class model)
     const cohortCount = await prisma.cohort.count({
       where: { classId: id, tenantId },
     })
@@ -114,18 +114,6 @@ export async function deleteClass(id: string) {
       return {
         success: false,
         error: `In Use: ${cohortCount} cohort${cohortCount > 1 ? 's' : ''} linked`,
-      }
-    }
-
-    // Check for section templates
-    const templateCount = await prisma.sectionTemplate.count({
-      where: { classId: id, tenantId },
-    })
-
-    if (templateCount > 0) {
-      return {
-        success: false,
-        error: `In Use: ${templateCount} section template${templateCount > 1 ? 's' : ''} linked`,
       }
     }
 

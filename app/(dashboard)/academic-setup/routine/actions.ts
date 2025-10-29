@@ -213,3 +213,239 @@ export async function deleteRoutine(id: string) {
   }
 }
 
+// Teacher management
+const teacherSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email').max(100),
+  phone: z.string().max(20).optional(),
+  availabilityJson: z.string().optional(),
+})
+
+export async function createTeacher(data: z.infer<typeof teacherSchema>) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+    const validated = teacherSchema.parse(data)
+
+    // Check for duplicate email
+    const existing = await prisma.teacher.findFirst({
+      where: {
+        tenantId,
+        email: validated.email,
+      },
+    })
+
+    if (existing) {
+      return { success: false, error: 'Teacher with this email already exists' }
+    }
+
+    await prisma.teacher.create({
+      data: {
+        ...validated,
+        tenantId,
+        phone: validated.phone || null,
+        availabilityJson: validated.availabilityJson || null,
+      },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to create teacher' }
+  }
+}
+
+export async function updateTeacher(id: string, data: z.infer<typeof teacherSchema>) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+    const validated = teacherSchema.parse(data)
+
+    // Check for duplicate email (excluding current teacher)
+    const existing = await prisma.teacher.findFirst({
+      where: {
+        tenantId,
+        email: validated.email,
+        id: { not: id },
+      },
+    })
+
+    if (existing) {
+      return { success: false, error: 'Teacher with this email already exists' }
+    }
+
+    await prisma.teacher.update({
+      where: { id, tenantId },
+      data: {
+        ...validated,
+        phone: validated.phone || null,
+        availabilityJson: validated.availabilityJson || null,
+      },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to update teacher' }
+  }
+}
+
+export async function deleteTeacher(id: string) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+
+    // Check for routines
+    const routineCount = await prisma.routine.count({
+      where: { teacherId: id, tenantId },
+    })
+
+    if (routineCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: ${routineCount} routine${routineCount > 1 ? 's' : ''} assigned`,
+      }
+    }
+
+    await prisma.teacher.delete({
+      where: { id, tenantId },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to delete teacher' }
+  }
+}
+
+// Room management
+const roomSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  capacity: z.number().int().positive().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+})
+
+export async function createRoom(data: z.infer<typeof roomSchema>) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+    const validated = roomSchema.parse(data)
+
+    // Check for duplicate name
+    const existing = await prisma.room.findFirst({
+      where: {
+        tenantId,
+        name: validated.name,
+      },
+    })
+
+    if (existing) {
+      return { success: false, error: 'Room with this name already exists' }
+    }
+
+    await prisma.room.create({
+      data: {
+        ...validated,
+        tenantId,
+        capacity: validated.capacity || null,
+      },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to create room' }
+  }
+}
+
+export async function updateRoom(id: string, data: z.infer<typeof roomSchema>) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+    const validated = roomSchema.parse(data)
+
+    // Check for duplicate name (excluding current room)
+    const existing = await prisma.room.findFirst({
+      where: {
+        tenantId,
+        name: validated.name,
+        id: { not: id },
+      },
+    })
+
+    if (existing) {
+      return { success: false, error: 'Room with this name already exists' }
+    }
+
+    await prisma.room.update({
+      where: { id, tenantId },
+      data: {
+        ...validated,
+        capacity: validated.capacity || null,
+      },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to update room' }
+  }
+}
+
+export async function deleteRoom(id: string) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+
+    // Check for routines
+    const routineCount = await prisma.routine.count({
+      where: { roomId: id, tenantId },
+    })
+
+    if (routineCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: ${routineCount} routine${routineCount > 1 ? 's' : ''} using this room`,
+      }
+    }
+
+    await prisma.room.delete({
+      where: { id, tenantId },
+    })
+
+    revalidatePath('/academic-setup/routine')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to delete room' }
+  }
+}

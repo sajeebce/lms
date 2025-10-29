@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Pencil, Trash2, Lock, ShieldAlert } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -68,6 +68,7 @@ const formSchema = z.object({
   classId: z.string().min(1, 'Class is required'),
   streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
+  sectionId: z.string().optional(), // Optional section
   status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
   startDate: z.string().optional(),
@@ -92,6 +93,7 @@ type Branch = { id: string; name: string }
 type AcademicYear = { id: string; name: string }
 type Class = { id: string; name: string }
 type Stream = { id: string; name: string }
+type Section = { id: string; name: string }
 
 export function CohortsClient({
   cohorts,
@@ -99,12 +101,14 @@ export function CohortsClient({
   academicYears,
   classes,
   streams,
+  sections,
 }: {
   cohorts: Cohort[]
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
   streams: Stream[]
+  sections: Section[]
 }) {
   const [open, setOpen] = useState(false)
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null)
@@ -120,11 +124,41 @@ export function CohortsClient({
       classId: '',
       streamId: '',
       branchId: '',
+      sectionId: '',
       status: 'PLANNED',
       enrollmentOpen: false,
       startDate: '',
     },
   })
+
+  // Auto-fill cohort name based on selections
+  const watchedFields = form.watch(['yearId', 'classId', 'streamId', 'sectionId'])
+
+  useEffect(() => {
+    const [yearId, classId, streamId, sectionId] = watchedFields
+
+    // Only auto-fill if editing is not active and name is empty
+    if (editingCohort || form.getValues('name')) return
+
+    if (yearId && classId) {
+      const year = academicYears.find(y => y.id === yearId)
+      const cls = classes.find(c => c.id === classId)
+      const stream = streamId ? streams.find(s => s.id === streamId) : null
+      const section = sectionId ? sections.find(s => s.id === sectionId) : null
+
+      // Format: "Class-Stream-Section AcademicYear"
+      // Example: "Class 10-Science-Section A 2025"
+      let autoName = cls?.name || ''
+      if (stream) autoName += `-${stream.name}`
+      if (section) autoName += `-${section.name}`
+      if (year) autoName += ` ${year.name}`
+
+      if (autoName && !form.getValues('name')) {
+        form.setValue('name', autoName, { shouldValidate: false })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedFields])
 
   // Filters
   const [filters, setFilters] = useState({
@@ -503,6 +537,39 @@ export function CohortsClient({
                       )}
                     />
                   </div>
+
+                  {/* Section (Optional) */}
+                  <FormField
+                    control={form.control}
+                    name="sectionId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section (Optional)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || undefined}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="No section (create later)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">No Section</SelectItem>
+                            {sections.map((section) => (
+                              <SelectItem key={section.id} value={section.id}>
+                                {section.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          Link an independent section to this cohort
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {/* Start Date (Optional) */}
                   <FormField

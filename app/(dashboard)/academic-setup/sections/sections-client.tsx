@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ShieldAlert } from 'lucide-react'
+import { Plus, Pencil, Trash2, ShieldAlert, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -59,7 +59,6 @@ const formSchema = z.object({
   name: z.string()
     .min(1, 'Section name is required')
     .max(100, 'Section name must be 100 characters or less'),
-  cohortId: z.string().min(1, 'Cohort is required'),
   capacity: z.number()
     .min(0, 'Capacity must be 0 or greater')
     .max(9999999, 'Capacity must be 9999999 or less'),
@@ -81,77 +80,43 @@ type Section = {
     year: { id: string; name: string }
     class: { id: string; name: string }
     branch: { id: string; name: string }
+  } | null
+  _count: {
+    enrollments: number
+    routines: number
   }
-}
-
-type Branch = { id: string; name: string }
-type AcademicYear = { id: string; name: string }
-type Class = { id: string; name: string }
-type Cohort = {
-  id: string
-  name: string
-  year: { id: string; name: string }
-  class: { id: string; name: string }
-  branch: { id: string; name: string }
 }
 
 export function SectionsClient({
   sections,
-  branches,
-  academicYears,
-  classes,
-  cohorts,
 }: {
   sections: Section[]
-  branches: Branch[]
-  academicYears: AcademicYear[]
-  classes: Class[]
-  cohorts: Cohort[]
 }) {
   const [open, setOpen] = useState(false)
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // React Hook Form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      cohortId: '',
       capacity: 40,
       note: '',
     },
   })
 
-  // Filters
-  const [filters, setFilters] = useState({
-    branchId: '',
-    yearId: '',
-    classId: '',
-    cohortId: '',
-  })
-
-  // Cascading filter logic
-  const filteredCohorts = useMemo(() => {
-    return cohorts.filter((cohort) => {
-      if (filters.branchId && filters.branchId !== 'all' && cohort.branch.id !== filters.branchId) return false
-      if (filters.yearId && filters.yearId !== 'all' && cohort.year.id !== filters.yearId) return false
-      if (filters.classId && filters.classId !== 'all' && cohort.class.id !== filters.classId) return false
-      return true
-    })
-  }, [cohorts, filters])
-
+  // Simple search filter
   const filteredSections = useMemo(() => {
-    return sections.filter((section) => {
-      if (filters.branchId && filters.branchId !== 'all' && section.cohort.branch.id !== filters.branchId)
-        return false
-      if (filters.yearId && filters.yearId !== 'all' && section.cohort.year.id !== filters.yearId) return false
-      if (filters.classId && filters.classId !== 'all' && section.cohort.class.id !== filters.classId) return false
-      if (filters.cohortId && filters.cohortId !== 'all' && section.cohort.id !== filters.cohortId) return false
-      return true
-    })
-  }, [sections, filters])
+    if (!searchQuery) return sections
+
+    const query = searchQuery.toLowerCase()
+    return sections.filter((section) =>
+      section.name.toLowerCase().includes(query)
+    )
+  }, [sections, searchQuery])
 
   const onSubmit = async (values: FormValues) => {
     const result = editingSection
@@ -194,7 +159,6 @@ export function SectionsClient({
     setEditingSection(section)
     form.reset({
       name: section.name,
-      cohortId: section.cohort.id,
       capacity: section.capacity,
       note: section.note || '',
     })
@@ -205,7 +169,6 @@ export function SectionsClient({
     setEditingSection(null)
     form.reset({
       name: '',
-      cohortId: '',
       capacity: 40,
       note: '',
     })
@@ -213,90 +176,17 @@ export function SectionsClient({
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Search Bar */}
       <div className="bg-card rounded-lg border border-border p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <Label className="text-xs">Branch</Label>
-            <Select
-              value={filters.branchId}
-              onValueChange={(value) => {
-                setFilters({ ...filters, branchId: value, cohortId: '' })
-              }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Academic Year</Label>
-            <Select
-              value={filters.yearId}
-              onValueChange={(value) => {
-                setFilters({ ...filters, yearId: value, cohortId: '' })
-              }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {academicYears.map((year) => (
-                  <SelectItem key={year.id} value={year.id}>
-                    {year.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Class</Label>
-            <Select
-              value={filters.classId}
-              onValueChange={(value) => {
-                setFilters({ ...filters, classId: value, cohortId: '' })
-              }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Cohort</Label>
-            <Select
-              value={filters.cohortId}
-              onValueChange={(value) => setFilters({ ...filters, cohortId: value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {filteredCohorts.map((cohort) => (
-                  <SelectItem key={cohort.id} value={cohort.id}>
-                    {cohort.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Label className="text-xs">Search Sections</Label>
+            <Input
+              placeholder="Search by section name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9"
+            />
           </div>
         </div>
       </div>
@@ -328,32 +218,6 @@ export function SectionsClient({
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Cohort */}
-                  <FormField
-                    control={form.control}
-                    name="cohortId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cohort *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select cohort" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {cohorts.map((cohort) => (
-                              <SelectItem key={cohort.id} value={cohort.id}>
-                                {cohort.name} ({cohort.class.name} - {cohort.branch.name})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
                   {/* Section Name */}
                   <FormField
                     control={form.control}
@@ -441,12 +305,12 @@ export function SectionsClient({
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
+            <TableRow className="bg-cyan-50/50 dark:bg-slate-800/50">
               <TableHead>Section Name</TableHead>
-              <TableHead>Cohort</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Branch</TableHead>
               <TableHead>Capacity</TableHead>
+              <TableHead>Enrollments</TableHead>
+              <TableHead>Routines</TableHead>
+              <TableHead>Linked Cohort</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -462,16 +326,28 @@ export function SectionsClient({
                 <TableRow key={section.id}>
                   <TableCell className="font-medium">{section.name}</TableCell>
                   <TableCell>
-                    <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300">
-                      {section.cohort.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{section.cohort.class.name}</TableCell>
-                  <TableCell>{section.cohort.branch.name}</TableCell>
-                  <TableCell>
                     <Badge variant="outline">
                       {section.capacity === 0 ? '∞ Unlimited' : `${section.capacity} students`}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300">
+                      {section._count.enrollments} student{section._count.enrollments !== 1 ? 's' : ''}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="bg-purple-50 text-purple-700 hover:bg-purple-50 dark:bg-purple-900/30 dark:text-purple-300">
+                      {section._count.routines} routine{section._count.routines !== 1 ? 's' : ''}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {section.cohort ? (
+                      <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        {section.cohort.name}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Independent</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -486,11 +362,35 @@ export function SectionsClient({
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          const totalLinked = section._count.enrollments + section._count.routines
+                          if (totalLinked > 0) {
+                            const messages = []
+                            if (section._count.enrollments > 0) {
+                              messages.push(`${section._count.enrollments} student${section._count.enrollments > 1 ? 's' : ''} enrolled`)
+                            }
+                            if (section._count.routines > 0) {
+                              messages.push(`${section._count.routines} routine${section._count.routines > 1 ? 's' : ''} linked`)
+                            }
+                            toast.error('Cannot Delete', {
+                              description: `This section has ${messages.join(' and ')}. Please remove them first.`,
+                            })
+                            return
+                          }
                           setSectionToDelete(section)
                           setDeleteDialogOpen(true)
                         }}
+                        disabled={section._count.enrollments > 0 || section._count.routines > 0}
+                        className={
+                          section._count.enrollments > 0 || section._count.routines > 0
+                            ? 'cursor-not-allowed'
+                            : ''
+                        }
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        {section._count.enrollments > 0 || section._count.routines > 0 ? (
+                          <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>

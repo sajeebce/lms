@@ -24,10 +24,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { createCourse } from './actions'
+import { createCourse, updateCourse, deleteCourse } from './actions'
 import { EnrollmentDialog } from './enrollment-dialog'
-import { BookOpen, Plus, Users } from 'lucide-react'
+import { BookOpen, Plus, Users, Pencil, Trash2, Lock, ShieldAlert } from 'lucide-react'
 
 type Course = {
   id: string
@@ -74,6 +84,9 @@ export function CoursesClient({
   const [enrollmentOpen, setEnrollmentOpen] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(courseSchema),
@@ -87,18 +100,46 @@ export function CoursesClient({
 
   const onSubmit = async (data: FormValues) => {
     setLoading(true)
-    const result = await createCourse(data)
+    const result = editingCourse
+      ? await updateCourse(editingCourse.id, data)
+      : await createCourse(data)
     setLoading(false)
 
     if (result.success) {
-      toast.success('Course created successfully! 🎉')
+      toast.success(editingCourse ? 'Course updated successfully! 🎉' : 'Course created successfully! 🎉')
       form.reset()
       setOpen(false)
+      setEditingCourse(null)
       // Refresh courses list
       window.location.reload()
     } else {
-      toast.error(result.error || 'Failed to create course')
+      toast.error(result.error || `Failed to ${editingCourse ? 'update' : 'create'} course`)
     }
+  }
+
+  const handleEdit = (course: Course) => {
+    setEditingCourse(course)
+    form.reset({
+      name: course.name,
+      code: course.code,
+      description: course.description || '',
+      credits: course.credits,
+    })
+    setOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!courseToDelete) return
+
+    const result = await deleteCourse(courseToDelete.id)
+    if (result.success) {
+      toast.success('Course deleted successfully')
+      window.location.reload()
+    } else {
+      toast.error(result.error || 'Failed to delete course')
+    }
+    setDeleteDialogOpen(false)
+    setCourseToDelete(null)
   }
 
   const handleEnrollClick = (course: Course) => {
@@ -108,12 +149,23 @@ export function CoursesClient({
 
   return (
     <div className="space-y-6">
-      {/* Create Course Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      {/* Create/Edit Course Dialog */}
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen)
+          if (!isOpen) {
+            setEditingCourse(null)
+            form.reset()
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Course</DialogTitle>
-            <DialogDescription>Add a new course to the system</DialogDescription>
+            <DialogTitle>{editingCourse ? 'Edit Course' : 'Create New Course'}</DialogTitle>
+            <DialogDescription>
+              {editingCourse ? 'Update course information' : 'Add a new course to the system'}
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -233,14 +285,45 @@ export function CoursesClient({
                         <Badge variant="secondary">{course._count.enrollments}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEnrollClick(course)}
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Enroll
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEnrollClick(course)}
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Enroll
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(course)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (course._count.enrollments > 0) {
+                                toast.error('Cannot Delete', {
+                                  description: `This course has ${course._count.enrollments} student${course._count.enrollments > 1 ? 's' : ''} enrolled. Please remove them first.`,
+                                })
+                                return
+                              }
+                              setCourseToDelete(course)
+                              setDeleteDialogOpen(true)
+                            }}
+                            disabled={course._count.enrollments > 0}
+                            className={course._count.enrollments > 0 ? 'cursor-not-allowed' : ''}
+                          >
+                            {course._count.enrollments > 0 ? (
+                              <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -250,6 +333,32 @@ export function CoursesClient({
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Course</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-base">
+              Are you sure you want to delete <span className="font-semibold text-foreground">{courseToDelete?.name}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

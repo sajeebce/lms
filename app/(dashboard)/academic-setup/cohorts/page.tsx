@@ -7,7 +7,7 @@ import { Users } from 'lucide-react'
 export default async function CohortsPage() {
   const tenantId = await getTenantId()
 
-  const [cohorts, branches, academicYears, classes, streams] = await Promise.all([
+  const [cohorts, branches, academicYears, classes, streams, sections] = await Promise.all([
     prisma.cohort.findMany({
       where: { tenantId },
       include: {
@@ -37,6 +37,13 @@ export default async function CohortsPage() {
       where: { tenantId },
       orderBy: { name: 'asc' },
     }),
+    prisma.section.findMany({
+      where: {
+        tenantId,
+        cohortId: null, // Only independent sections
+      },
+      orderBy: { name: 'asc' },
+    }),
   ])
 
   return (
@@ -54,6 +61,7 @@ export default async function CohortsPage() {
         academicYears={academicYears}
         classes={classes}
         streams={streams}
+        sections={sections}
       />
     </div>
   )

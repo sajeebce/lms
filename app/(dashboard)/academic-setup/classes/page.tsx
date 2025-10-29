@@ -15,7 +15,6 @@ export default async function ClassesPage() {
         _count: {
           select: {
             cohorts: true,
-            sectionTemplates: true,
           },
         },
       },

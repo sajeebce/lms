@@ -57,14 +57,14 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
       icon: Layers,
     },
     {
-      href: '/academic-setup/cohorts',
-      label: 'Cohorts',
-      icon: Users,
-    },
-    {
       href: '/academic-setup/sections',
       label: 'Sections',
       icon: BookOpen,
+    },
+    {
+      href: '/academic-setup/cohorts',
+      label: 'Cohorts',
+      icon: Users,
     },
     {
       href: '/academic-setup/routine',

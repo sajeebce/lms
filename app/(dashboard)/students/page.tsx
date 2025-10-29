@@ -4,16 +4,8 @@ import { PageHeader } from '@/components/page-header'
 import { Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { StudentsClient } from './students-client'
 
 export default async function StudentsPage() {
   await requireRole('ADMIN')
@@ -74,43 +66,7 @@ export default async function StudentsPage() {
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50 dark:bg-slate-800/50">
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Section</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => {
-                    const enrollment = student.enrollments[0]
-                    const cohort = enrollment?.section?.cohort
-
-                    return (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.user.name}</TableCell>
-                        <TableCell>{student.user.email}</TableCell>
-                        <TableCell>{student.user.phone || '-'}</TableCell>
-                        <TableCell>{cohort?.class?.name || '-'}</TableCell>
-                        <TableCell>{enrollment?.section?.name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={student.status === 'ACTIVE' ? 'default' : 'secondary'}
-                          >
-                            {student.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <StudentsClient students={students} />
           )}
         </CardContent>
       </Card>

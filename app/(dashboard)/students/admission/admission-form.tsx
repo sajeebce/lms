@@ -7,7 +7,15 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import {
   Select,
   SelectContent,
@@ -27,15 +35,28 @@ type Section = { id: string; name: string; capacity: number; _count: { enrollmen
 type Cohort = { id: string; name: string }
 
 const admissionSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().optional(),
+  fullName: z.string()
+    .min(1, 'Full name is required')
+    .max(100, 'Full name must be 100 characters or less'),
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Invalid email address')
+    .max(100, 'Email must be 100 characters or less'),
+  phone: z.string()
+    .max(20, 'Phone must be 20 characters or less')
+    .optional(),
   dateOfBirth: z.string().optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
-  address: z.string().optional(),
-  fatherName: z.string().optional(),
-  fatherPhone: z.string().optional(),
-  branchId: z.string().optional(), // Will be validated based on enableCohorts
+  address: z.string()
+    .max(200, 'Address must be 200 characters or less')
+    .optional(),
+  fatherName: z.string()
+    .max(100, 'Father name must be 100 characters or less')
+    .optional(),
+  fatherPhone: z.string()
+    .max(20, 'Father phone must be 20 characters or less')
+    .optional(),
+  branchId: z.string().optional(),
   yearId: z.string().min(1, 'Academic year is required'),
   classId: z.string().min(1, 'Class is required'),
   streamId: z.string().optional(),
@@ -83,19 +104,61 @@ export function AdmissionForm({
   })
 
   const handleYearChange = async (yearId: string) => {
-    form.setValue('yearId', yearId)
+    form.setValue('cohortId', '')
+    form.setValue('sectionId', '')
     setAvailableCohorts([])
     setAvailableSections([])
   }
 
   const handleClassChange = async (classId: string) => {
-    form.setValue('classId', classId)
+    form.setValue('cohortId', '')
+    form.setValue('sectionId', '')
     setAvailableCohorts([])
     setAvailableSections([])
   }
 
+  const handleBranchChange = async (branchId: string) => {
+    form.setValue('cohortId', '')
+    form.setValue('sectionId', '')
+    setAvailableCohorts([])
+    setAvailableSections([])
+
+    const yearId = form.getValues('yearId')
+    const classId = form.getValues('classId')
+    const streamId = form.getValues('streamId')
+
+    if (enableCohorts && yearId && classId && branchId) {
+      setLoading(true)
+      const result = await getAvailableCohorts({ yearId, classId, branchId, streamId })
+      setLoading(false)
+      if (result.success) {
+        setAvailableCohorts(result.data as Cohort[])
+      }
+    }
+  }
+
+  const handleStreamChange = async (streamId: string) => {
+    form.setValue('cohortId', '')
+    form.setValue('sectionId', '')
+    setAvailableCohorts([])
+    setAvailableSections([])
+
+    const yearId = form.getValues('yearId')
+    const classId = form.getValues('classId')
+    const branchId = form.getValues('branchId')
+
+    if (enableCohorts && yearId && classId && branchId) {
+      setLoading(true)
+      const result = await getAvailableCohorts({ yearId, classId, branchId, streamId })
+      setLoading(false)
+      if (result.success) {
+        setAvailableCohorts(result.data as Cohort[])
+      }
+    }
+  }
+
   const handleCohortChange = async (cohortId: string) => {
-    form.setValue('cohortId', cohortId)
+    form.setValue('sectionId', '')
     setLoading(true)
     const result = await getAvailableSections(cohortId)
     setLoading(false)
@@ -136,221 +199,337 @@ export function AdmissionForm({
       </CardHeader>
 
       <CardContent className="pt-6">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Personal Information Section */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Enter full name"
-                  {...form.register('fullName')}
-                />
-                {form.formState.errors.fullName && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.fullName.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email"
-                  {...form.register('email')}
-                />
-                {form.formState.errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.email.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  placeholder="Enter phone number"
-                  {...form.register('phone')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  {...form.register('dateOfBirth')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <Select value={form.watch('gender') || ''} onValueChange={(v) => form.setValue('gender', v as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  placeholder="Enter address"
-                  {...form.register('address')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="fatherName">Father's Name</Label>
-                <Input
-                  id="fatherName"
-                  placeholder="Enter father's name"
-                  {...form.register('fatherName')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="fatherPhone">Father's Phone</Label>
-                <Input
-                  id="fatherPhone"
-                  placeholder="Enter father's phone"
-                  {...form.register('fatherPhone')}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Academic Setup Section */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Academic Setup</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {enableCohorts && (
-                <div>
-                  <Label htmlFor="branchId">Branch *</Label>
-                  <Select value={form.watch('branchId')} onValueChange={(v) => form.setValue('branchId', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.branchId && (
-                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.branchId.message}</p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Personal Information Section */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-foreground border-b pb-2">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter full name" maxLength={100} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-              )}
+                />
 
-              <div>
-                <Label htmlFor="yearId">Academic Year *</Label>
-                <Select value={form.watch('yearId')} onValueChange={handleYearChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select academic year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map((year) => (
-                      <SelectItem key={year.id} value={year.id}>
-                        {year.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.yearId && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.yearId.message}</p>
-                )}
-              </div>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="student@example.com" maxLength={100} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div>
-                <Label htmlFor="classId">Class *</Label>
-                <Select value={form.watch('classId')} onValueChange={handleClassChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.classId && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.classId.message}</p>
-                )}
-              </div>
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter phone number" maxLength={20} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {streams.length > 0 && (
-                <div>
-                  <Label htmlFor="streamId">Stream</Label>
-                  <Select value={form.watch('streamId') || ''} onValueChange={(v) => form.setValue('streamId', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stream (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {streams.map((stream) => (
-                        <SelectItem key={stream.id} value={stream.id}>
-                          {stream.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {enableCohorts && (
-                <div>
-                  <Label htmlFor="cohortId">Cohort *</Label>
-                  <Select value={form.watch('cohortId') || ''} onValueChange={handleCohortChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select cohort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCohorts.map((cohort) => (
-                        <SelectItem key={cohort.id} value={cohort.id}>
-                          {cohort.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gender</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div>
-                <Label htmlFor="sectionId">Section *</Label>
-                <Select value={form.watch('sectionId')} onValueChange={(v) => form.setValue('sectionId', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name} ({section._count.enrollments}/{section.capacity || '∞'})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.sectionId && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.sectionId.message}</p>
-                )}
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter address" maxLength={200} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
-          </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Admitting...' : 'Admit Student'}
-          </Button>
-        </form>
+            {/* Guardian Information Section */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-foreground border-b pb-2">Guardian Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="fatherName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Father Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter father name" maxLength={100} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fatherPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Father Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter father phone" maxLength={20} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Academic Setup Section */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-foreground border-b pb-2">Academic Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {enableCohorts && branches.length > 1 && (
+                  <FormField
+                    control={form.control}
+                    name="branchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch *</FormLabel>
+                        <Select onValueChange={(value) => { field.onChange(value); handleBranchChange(value) }} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select branch" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {branches.map((branch) => (
+                              <SelectItem key={branch.id} value={branch.id}>
+                                {branch.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="yearId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Academic Year *</FormLabel>
+                      <Select onValueChange={(value) => { field.onChange(value); handleYearChange(value) }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select academic year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {academicYears.map((year) => (
+                            <SelectItem key={year.id} value={year.id}>
+                              {year.name} ({year.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="classId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Class *</FormLabel>
+                      <Select onValueChange={(value) => { field.onChange(value); handleClassChange(value) }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select class" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.id} value={cls.id}>
+                              {cls.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {streams.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="streamId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stream</FormLabel>
+                        <Select onValueChange={(value) => { field.onChange(value); handleStreamChange(value) }} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select stream (optional)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {streams.map((stream) => (
+                              <SelectItem key={stream.id} value={stream.id}>
+                                {stream.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {enableCohorts && (
+                  <FormField
+                    control={form.control}
+                    name="cohortId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cohort *</FormLabel>
+                        <Select
+                          onValueChange={(value) => { field.onChange(value); handleCohortChange(value) }}
+                          value={field.value}
+                          disabled={availableCohorts.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={availableCohorts.length === 0 ? "Select year, class & branch first" : "Select cohort"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableCohorts.map((cohort) => (
+                              <SelectItem key={cohort.id} value={cohort.id}>
+                                {cohort.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {availableCohorts.length === 0 && 'Please select academic year, class and branch to see available cohorts'}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="sectionId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Section *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={enableCohorts ? availableSections.length === 0 : false}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={enableCohorts && availableSections.length === 0 ? "Select cohort first" : "Select section"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableSections.map((section) => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {section.name} ({section._count.enrollments}/{section.capacity} enrolled)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {enableCohorts && availableSections.length === 0 && 'Please select a cohort to see available sections'}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset()
+                  setAvailableCohorts([])
+                  setAvailableSections([])
+                }}
+                disabled={loading}
+              >
+                Reset
+              </Button>
+              <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+                {loading ? 'Admitting...' : 'Admit Student'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )

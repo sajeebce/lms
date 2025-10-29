@@ -74,9 +74,8 @@ type ClassItem = {
   alias: string | null
   order: number
   stream: { id: string; name: string } | null
-  _count: {
+  _count?: {
     cohorts: number
-    sectionTemplates: number
   }
 }
 
@@ -166,8 +165,7 @@ export function ClassesClient({
     })
   }
 
-  const isInUse = (cohortCount: number, templateCount: number) =>
-    cohortCount > 0 || templateCount > 0
+  const isInUse = (cohortCount: number | undefined) => (cohortCount ?? 0) > 0
 
   return (
     <div className="bg-card rounded-lg border border-border">
@@ -331,10 +329,7 @@ export function ClassesClient({
             </TableRow>
           ) : (
             classes.map((classItem) => {
-              const inUse = isInUse(
-                classItem._count.cohorts,
-                classItem._count.sectionTemplates
-              )
+              const inUse = isInUse(classItem._count?.cohorts)
               const nextOrder = classItem.order + 1
               const nextClass = classes.find((c) => c.order === nextOrder)
 
@@ -360,14 +355,9 @@ export function ClassesClient({
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {classItem._count.cohorts > 0 && (
+                      {(classItem._count?.cohorts ?? 0) > 0 && (
                         <span className="text-xs text-muted-foreground">
-                          {classItem._count.cohorts} cohort(s)
-                        </span>
-                      )}
-                      {classItem._count.sectionTemplates > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {classItem._count.sectionTemplates} template(s)
+                          {classItem._count?.cohorts} cohort(s)
                         </span>
                       )}
                       {nextClass && (
@@ -395,7 +385,7 @@ export function ClassesClient({
                         onClick={() => {
                           if (inUse) {
                             toast.error('In Use', {
-                              description: `Cannot delete: ${classItem._count.cohorts} cohort(s), ${classItem._count.sectionTemplates} template(s) linked`,
+                              description: `Cannot delete: ${classItem._count?.cohorts ?? 0} cohort(s) linked`,
                             })
                             return
                           }

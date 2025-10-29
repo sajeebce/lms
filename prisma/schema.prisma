@@ -192,19 +192,19 @@ enum CohortStatus {
 model Section {
   id        String   @id @default(cuid())
   tenantId  String
-  cohortId  String
+  cohortId  String?  // Optional - sections can exist independently or be linked to cohorts
   name      String
   capacity  Int
   note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cohort      Cohort    @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohort      Cohort?             @relation(fields: [cohortId], references: [id], onDelete: SetNull)
   routines    Routine[]
   enrollments StudentEnrollment[]
 
-  @@unique([tenantId, cohortId, name])
+  @@unique([tenantId, name])
   @@map("sections")
 }
 

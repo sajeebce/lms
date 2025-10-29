@@ -9,6 +9,13 @@ export default async function AcademicYearsPage() {
 
   const academicYears = await prisma.academicYear.findMany({
     where: { tenantId },
+    include: {
+      _count: {
+        select: {
+          cohorts: true,
+        },
+      },
+    },
     orderBy: { startDate: 'desc' },
   })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, ShieldAlert } from 'lucide-react'
+import { Plus, Pencil, Trash2, ShieldAlert, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -77,6 +77,9 @@ type Branch = {
   code: string | null
   phone: string | null
   status: 'ACTIVE' | 'INACTIVE'
+  _count: {
+    cohorts: number
+  }
 }
 
 export function BranchesClient({ branches }: { branches: Branch[] }) {
@@ -346,11 +349,23 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
+                        if (branch._count.cohorts > 0) {
+                          toast.error('Cannot Delete', {
+                            description: `This branch has ${branch._count.cohorts} cohort(s) linked. Please remove them first.`,
+                          })
+                          return
+                        }
                         setBranchToDelete(branch)
                         setDeleteDialogOpen(true)
                       }}
+                      disabled={branch._count.cohorts > 0}
+                      title={branch._count.cohorts > 0 ? `Locked (${branch._count.cohorts} cohort${branch._count.cohorts > 1 ? 's' : ''})` : 'Delete branch'}
                     >
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                      {branch._count.cohorts > 0 ? (
+                        <Lock className="h-4 w-4 text-amber-600" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      )}
                     </Button>
                   </div>
                 </TableCell>

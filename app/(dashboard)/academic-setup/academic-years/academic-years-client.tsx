@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Archive, Star, MoreVertical, Calendar } from 'lucide-react'
+import { Plus, Pencil, Trash2, Archive, Star, MoreVertical, Calendar, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -168,6 +168,9 @@ type AcademicYear = {
   endDate: Date
   state: 'PLANNED' | 'ENROLLING' | 'IN_SESSION' | 'COMPLETED' | 'ARCHIVED'
   isCurrent: boolean
+  _count: {
+    cohorts: number
+  }
 }
 
 export function AcademicYearsClient({ academicYears }: { academicYears: AcademicYear[] }) {
@@ -502,13 +505,28 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
 
                       <DropdownMenuItem
                         onClick={() => {
+                          if (year._count.cohorts > 0) {
+                            toast.error('Cannot Delete', {
+                              description: `This year has ${year._count.cohorts} cohort(s) linked. Please remove them first.`,
+                            })
+                            return
+                          }
                           setYearToDelete(year)
                           setDeleteDialogOpen(true)
                         }}
-                        className="text-red-600 dark:text-red-400"
+                        className={year._count.cohorts > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        {year._count.cohorts > 0 ? (
+                          <>
+                            <Lock className="h-4 w-4 mr-2" />
+                            Locked ({year._count.cohorts} cohort{year._count.cohorts > 1 ? 's' : ''})
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </>
+                        )}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

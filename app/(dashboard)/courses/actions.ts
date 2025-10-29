@@ -51,6 +51,76 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
   }
 }
 
+export async function updateCourse(id: string, data: z.infer<typeof courseSchema>) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+    const validated = courseSchema.parse(data)
+
+    // Check for duplicate code (excluding current course)
+    const existing = await prisma.course.findFirst({
+      where: {
+        tenantId,
+        code: validated.code,
+        id: { not: id },
+      },
+    })
+
+    if (existing) {
+      return { success: false, error: 'Course with this code already exists' }
+    }
+
+    await prisma.course.update({
+      where: { id, tenantId },
+      data: {
+        ...validated,
+      },
+    })
+
+    revalidatePath('/courses')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to update course' }
+  }
+}
+
+export async function deleteCourse(id: string) {
+  try {
+    await requireRole('ADMIN')
+    const tenantId = await getTenantId()
+
+    // Check for course enrollments
+    const enrollmentCount = await prisma.courseEnrollment.count({
+      where: { courseId: id, tenantId },
+    })
+
+    if (enrollmentCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: ${enrollmentCount} student${enrollmentCount > 1 ? 's' : ''} enrolled`,
+      }
+    }
+
+    await prisma.course.delete({
+      where: { id, tenantId },
+    })
+
+    revalidatePath('/courses')
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Failed to delete course' }
+  }
+}
+
 // Search students for enrollment
 export async function searchStudents(query: string) {
   try {

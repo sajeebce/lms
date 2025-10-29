@@ -7,59 +7,36 @@ import { Grid3x3 } from 'lucide-react'
 export default async function SectionsPage() {
   const tenantId = await getTenantId()
 
-  const [sections, branches, academicYears, classes, cohorts] = await Promise.all([
-    prisma.section.findMany({
-      where: { tenantId },
-      include: {
-        cohort: {
-          include: {
-            year: true,
-            class: true,
-            branch: true,
-          },
+  const sections = await prisma.section.findMany({
+    where: { tenantId },
+    include: {
+      cohort: {
+        include: {
+          year: true,
+          class: true,
+          branch: true,
         },
       },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.branch.findMany({
-      where: { tenantId, status: 'ACTIVE' },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.academicYear.findMany({
-      where: { tenantId },
-      orderBy: { startDate: 'desc' },
-    }),
-    prisma.class.findMany({
-      where: { tenantId },
-      orderBy: { order: 'asc' },
-    }),
-    prisma.cohort.findMany({
-      where: { tenantId },
-      include: {
-        year: true,
-        class: true,
-        branch: true,
+      _count: {
+        select: {
+          enrollments: true,
+          routines: true,
+        },
       },
-      orderBy: { name: 'asc' },
-    }),
-  ])
+    },
+    orderBy: { name: 'asc' },
+  })
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sections"
-        description="Manage sections within classes"
+        description="Manage independent sections for student enrollment"
         icon={Grid3x3}
         bgColor="bg-cyan-50"
         iconBgColor="bg-blue-600"
       />
-      <SectionsClient
-        sections={sections}
-        branches={branches}
-        academicYears={academicYears}
-        classes={classes}
-        cohorts={cohorts}
-      />
+      <SectionsClient sections={sections} />
     </div>
   )
 }

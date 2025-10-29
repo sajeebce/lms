@@ -9,7 +9,6 @@ const sectionSchema = z.object({
   name: z.string()
     .min(1, 'Name is required')
     .max(100, 'Name must be 100 characters or less'),
-  cohortId: z.string().min(1, 'Cohort is required'),
   capacity: z.number().int()
     .min(0, 'Capacity must be 0 or greater')
     .max(9999999, 'Capacity must be 9999999 or less'),
@@ -24,11 +23,10 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
     const tenantId = await getTenantId()
     const validated = sectionSchema.parse(data)
 
-    // Check for duplicate
+    // Check for duplicate (tenant-wide unique name)
     const existing = await prisma.section.findFirst({
       where: {
         tenantId,
-        cohortId: validated.cohortId,
         name: validated.name,
       },
     })
@@ -36,7 +34,7 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
     if (existing) {
       return {
         success: false,
-        error: 'Section with this name already exists in this cohort',
+        error: 'Section with this name already exists',
       }
     }
 
@@ -44,11 +42,13 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
       data: {
         ...validated,
         tenantId,
+        cohortId: null, // Sections are independent by default
         note: validated.note || null,
       },
     })
 
     revalidatePath('/academic-setup/sections')
+    revalidatePath('/academic-setup/cohorts')
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -93,16 +93,29 @@ export async function deleteSection(id: string) {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
 
-    // TODO: Check for students assigned (placeholder for now)
-    // const studentCount = await prisma.studentPlacement.count({
-    //   where: { sectionId: id, tenantId },
-    // })
-    // if (studentCount > 0) {
-    //   return {
-    //     success: false,
-    //     error: `Cannot delete: ${studentCount} student(s) assigned`,
-    //   }
-    // }
+    // Check for student enrollments
+    const enrollmentCount = await prisma.studentEnrollment.count({
+      where: { sectionId: id, tenantId },
+    })
+
+    if (enrollmentCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: ${enrollmentCount} student${enrollmentCount > 1 ? 's' : ''} enrolled`,
+      }
+    }
+
+    // Check for routines
+    const routineCount = await prisma.routine.count({
+      where: { sectionId: id, tenantId },
+    })
+
+    if (routineCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: ${routineCount} routine${routineCount > 1 ? 's' : ''} linked`,
+      }
+    }
 
     await prisma.section.delete({
       where: { id, tenantId },
