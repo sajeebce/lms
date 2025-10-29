@@ -1,8 +1,16 @@
 import Link from 'next/link'
-import { Settings as SettingsIcon, Palette, Bell, Shield, Users } from 'lucide-react'
+import { Settings as SettingsIcon, Palette, Bell, Shield, Users, BookOpen } from 'lucide-react'
 
 export default function SettingsPage() {
   const settingsCategories = [
+    {
+      title: 'Academic Settings',
+      description: 'Configure academic setup including cohorts and enrollment modes',
+      icon: BookOpen,
+      href: '/settings/academic',
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: 'from-blue-50 to-indigo-50',
+    },
     {
       title: 'Theme Settings',
       description: 'Customize your LMS appearance with colors and themes',

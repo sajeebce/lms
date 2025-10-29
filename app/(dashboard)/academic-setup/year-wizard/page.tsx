@@ -7,7 +7,7 @@ import { Wand2 } from 'lucide-react'
 export default async function YearWizardPage() {
   const tenantId = await getTenantId()
 
-  const [branches, academicYears, classes] = await Promise.all([
+  const [branches, academicYears, classes, streams] = await Promise.all([
     prisma.branch.findMany({
       where: { tenantId, status: 'ACTIVE' },
       orderBy: { name: 'asc' },
@@ -19,6 +19,10 @@ export default async function YearWizardPage() {
     prisma.class.findMany({
       where: { tenantId },
       orderBy: { order: 'asc' },
+    }),
+    prisma.stream.findMany({
+      where: { tenantId },
+      orderBy: { name: 'asc' },
     }),
   ])
 
@@ -35,6 +39,7 @@ export default async function YearWizardPage() {
         branches={branches}
         academicYears={academicYears}
         classes={classes}
+        streams={streams}
       />
     </div>
   )

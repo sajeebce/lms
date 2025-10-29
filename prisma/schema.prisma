@@ -22,18 +22,22 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   // Relations
-  branches          Branch[]
-  academicYears     AcademicYear[]
-  streams           Stream[]
-  classes           Class[]
-  cohorts           Cohort[]
-  sectionTemplates  SectionTemplate[]
-  sections          Section[]
-  teachers          Teacher[]
-  rooms             Room[]
-  routines          Routine[]
-  users             User[]
-  themeSettings     ThemeSettings?
+  branches            Branch[]
+  academicYears       AcademicYear[]
+  streams             Stream[]
+  classes             Class[]
+  cohorts             Cohort[]
+  sections            Section[]
+  teachers            Teacher[]
+  rooms               Room[]
+  routines            Routine[]
+  users               User[]
+  themeSettings       ThemeSettings?
+  tenantSettings      TenantSettings?
+  students            Student[]
+  courses             Course[]
+  studentEnrollments  StudentEnrollment[]
+  courseEnrollments   CourseEnrollment[]
 
   @@map("tenants")
 }
@@ -49,6 +53,7 @@ model User {
 
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   routinesCreated Routine[]
+  student         Student?
 
   @@unique([tenantId, email])
   @@map("users")
@@ -143,7 +148,6 @@ model Class {
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stream           Stream?           @relation(fields: [streamId], references: [id], onDelete: SetNull)
   cohorts          Cohort[]
-  sectionTemplates SectionTemplate[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, order])
@@ -185,23 +189,6 @@ enum CohortStatus {
   ARCHIVED
 }
 
-model SectionTemplate {
-  id        String   @id @default(cuid())
-  tenantId  String
-  classId   String
-  name      String
-  capacity  Int      @default(1)
-  note      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  class  Class  @relation(fields: [classId], references: [id], onDelete: Restrict)
-
-  @@unique([tenantId, classId, name])
-  @@map("section_templates")
-}
-
 model Section {
   id        String   @id @default(cuid())
   tenantId  String
@@ -212,9 +199,10 @@ model Section {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cohort   Cohort    @relation(fields: [cohortId], references: [id], onDelete: Restrict)
-  routines Routine[]
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohort      Cohort    @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  routines    Routine[]
+  enrollments StudentEnrollment[]
 
   @@unique([tenantId, cohortId, name])
   @@map("sections")
@@ -319,4 +307,120 @@ model ThemeSettings {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("theme_settings")
+}
+
+// ============================================
+// TENANT SETTINGS MODEL
+// ============================================
+
+model TenantSettings {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  enableCohorts   Boolean  @default(true)  // Enable/disable cohort-based enrollment
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+// ============================================
+// STUDENT MODEL
+// ============================================
+
+model Student {
+  id              String   @id @default(cuid())
+  tenantId        String
+  userId          String   @unique
+  rollNumber      String?
+  dateOfBirth     DateTime?
+  gender          String?
+  address         String?
+  fatherName      String?
+  fatherPhone     String?
+  status          StudentStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments     StudentEnrollment[]
+  courseEnrollments CourseEnrollment[]
+
+  @@map("students")
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  DROPPED
+}
+
+// ============================================
+// COURSE MODEL
+// ============================================
+
+model Course {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  code            String
+  description     String?
+  credits         Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments     CourseEnrollment[]
+
+  @@unique([tenantId, code])
+  @@map("courses")
+}
+
+// ============================================
+// ENROLLMENT MODELS
+// ============================================
+
+model StudentEnrollment {
+  id              String   @id @default(cuid())
+  tenantId        String
+  studentId       String
+  sectionId       String
+  enrollmentDate  DateTime @default(now())
+  status          EnrollmentStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  section         Section  @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, studentId, sectionId])
+  @@map("student_enrollments")
+}
+
+model CourseEnrollment {
+  id              String   @id @default(cuid())
+  tenantId        String
+  studentId       String
+  courseId        String
+  enrollmentDate  DateTime @default(now())
+  status          EnrollmentStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, studentId, courseId])
+  @@map("course_enrollments")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+  COMPLETED
 }

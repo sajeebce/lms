@@ -9,6 +9,8 @@ const wizardSchema = z.object({
   yearId: z.string().min(1, 'Academic year is required'),
   branchId: z.string().min(1, 'Branch is required'),
   classIds: z.array(z.string()).min(1, 'At least one class is required'),
+  streamIds: z.array(z.string()).optional().default([]),
+  sectionNames: z.array(z.string()).optional().default([]),
 })
 
 type PreviewItem = {
@@ -19,13 +21,39 @@ type PreviewItem = {
   exists: boolean
 }
 
+// Helper function to generate cohort name
+function generateCohortName(
+  className: string,
+  streamName: string | undefined,
+  sectionName: string | undefined,
+  yearCode: string,
+  branchName: string,
+  isSingleBranch: boolean
+): string {
+  const parts: string[] = [className.toLowerCase()]
+
+  if (streamName) {
+    parts.push(streamName.toLowerCase())
+  }
+
+  if (sectionName) {
+    parts.push(sectionName.toLowerCase())
+  }
+
+  const baseName = parts.join('-')
+  const yearPart = yearCode
+  const branchPart = isSingleBranch ? '' : ` (${branchName})`
+
+  return `${baseName} ${yearPart}${branchPart}`
+}
+
 export async function previewYearWizard(data: z.infer<typeof wizardSchema>) {
   try {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
     const validated = wizardSchema.parse(data)
 
-    const [year, branch, classes, templates] = await Promise.all([
+    const [year, branch, classes, streams] = await Promise.all([
       prisma.academicYear.findUnique({
         where: { id: validated.yearId, tenantId },
       }),
@@ -35,48 +63,68 @@ export async function previewYearWizard(data: z.infer<typeof wizardSchema>) {
       prisma.class.findMany({
         where: { id: { in: validated.classIds }, tenantId },
       }),
-      prisma.sectionTemplate.findMany({
-        where: {
-          classId: { in: validated.classIds },
-          tenantId,
-        },
-        include: { class: true },
-      }),
+      validated.streamIds.length > 0
+        ? prisma.stream.findMany({
+            where: { id: { in: validated.streamIds }, tenantId },
+          })
+        : Promise.resolve([]),
     ])
 
     if (!year || !branch) {
       return { success: false, error: 'Invalid year or branch' }
     }
 
+    // Get all branches to check if this is single branch
+    const allBranches = await prisma.branch.findMany({
+      where: { tenantId },
+    })
+    const isSingleBranch = allBranches.length === 1
+
     const preview: PreviewItem[] = []
+    const yearCode = year.code
 
+    // Generate combinations
     for (const cls of classes) {
-      const cohortName = `${cls.name} – ${year.name.split('–')[0].trim()} Intake`
+      const streamsToUse = validated.streamIds.length > 0
+        ? streams
+        : [{ id: '', name: '' }]
 
-      // Check if cohort exists
-      const existingCohort = await prisma.cohort.findFirst({
-        where: {
-          tenantId,
-          yearId: validated.yearId,
-          classId: cls.id,
-          branchId: validated.branchId,
-          name: cohortName,
-        },
-      })
+      const sectionsToUse = validated.sectionNames.length > 0
+        ? validated.sectionNames
+        : ['']
 
-      // Get templates for this class
-      const classTemplates = templates.filter((t) => t.classId === cls.id)
+      for (const stream of streamsToUse) {
+        for (const sectionName of sectionsToUse) {
+          const cohortName = generateCohortName(
+            cls.name,
+            stream.name || undefined,
+            sectionName || undefined,
+            yearCode,
+            branch.name,
+            isSingleBranch
+          )
 
-      preview.push({
-        classId: cls.id,
-        className: cls.name,
-        cohortName,
-        sections: classTemplates.map((t) => ({
-          name: t.name,
-          capacity: t.capacity,
-        })),
-        exists: !!existingCohort,
-      })
+          // Check if cohort exists
+          const existingCohort = await prisma.cohort.findFirst({
+            where: {
+              tenantId,
+              yearId: validated.yearId,
+              classId: cls.id,
+              streamId: stream.id || undefined,
+              branchId: validated.branchId,
+              name: cohortName,
+            },
+          })
+
+          preview.push({
+            classId: cls.id,
+            className: cls.name,
+            cohortName,
+            sections: sectionName ? [{ name: sectionName, capacity: 0 }] : [],
+            exists: !!existingCohort,
+          })
+        }
+      }
     }
 
     return { success: true, preview, year: year.name, branch: branch.name }
@@ -97,7 +145,7 @@ export async function executeYearWizard(data: z.infer<typeof wizardSchema>) {
     const tenantId = await getTenantId()
     const validated = wizardSchema.parse(data)
 
-    const [year, branch, classes, templates] = await Promise.all([
+    const [year, branch, classes, streams, allBranches] = await Promise.all([
       prisma.academicYear.findUnique({
         where: { id: validated.yearId, tenantId },
       }),
@@ -107,17 +155,22 @@ export async function executeYearWizard(data: z.infer<typeof wizardSchema>) {
       prisma.class.findMany({
         where: { id: { in: validated.classIds }, tenantId },
       }),
-      prisma.sectionTemplate.findMany({
-        where: {
-          classId: { in: validated.classIds },
-          tenantId,
-        },
+      validated.streamIds.length > 0
+        ? prisma.stream.findMany({
+            where: { id: { in: validated.streamIds }, tenantId },
+          })
+        : Promise.resolve([]),
+      prisma.branch.findMany({
+        where: { tenantId },
       }),
     ])
 
     if (!year || !branch) {
       return { success: false, error: 'Invalid year or branch' }
     }
+
+    const isSingleBranch = allBranches.length === 1
+    const yearCode = year.code
 
     let cohortsCreated = 0
     let sectionsCreated = 0
@@ -126,53 +179,71 @@ export async function executeYearWizard(data: z.infer<typeof wizardSchema>) {
     // Use transaction for atomicity
     await prisma.$transaction(async (tx) => {
       for (const cls of classes) {
-        const cohortName = `${cls.name} – ${year.name.split('–')[0].trim()} Intake`
+        const streamsToUse = validated.streamIds.length > 0
+          ? streams
+          : [{ id: '', name: '' }]
 
-        // Check if cohort exists
-        const existingCohort = await tx.cohort.findFirst({
-          where: {
-            tenantId,
-            yearId: validated.yearId,
-            classId: cls.id,
-            branchId: validated.branchId,
-            name: cohortName,
-          },
-        })
+        const sectionsToUse = validated.sectionNames.length > 0
+          ? validated.sectionNames
+          : ['']
 
-        if (existingCohort) {
-          skipped++
-          continue
-        }
+        for (const stream of streamsToUse) {
+          for (const sectionName of sectionsToUse) {
+            const cohortName = generateCohortName(
+              cls.name,
+              stream.name || undefined,
+              sectionName || undefined,
+              yearCode,
+              branch.name,
+              isSingleBranch
+            )
 
-        // Create cohort
-        const cohort = await tx.cohort.create({
-          data: {
-            tenantId,
-            yearId: validated.yearId,
-            classId: cls.id,
-            branchId: validated.branchId,
-            name: cohortName,
-            status: 'PLANNED',
-            enrollmentOpen: false,
-          },
-        })
+            // Check if cohort exists
+            const existingCohort = await tx.cohort.findFirst({
+              where: {
+                tenantId,
+                yearId: validated.yearId,
+                classId: cls.id,
+                streamId: stream.id || undefined,
+                branchId: validated.branchId,
+                name: cohortName,
+              },
+            })
 
-        cohortsCreated++
+            if (existingCohort) {
+              skipped++
+              continue
+            }
 
-        // Create sections from templates
-        const classTemplates = templates.filter((t) => t.classId === cls.id)
+            // Create cohort
+            const cohort = await tx.cohort.create({
+              data: {
+                tenantId,
+                yearId: validated.yearId,
+                classId: cls.id,
+                streamId: stream.id || undefined,
+                branchId: validated.branchId,
+                name: cohortName,
+                status: 'PLANNED',
+                enrollmentOpen: false,
+              },
+            })
 
-        for (const template of classTemplates) {
-          await tx.section.create({
-            data: {
-              tenantId,
-              cohortId: cohort.id,
-              name: template.name,
-              capacity: template.capacity,
-              note: template.note,
-            },
-          })
-          sectionsCreated++
+            cohortsCreated++
+
+            // Create section if section name provided
+            if (sectionName) {
+              await tx.section.create({
+                data: {
+                  tenantId,
+                  cohortId: cohort.id,
+                  name: sectionName,
+                  capacity: 0, // Default unlimited
+                },
+              })
+              sectionsCreated++
+            }
+          }
         }
       }
     })

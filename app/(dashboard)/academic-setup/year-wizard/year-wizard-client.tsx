@@ -27,6 +27,7 @@ import { previewYearWizard, executeYearWizard } from './actions'
 type Branch = { id: string; name: string }
 type AcademicYear = { id: string; name: string }
 type Class = { id: string; name: string }
+type Stream = { id: string; name: string }
 
 type PreviewItem = {
   classId: string
@@ -40,15 +41,19 @@ export function YearWizardClient({
   branches,
   academicYears,
   classes,
+  streams,
 }: {
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
+  streams: Stream[]
 }) {
   const [formData, setFormData] = useState({
     yearId: '',
     branchId: '',
     classIds: [] as string[],
+    streamIds: [] as string[],
+    sectionNames: [] as string[],
   })
 
   const [preview, setPreview] = useState<PreviewItem[] | null>(null)
@@ -98,7 +103,7 @@ export function YearWizardClient({
       })
       setPreview(null)
       setPreviewMeta(null)
-      setFormData({ yearId: '', branchId: '', classIds: [] })
+      setFormData({ yearId: '', branchId: '', classIds: [], streamIds: [], sectionNames: [] })
     } else {
       toast.error(result.error || 'Failed to execute wizard')
     }
@@ -111,7 +116,35 @@ export function YearWizardClient({
         ? prev.classIds.filter((id) => id !== classId)
         : [...prev.classIds, classId],
     }))
-    setPreview(null) // Reset preview when selection changes
+    setPreview(null)
+  }
+
+  const toggleStream = (streamId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      streamIds: prev.streamIds.includes(streamId)
+        ? prev.streamIds.filter((id) => id !== streamId)
+        : [...prev.streamIds, streamId],
+    }))
+    setPreview(null)
+  }
+
+  const addSectionName = (name: string) => {
+    if (name.trim() && !formData.sectionNames.includes(name.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        sectionNames: [...prev.sectionNames, name.trim()],
+      }))
+      setPreview(null)
+    }
+  }
+
+  const removeSectionName = (name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      sectionNames: prev.sectionNames.filter((s) => s !== name),
+    }))
+    setPreview(null)
   }
 
   return (
@@ -196,6 +229,70 @@ export function YearWizardClient({
                 </button>
               ))}
             </div>
+          </div>
+
+          {streams.length > 0 && (
+            <div>
+              <Label>Streams (optional - select multiple)</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                {streams.map((stream) => (
+                  <button
+                    key={stream.id}
+                    type="button"
+                    onClick={() => toggleStream(stream.id)}
+                    className={`p-3 rounded-lg border-2 transition-all ${
+                      formData.streamIds.includes(stream.id)
+                        ? 'border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200'
+                        : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-card hover:border-blue-300 dark:hover:border-blue-600 text-foreground'
+                    }`}
+                  >
+                    <div className="font-medium text-sm">{stream.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label>Sections (optional - enter names)</Label>
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                placeholder="e.g., Morning, Evening, A, B"
+                className="flex-1 px-3 py-2 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-card text-foreground"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    addSectionName((e.target as HTMLInputElement).value)
+                    ;(e.target as HTMLInputElement).value = ''
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(e) => {
+                  const input = (e.currentTarget.previousElementSibling as HTMLInputElement)
+                  addSectionName(input.value)
+                  input.value = ''
+                }}
+              >
+                Add
+              </Button>
+            </div>
+            {formData.sectionNames.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {formData.sectionNames.map((name) => (
+                  <Badge
+                    key={name}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-red-100 dark:hover:bg-red-950"
+                    onClick={() => removeSectionName(name)}
+                  >
+                    {name} ✕
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">
