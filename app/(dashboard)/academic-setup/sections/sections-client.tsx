@@ -74,16 +74,20 @@ type Section = {
   name: string
   capacity: number
   note: string | null
-  cohort: {
+  cohortSections: Array<{
     id: string
-    name: string
-    year: { id: string; name: string }
-    class: { id: string; name: string }
-    branch: { id: string; name: string }
-  } | null
+    cohort: {
+      id: string
+      name: string
+      year: { id: string; name: string }
+      class: { id: string; name: string }
+      branch: { id: string; name: string }
+    }
+  }>
   _count: {
     enrollments: number
     routines: number
+    cohortSections: number
   }
 }
 
@@ -341,10 +345,17 @@ export function SectionsClient({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {section.cohort ? (
-                      <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300">
-                        {section.cohort.name}
-                      </Badge>
+                    {section.cohortSections.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {section.cohortSections.map((cs) => (
+                          <Badge
+                            key={cs.id}
+                            className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300"
+                          >
+                            {cs.cohort.name}
+                          </Badge>
+                        ))}
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Independent</span>
                     )}
@@ -362,31 +373,34 @@ export function SectionsClient({
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          const totalLinked = section._count.enrollments + section._count.routines
-                          if (totalLinked > 0) {
-                            const messages = []
-                            if (section._count.enrollments > 0) {
-                              messages.push(`${section._count.enrollments} student${section._count.enrollments > 1 ? 's' : ''} enrolled`)
-                            }
-                            if (section._count.routines > 0) {
-                              messages.push(`${section._count.routines} routine${section._count.routines > 1 ? 's' : ''} linked`)
-                            }
+                          // Check if section has dependencies
+                          const messages = []
+                          if (section._count.cohortSections > 0) {
+                            messages.push(`linked to ${section._count.cohortSections} cohort${section._count.cohortSections > 1 ? 's' : ''}`)
+                          }
+                          if (section._count.enrollments > 0) {
+                            messages.push(`${section._count.enrollments} student${section._count.enrollments > 1 ? 's' : ''} enrolled`)
+                          }
+                          if (section._count.routines > 0) {
+                            messages.push(`${section._count.routines} routine${section._count.routines > 1 ? 's' : ''} linked`)
+                          }
+                          if (messages.length > 0) {
                             toast.error('Cannot Delete', {
-                              description: `This section has ${messages.join(' and ')}. Please remove them first.`,
+                              description: `This section is ${messages.join(' and has ')}. Please remove dependencies first.`,
                             })
                             return
                           }
                           setSectionToDelete(section)
                           setDeleteDialogOpen(true)
                         }}
-                        disabled={section._count.enrollments > 0 || section._count.routines > 0}
+                        disabled={section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0}
                         className={
-                          section._count.enrollments > 0 || section._count.routines > 0
+                          section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0
                             ? 'cursor-not-allowed'
                             : ''
                         }
                       >
-                        {section._count.enrollments > 0 || section._count.routines > 0 ? (
+                        {section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0 ? (
                           <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         ) : (
                           <Trash2 className="h-4 w-4 text-red-600" />

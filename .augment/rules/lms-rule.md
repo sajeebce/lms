@@ -1,3 +1,6 @@
+
+
+
 ---
 type: "manual"
 ---
@@ -599,3 +602,106 @@ When creating any new form in Academic Setup (or similar modules):
 ---
 
 **IMPORTANT:** These standards are MANDATORY for all future forms. Do NOT create forms without these features.
+
+---
+
+## 🔽 DROPDOWN COMPONENT STANDARDS (MANDATORY)
+
+### **For ALL future dropdown implementations:**
+
+#### **1. Single-Select Dropdowns:**
+- **ALWAYS** use `SearchableDropdown` component from `@/components/ui/searchable-dropdown`
+- **NEVER** use standard `<Select>` component for user-facing dropdowns
+- Exception: Only use `<Select>` for 2-3 static options (e.g., Yes/No, Active/Inactive) - but prefer `SearchableDropdown` for consistency
+
+#### **2. Multi-Select Dropdowns:**
+- **ALWAYS** use `MultiSelectDropdown` component from `@/components/ui/multi-select-dropdown`
+- **NEVER** use checkbox grids or custom multi-select implementations
+
+#### **3. Features Required:**
+- ✅ Search functionality (real-time filtering)
+- ✅ Virtual scrolling (max-height 300px with overflow-y-auto)
+- ✅ Keyboard navigation (arrow keys, enter, escape)
+- ✅ Check icon for selected items (single-select)
+- ✅ Badge display for selected items (multi-select)
+- ✅ "Clear All" functionality (multi-select)
+- ✅ Consistent design with Popover + Command pattern
+
+#### **4. When to Use Which:**
+- Use `SearchableDropdown` when user selects **ONE** item
+- Use `MultiSelectDropdown` when user selects **MULTIPLE** items
+
+#### **5. Implementation Pattern:**
+
+**Single-Select Example:**
+```typescript
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+
+<FormField
+  control={form.control}
+  name="branchId"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Branch *</FormLabel>
+      <FormControl>
+        <SearchableDropdown
+          options={branches.map(branch => ({
+            value: branch.id,
+            label: branch.name
+          }))}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Select branch"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+**Multi-Select Example:**
+```typescript
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
+
+<FormField
+  control={form.control}
+  name="classIds"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Classes *</FormLabel>
+      <FormControl>
+        <MultiSelectDropdown
+          options={classes.map(cls => ({
+            value: cls.id,
+            label: cls.name
+          }))}
+          value={field.value}
+          onChange={field.onChange}
+          placeholder="Select classes"
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+#### **6. Benefits:**
+- **Performance:** Virtual scrolling handles 1000+ items smoothly
+- **UX:** Search functionality makes finding items fast
+- **Consistency:** Same design pattern across entire app
+- **Accessibility:** Keyboard navigation built-in
+- **Mobile-Friendly:** Touch-optimized with proper spacing
+- **Future-Proof:** Easy to add features like infinite scroll, hierarchical options, etc.
+
+#### **7. DO NOT:**
+- ❌ Use standard `<Select>` component for dropdowns with 5+ options
+- ❌ Create custom dropdown implementations
+- ❌ Use checkbox grids for multi-select (use `MultiSelectDropdown` instead)
+- ❌ Use button grids for selection (use dropdowns instead)
+- ❌ Forget to add search functionality for large datasets
+
+---
+
+**IMPORTANT:** These dropdown standards are MANDATORY for all future implementations. Do NOT create dropdowns without using these components.

@@ -40,18 +40,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createRoutine, updateRoutine, deleteRoutine } from './actions'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 
 // Form validation schema
 const formSchema = z.object({
@@ -213,62 +207,53 @@ export function RoutineClient({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label className="text-xs">Branch</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...branches.map((branch) => ({
+                  value: branch.id,
+                  label: branch.name,
+                })),
+              ]}
               value={filters.branchId}
-              onValueChange={(value) => {
+              onChange={(value) => {
                 setFilters({ ...filters, branchId: value, sectionId: '' })
               }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Section</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...filteredSections.map((section) => ({
+                  value: section.id,
+                  label: `${section.name} (${section.cohort.class.name})`,
+                })),
+              ]}
               value={filters.sectionId}
-              onValueChange={(value) => setFilters({ ...filters, sectionId: value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {filteredSections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.name} ({section.cohort.class.name})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, sectionId: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Day of Week</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...DAYS.map((day, idx) => ({
+                  value: idx.toString(),
+                  label: day,
+                })),
+              ]}
               value={filters.dayOfWeek}
-              onValueChange={(value) => setFilters({ ...filters, dayOfWeek: value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {DAYS.map((day, idx) => (
-                  <SelectItem key={idx} value={idx.toString()}>
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, dayOfWeek: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
         </div>
       </div>
@@ -307,21 +292,17 @@ export function RoutineClient({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Section *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select section" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {sections.map((section) => (
-                              <SelectItem key={section.id} value={section.id}>
-                                {section.name} ({section.cohort.class.name} -{' '}
-                                {section.cohort.branch.name})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={sections.map((section) => ({
+                              value: section.id,
+                              label: `${section.name} (${section.cohort.class.name} - ${section.cohort.branch.name})`,
+                            }))}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select section"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -334,20 +315,17 @@ export function RoutineClient({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Teacher *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select teacher" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {teachers.map((teacher) => (
-                              <SelectItem key={teacher.id} value={teacher.id}>
-                                {teacher.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={teachers.map((teacher) => ({
+                              value: teacher.id,
+                              label: teacher.name,
+                            }))}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select teacher"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -360,20 +338,17 @@ export function RoutineClient({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Room *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select room" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {rooms.map((room) => (
-                              <SelectItem key={room.id} value={room.id}>
-                                {room.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={rooms.map((room) => ({
+                              value: room.id,
+                              label: room.name,
+                            }))}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select room"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -386,20 +361,17 @@ export function RoutineClient({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Day of Week *</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value.toString()}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {DAYS.map((day, idx) => (
-                              <SelectItem key={idx} value={idx.toString()}>
-                                {day}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={DAYS.map((day, idx) => ({
+                              value: idx.toString(),
+                              label: day,
+                            }))}
+                            value={field.value.toString()}
+                            onChange={(value) => field.onChange(parseInt(value))}
+                            placeholder="Select day"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -16,16 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
 import { admitStudent, getAvailableCohorts, getAvailableSections } from './actions'
 import { UserPlus } from 'lucide-react'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 
 type Branch = { id: string; name: string }
 type AcademicYear = { id: string; name: string; code: string }
@@ -267,18 +261,18 @@ export function AdmissionForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Gender</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={[
+                            { value: 'Male', label: 'Male' },
+                            { value: 'Female', label: 'Female' },
+                            { value: 'Other', label: 'Other' },
+                          ]}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          placeholder="Select gender"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -345,20 +339,17 @@ export function AdmissionForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Branch *</FormLabel>
-                        <Select onValueChange={(value) => { field.onChange(value); handleBranchChange(value) }} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {branches.map((branch) => (
-                              <SelectItem key={branch.id} value={branch.id}>
-                                {branch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={branches.map((branch) => ({
+                              value: branch.id,
+                              label: branch.name,
+                            }))}
+                            value={field.value}
+                            onChange={(value) => { field.onChange(value); handleBranchChange(value) }}
+                            placeholder="Select branch"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -371,20 +362,17 @@ export function AdmissionForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Academic Year *</FormLabel>
-                      <Select onValueChange={(value) => { field.onChange(value); handleYearChange(value) }} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select academic year" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {academicYears.map((year) => (
-                            <SelectItem key={year.id} value={year.id}>
-                              {year.name} ({year.code})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={academicYears.map((year) => ({
+                            value: year.id,
+                            label: `${year.name} (${year.code})`,
+                          }))}
+                          value={field.value}
+                          onChange={(value) => { field.onChange(value); handleYearChange(value) }}
+                          placeholder="Select academic year"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -396,20 +384,17 @@ export function AdmissionForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Class *</FormLabel>
-                      <Select onValueChange={(value) => { field.onChange(value); handleClassChange(value) }} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select class" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {classes.map((cls) => (
-                            <SelectItem key={cls.id} value={cls.id}>
-                              {cls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={classes.map((cls) => ({
+                            value: cls.id,
+                            label: cls.name,
+                          }))}
+                          value={field.value}
+                          onChange={(value) => { field.onChange(value); handleClassChange(value) }}
+                          placeholder="Select class"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -422,20 +407,17 @@ export function AdmissionForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stream</FormLabel>
-                        <Select onValueChange={(value) => { field.onChange(value); handleStreamChange(value) }} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select stream (optional)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {streams.map((stream) => (
-                              <SelectItem key={stream.id} value={stream.id}>
-                                {stream.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={streams.map((stream) => ({
+                              value: stream.id,
+                              label: stream.name,
+                            }))}
+                            value={field.value || ''}
+                            onChange={(value) => { field.onChange(value); handleStreamChange(value) }}
+                            placeholder="Select stream (optional)"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -449,24 +431,18 @@ export function AdmissionForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Cohort *</FormLabel>
-                        <Select
-                          onValueChange={(value) => { field.onChange(value); handleCohortChange(value) }}
-                          value={field.value}
-                          disabled={availableCohorts.length === 0}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={availableCohorts.length === 0 ? "Select year, class & branch first" : "Select cohort"} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {availableCohorts.map((cohort) => (
-                              <SelectItem key={cohort.id} value={cohort.id}>
-                                {cohort.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={availableCohorts.map((cohort) => ({
+                              value: cohort.id,
+                              label: cohort.name,
+                            }))}
+                            value={field.value}
+                            onChange={(value) => { field.onChange(value); handleCohortChange(value) }}
+                            placeholder={availableCohorts.length === 0 ? "Select year, class & branch first" : "Select cohort"}
+                            disabled={availableCohorts.length === 0}
+                          />
+                        </FormControl>
                         <FormDescription>
                           {availableCohorts.length === 0 && 'Please select academic year, class and branch to see available cohorts'}
                         </FormDescription>
@@ -482,24 +458,18 @@ export function AdmissionForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Section *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={enableCohorts ? availableSections.length === 0 : false}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={enableCohorts && availableSections.length === 0 ? "Select cohort first" : "Select section"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {availableSections.map((section) => (
-                            <SelectItem key={section.id} value={section.id}>
-                              {section.name} ({section._count.enrollments}/{section.capacity} enrolled)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={availableSections.map((section) => ({
+                            value: section.id,
+                            label: `${section.name} (${section._count.enrollments}/${section.capacity} enrolled)`,
+                          }))}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder={enableCohorts && availableSections.length === 0 ? "Select cohort first" : "Select section"}
+                          disabled={enableCohorts ? availableSections.length === 0 : false}
+                        />
+                      </FormControl>
                       <FormDescription>
                         {enableCohorts && availableSections.length === 0 && 'Please select a cohort to see available sections'}
                       </FormDescription>

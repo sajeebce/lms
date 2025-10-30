@@ -10,17 +10,22 @@ export default async function SectionsPage() {
   const sections = await prisma.section.findMany({
     where: { tenantId },
     include: {
-      cohort: {
+      cohortSections: {
         include: {
-          year: true,
-          class: true,
-          branch: true,
+          cohort: {
+            include: {
+              year: true,
+              class: true,
+              branch: true,
+            },
+          },
         },
       },
       _count: {
         select: {
           enrollments: true,
           routines: true,
+          cohortSections: true,
         },
       },
     },

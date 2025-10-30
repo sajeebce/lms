@@ -50,14 +50,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import {
   createAcademicYear,
   updateAcademicYear,
@@ -377,19 +371,19 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Year State *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="PLANNED">📋 Planned</SelectItem>
-                          <SelectItem value="IN_SESSION">🎓 In Session</SelectItem>
-                          <SelectItem value="COMPLETED">✅ Completed</SelectItem>
-                          <SelectItem value="ARCHIVED">📦 Archived</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={[
+                            { value: 'PLANNED', label: '📋 Planned' },
+                            { value: 'IN_SESSION', label: '🎓 In Session' },
+                            { value: 'COMPLETED', label: '✅ Completed' },
+                            { value: 'ARCHIVED', label: '📦 Archived' },
+                          ]}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select state"
+                        />
+                      </FormControl>
                       <FormDescription>
                         Current state of the academic year
                       </FormDescription>

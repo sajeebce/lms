@@ -15,8 +15,13 @@ export default async function CohortsPage() {
         class: true,
         stream: true,
         branch: true,
+        cohortSections: {
+          include: {
+            section: true,
+          },
+        },
         _count: {
-          select: { sections: true },
+          select: { cohortSections: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -38,10 +43,7 @@ export default async function CohortsPage() {
       orderBy: { name: 'asc' },
     }),
     prisma.section.findMany({
-      where: {
-        tenantId,
-        cohortId: null, // Only independent sections
-      },
+      where: { tenantId },
       orderBy: { name: 'asc' },
     }),
   ])

@@ -38,7 +38,7 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
       }
     }
 
-    await prisma.section.create({
+    const createdSection = await prisma.section.create({
       data: {
         ...validated,
         tenantId,
@@ -49,7 +49,8 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
 
     revalidatePath('/academic-setup/sections')
     revalidatePath('/academic-setup/cohorts')
-    return { success: true }
+    revalidatePath('/academic-setup/year-wizard')
+    return { success: true, section: { id: createdSection.id, name: createdSection.name } }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors[0].message }

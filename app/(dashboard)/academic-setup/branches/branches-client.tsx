@@ -42,15 +42,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createBranch, updateBranch, deleteBranch } from './actions'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 
 // Form validation schema with character limits
 const formSchema = z.object({
@@ -267,17 +261,17 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">✅ Active</SelectItem>
-                          <SelectItem value="INACTIVE">⏸️ Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={[
+                            { value: 'ACTIVE', label: '✅ Active' },
+                            { value: 'INACTIVE', label: '⏸️ Inactive' },
+                          ]}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select status"
+                        />
+                      </FormControl>
                       <FormDescription>
                         Active branches can accept new enrollments
                       </FormDescription>

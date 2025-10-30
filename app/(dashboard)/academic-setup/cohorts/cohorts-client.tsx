@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -40,17 +41,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import {
   createCohort,
@@ -58,6 +53,7 @@ import {
   deleteCohort,
   toggleEnrollmentOpen,
 } from './actions'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 
 // Form validation schema with character limits
 const formSchema = z.object({
@@ -86,7 +82,11 @@ type Cohort = {
   class: { id: string; name: string }
   stream: { id: string; name: string } | null
   branch: { id: string; name: string }
-  _count: { sections: number }
+  cohortSections: Array<{
+    id: string
+    section: { id: string; name: string }
+  }>
+  _count: { cohortSections: number }
 }
 
 type Branch = { id: string; name: string }
@@ -115,6 +115,14 @@ export function CohortsClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [cohortToDelete, setCohortToDelete] = useState<Cohort | null>(null)
 
+  // Section creation state
+  const [localSections, setLocalSections] = useState<Section[]>(sections)
+  const [sectionDialogOpen, setSectionDialogOpen] = useState(false)
+  const [newSectionName, setNewSectionName] = useState('')
+  const [newSectionCapacity, setNewSectionCapacity] = useState(0)
+  const [newSectionNote, setNewSectionNote] = useState('')
+  const [creatingSection, setCreatingSection] = useState(false)
+
   // React Hook Form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -132,28 +140,32 @@ export function CohortsClient({
   })
 
   // Auto-fill cohort name based on selections
-  const watchedFields = form.watch(['yearId', 'classId', 'streamId', 'sectionId'])
+  const watchedFields = form.watch(['yearId', 'classId', 'streamId', 'sectionId', 'branchId'])
+  const [userEditedName, setUserEditedName] = useState(false)
 
   useEffect(() => {
-    const [yearId, classId, streamId, sectionId] = watchedFields
+    const [yearId, classId, streamId, sectionId, branchId] = watchedFields
 
-    // Only auto-fill if editing is not active and name is empty
-    if (editingCohort || form.getValues('name')) return
+    // Only auto-fill if editing is not active and user hasn't manually edited
+    if (editingCohort || userEditedName) return
 
-    if (yearId && classId) {
+    if (yearId && classId && branchId) {
       const year = academicYears.find(y => y.id === yearId)
       const cls = classes.find(c => c.id === classId)
-      const stream = streamId ? streams.find(s => s.id === streamId) : null
+      const stream = streamId && streamId !== '__none__' ? streams.find(s => s.id === streamId) : null
       const section = sectionId ? sections.find(s => s.id === sectionId) : null
+      const branch = branches.find(b => b.id === branchId)
 
-      // Format: "Class-Stream-Section AcademicYear"
-      // Example: "Class 10-Science-Section A 2025"
+      // Format: "Class-Stream-Section Year (Branch)"
+      // Example: "Class 10-Science-Section A 2025 (Main Campus)"
       let autoName = cls?.name || ''
       if (stream) autoName += `-${stream.name}`
       if (section) autoName += `-${section.name}`
       if (year) autoName += ` ${year.name}`
+      if (branch && branches.length > 1) autoName += ` (${branch.name})`
 
-      if (autoName && !form.getValues('name')) {
+      // Auto-fill name
+      if (autoName) {
         form.setValue('name', autoName, { shouldValidate: false })
       }
     }
@@ -243,8 +255,45 @@ export function CohortsClient({
     setOpen(true)
   }
 
+  const handleCreateSection = async () => {
+    if (!newSectionName.trim()) {
+      toast.error('Section name is required')
+      return
+    }
+
+    setCreatingSection(true)
+
+    // Import createSection action dynamically
+    const { createSection } = await import('@/app/(dashboard)/academic-setup/sections/actions')
+
+    const result = await createSection({
+      name: newSectionName.trim(),
+      capacity: newSectionCapacity,
+      note: newSectionNote.trim() || undefined,
+    })
+
+    setCreatingSection(false)
+
+    if (result.success && result.section) {
+      // Add new section to local state
+      setLocalSections([...localSections, result.section])
+
+      // Add to form selection
+      form.setValue('sectionId', result.section.id)
+
+      toast.success('Section created successfully')
+      setSectionDialogOpen(false)
+      setNewSectionName('')
+      setNewSectionCapacity(0)
+      setNewSectionNote('')
+    } else {
+      toast.error(result.error || 'Failed to create section')
+    }
+  }
+
   const resetForm = () => {
     setEditingCohort(null)
+    setUserEditedName(false)
     form.reset({
       name: '',
       yearId: '',
@@ -278,100 +327,81 @@ export function CohortsClient({
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <Label className="text-xs">Branch</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...branches.map((branch) => ({
+                  value: branch.id,
+                  label: branch.name,
+                })),
+              ]}
               value={filters.branchId}
-              onValueChange={(value) =>
-                setFilters({ ...filters, branchId: value })
-              }
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, branchId: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Academic Year</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...academicYears.map((year) => ({
+                  value: year.id,
+                  label: year.name,
+                })),
+              ]}
               value={filters.yearId}
-              onValueChange={(value) => setFilters({ ...filters, yearId: value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {academicYears.map((year) => (
-                  <SelectItem key={year.id} value={year.id}>
-                    {year.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, yearId: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Class</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                ...classes.map((cls) => ({
+                  value: cls.id,
+                  label: cls.name,
+                })),
+              ]}
               value={filters.classId}
-              onValueChange={(value) =>
-                setFilters({ ...filters, classId: value })
-              }
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, classId: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Status</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'PLANNED', label: 'PLANNED' },
+                { value: 'RUNNING', label: 'RUNNING' },
+                { value: 'FINISHED', label: 'FINISHED' },
+                { value: 'ARCHIVED', label: 'ARCHIVED' },
+              ]}
               value={filters.status}
-              onValueChange={(value) => setFilters({ ...filters, status: value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="PLANNED">PLANNED</SelectItem>
-                <SelectItem value="RUNNING">RUNNING</SelectItem>
-                <SelectItem value="FINISHED">FINISHED</SelectItem>
-                <SelectItem value="ARCHIVED">ARCHIVED</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, status: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
           <div>
             <Label className="text-xs">Enrollment</Label>
-            <Select
+            <SearchableDropdown
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'true', label: 'Open' },
+                { value: 'false', label: 'Closed' },
+              ]}
               value={filters.enrollmentOpen}
-              onValueChange={(value) =>
-                setFilters({ ...filters, enrollmentOpen: value })
-              }
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="true">Open</SelectItem>
-                <SelectItem value="false">Closed</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(value) => setFilters({ ...filters, enrollmentOpen: value })}
+              placeholder="All"
+              className="h-9"
+            />
           </div>
         </div>
       </div>
@@ -412,13 +442,25 @@ export function CohortsClient({
                         <FormLabel>Cohort Name *</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="e.g., 2025 Intake, Morning Batch"
+                            placeholder="Leave empty to auto-generate"
                             maxLength={100}
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              // Mark as user-edited if user types something
+                              if (e.target.value.trim() !== '') {
+                                setUserEditedName(true)
+                              } else {
+                                setUserEditedName(false)
+                              }
+                            }}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Enter the cohort name (max 100 characters)
+                        <FormDescription className="text-xs">
+                          <span className="text-violet-600 dark:text-violet-400 font-medium">
+                            💡 Tip:
+                          </span>{' '}
+                          Leave empty to auto-generate name based on Year, Class, Stream, and Section selections
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -433,20 +475,17 @@ export function CohortsClient({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Academic Year *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select year" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {academicYears.map((year) => (
-                                <SelectItem key={year.id} value={year.id}>
-                                  {year.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableDropdown
+                              options={academicYears.map((year) => ({
+                                value: year.id,
+                                label: year.name,
+                              }))}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select year"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -458,20 +497,17 @@ export function CohortsClient({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Class *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select class" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {classes.map((cls) => (
-                                <SelectItem key={cls.id} value={cls.id}>
-                                  {cls.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableDropdown
+                              options={classes.map((cls) => ({
+                                value: cls.id,
+                                label: cls.name,
+                              }))}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select class"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -486,24 +522,20 @@ export function CohortsClient({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Stream (Optional)</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || undefined}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="No stream" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="__none__">No Stream</SelectItem>
-                              {streams.map((stream) => (
-                                <SelectItem key={stream.id} value={stream.id}>
-                                  {stream.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableDropdown
+                              options={[
+                                { value: '__none__', label: 'No Stream' },
+                                ...streams.map((stream) => ({
+                                  value: stream.id,
+                                  label: stream.name,
+                                })),
+                              ]}
+                              value={field.value || '__none__'}
+                              onChange={field.onChange}
+                              placeholder="No stream"
+                            />
+                          </FormControl>
                           <FormDescription className="text-xs">
                             For Class 9-12 (Science/Commerce/Arts)
                           </FormDescription>
@@ -518,20 +550,17 @@ export function CohortsClient({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Branch *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select branch" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {branches.map((branch) => (
-                                <SelectItem key={branch.id} value={branch.id}>
-                                  {branch.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableDropdown
+                              options={branches.map((branch) => ({
+                                value: branch.id,
+                                label: branch.name,
+                              }))}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select branch"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -544,25 +573,33 @@ export function CohortsClient({
                     name="sectionId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Section (Optional)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || undefined}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="No section (create later)" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="__none__">No Section</SelectItem>
-                            {sections.map((section) => (
-                              <SelectItem key={section.id} value={section.id}>
-                                {section.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Section (Optional)</FormLabel>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSectionDialogOpen(true)}
+                            className="h-7 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Section
+                          </Button>
+                        </div>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={[
+                              { value: '__none__', label: 'No Section' },
+                              ...localSections.map((section) => ({
+                                value: section.id,
+                                label: section.name,
+                              })),
+                            ]}
+                            value={field.value || '__none__'}
+                            onChange={field.onChange}
+                            placeholder="No section (create later)"
+                          />
+                        </FormControl>
                         <FormDescription className="text-xs">
                           Link an independent section to this cohort
                         </FormDescription>
@@ -599,19 +636,19 @@ export function CohortsClient({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="PLANNED">PLANNED</SelectItem>
-                            <SelectItem value="RUNNING">RUNNING</SelectItem>
-                            <SelectItem value="FINISHED">FINISHED</SelectItem>
-                            <SelectItem value="ARCHIVED">ARCHIVED</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableDropdown
+                            options={[
+                              { value: 'PLANNED', label: 'PLANNED' },
+                              { value: 'RUNNING', label: 'RUNNING' },
+                              { value: 'FINISHED', label: 'FINISHED' },
+                              { value: 'ARCHIVED', label: 'ARCHIVED' },
+                            ]}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select status"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -718,27 +755,12 @@ export function CohortsClient({
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          if (cohort._count.sections > 0) {
-                            toast.error('Cannot delete', {
-                              description: `${cohort._count.sections} section(s) linked to this cohort`,
-                            })
-                            return
-                          }
                           setCohortToDelete(cohort)
                           setDeleteDialogOpen(true)
                         }}
-                        disabled={cohort._count.sections > 0}
-                        title={
-                          cohort._count.sections > 0
-                            ? `${cohort._count.sections} section(s) linked`
-                            : 'Delete cohort'
-                        }
+                        title="Delete cohort"
                       >
-                        {cohort._count.sections > 0 ? (
-                          <Lock className="h-4 w-4 text-amber-600" />
-                        ) : (
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        )}
+                        <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
                   </TableCell>
@@ -774,6 +796,91 @@ export function CohortsClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Section Creation Dialog */}
+      <Dialog open={sectionDialogOpen} onOpenChange={setSectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Section</DialogTitle>
+            <DialogDescription>
+              Create a new independent section that can be used across cohorts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Section Name */}
+            <div className="space-y-2">
+              <Label htmlFor="cohort-section-name">Section Name *</Label>
+              <Input
+                id="cohort-section-name"
+                placeholder="e.g., Section A"
+                value={newSectionName}
+                onChange={(e) => setNewSectionName(e.target.value)}
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground">
+                Max 100 characters
+              </p>
+            </div>
+
+            {/* Capacity */}
+            <div className="space-y-2">
+              <Label htmlFor="cohort-section-capacity">Capacity *</Label>
+              <Input
+                id="cohort-section-capacity"
+                type="number"
+                min="0"
+                max="9999999"
+                placeholder="0"
+                value={newSectionCapacity}
+                onChange={(e) => setNewSectionCapacity(parseInt(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Maximum students (0 = unlimited, max 9999999)
+              </p>
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label htmlFor="cohort-section-note">Note (Optional)</Label>
+              <Textarea
+                id="cohort-section-note"
+                placeholder="Optional description"
+                maxLength={500}
+                rows={3}
+                className="resize-none"
+                value={newSectionNote}
+                onChange={(e) => setNewSectionNote(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Additional information about this section (max 500 characters)
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSectionDialogOpen(false)
+                setNewSectionName('')
+                setNewSectionCapacity(0)
+                setNewSectionNote('')
+              }}
+              disabled={creatingSection}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateSection}
+              disabled={creatingSection || !newSectionName.trim()}
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+            >
+              {creatingSection ? 'Creating...' : 'Create Section'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

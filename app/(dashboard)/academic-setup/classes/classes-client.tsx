@@ -40,17 +40,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createClass, updateClass, deleteClass } from './actions'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 
 // Form validation schema with character limits
 const formSchema = z.object({
@@ -243,21 +237,20 @@ export function ClassesClient({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Stream (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select stream" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {streams.map((stream) => (
-                            <SelectItem key={stream.id} value={stream.id}>
-                              {stream.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableDropdown
+                          options={[
+                            { value: 'none', label: 'None' },
+                            ...streams.map((stream) => ({
+                              value: stream.id,
+                              label: stream.name,
+                            })),
+                          ]}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select stream"
+                        />
+                      </FormControl>
                       <FormDescription>
                         Assign a stream to this class
                       </FormDescription>

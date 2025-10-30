@@ -57,11 +57,14 @@ export async function createCohort(data: z.infer<typeof cohortSchema>) {
         },
       })
 
-      // If section selected, link it to this cohort
+      // If section selected, link it to this cohort via junction table
       if (validated.sectionId && validated.sectionId !== '__none__') {
-        await tx.section.update({
-          where: { id: validated.sectionId, tenantId },
-          data: { cohortId: cohort.id },
+        await tx.cohortSection.create({
+          data: {
+            tenantId,
+            cohortId: cohort.id,
+            sectionId: validated.sectionId,
+          },
         })
       }
     })
@@ -89,30 +92,23 @@ export async function updateCohort(
     const tenantId = await getTenantId()
     const validated = cohortSchema.parse(data)
 
-    // Use transaction to update cohort and handle section linking
-    await prisma.$transaction(async (tx) => {
-      await tx.cohort.update({
-        where: { id, tenantId },
-        data: {
-          name: validated.name,
-          yearId: validated.yearId,
-          classId: validated.classId,
-          streamId: validated.streamId || null,
-          branchId: validated.branchId,
-          status: validated.status,
-          enrollmentOpen: validated.enrollmentOpen,
-          startDate: validated.startDate ? new Date(validated.startDate) : null,
-        },
-      })
-
-      // Handle section linking (optional)
-      if (validated.sectionId && validated.sectionId !== '__none__') {
-        await tx.section.update({
-          where: { id: validated.sectionId, tenantId },
-          data: { cohortId: id },
-        })
-      }
+    // Update cohort only (section linking is managed separately via junction table)
+    await prisma.cohort.update({
+      where: { id, tenantId },
+      data: {
+        name: validated.name,
+        yearId: validated.yearId,
+        classId: validated.classId,
+        streamId: validated.streamId || null,
+        branchId: validated.branchId,
+        status: validated.status,
+        enrollmentOpen: validated.enrollmentOpen,
+        startDate: validated.startDate ? new Date(validated.startDate) : null,
+      },
     })
+
+    // Note: Section linking is now managed via CohortSection junction table
+    // This should be handled separately through a dedicated "Manage Sections" UI
 
     revalidatePath('/academic-setup/cohorts')
     revalidatePath('/academic-setup/sections')
@@ -153,23 +149,75 @@ export async function deleteCohort(id: string) {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
 
-    // Check for sections
-    const sectionCount = await prisma.section.count({
+    // Get sections linked to this cohort via junction table
+    const cohortSections = await prisma.cohortSection.findMany({
       where: { cohortId: id, tenantId },
+      include: {
+        section: {
+          select: {
+            id: true,
+            name: true,
+            enrollments: {
+              select: { id: true },
+            },
+            routines: {
+              select: { id: true },
+            },
+          },
+        },
+      },
     })
 
-    if (sectionCount > 0) {
-      return {
-        success: false,
-        error: `Cannot delete: ${sectionCount} section${sectionCount > 1 ? 's' : ''} linked`,
+    if (cohortSections.length > 0) {
+      // Check if any linked section has student enrollments
+      const sectionsWithEnrollments = cohortSections.filter(
+        cs => cs.section.enrollments.length > 0
+      )
+
+      if (sectionsWithEnrollments.length > 0) {
+        const totalEnrollments = sectionsWithEnrollments.reduce(
+          (sum, cs) => sum + cs.section.enrollments.length,
+          0
+        )
+        return {
+          success: false,
+          error: `Cannot delete: ${totalEnrollments} student${totalEnrollments > 1 ? 's' : ''} enrolled in linked sections`,
+        }
       }
+
+      // Check if any linked section has routines
+      const sectionsWithRoutines = cohortSections.filter(
+        cs => cs.section.routines.length > 0
+      )
+
+      if (sectionsWithRoutines.length > 0) {
+        const totalRoutines = sectionsWithRoutines.reduce(
+          (sum, cs) => sum + cs.section.routines.length,
+          0
+        )
+        return {
+          success: false,
+          error: `Cannot delete: ${totalRoutines} routine${totalRoutines > 1 ? 's' : ''} exist in linked sections`,
+        }
+      }
+
+      // If no enrollments or routines, just delete the junction table entries
+      // Sections themselves remain intact (they're reusable resources)
+      await prisma.cohortSection.deleteMany({
+        where: {
+          cohortId: id,
+          tenantId,
+        },
+      })
     }
 
+    // Now delete the cohort (junction table entries are already deleted)
     await prisma.cohort.delete({
       where: { id, tenantId },
     })
 
     revalidatePath('/academic-setup/cohorts')
+    revalidatePath('/academic-setup/sections')
     return { success: true }
   } catch (error) {
     if (error instanceof Error) {

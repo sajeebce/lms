@@ -28,6 +28,7 @@ model Tenant {
   classes             Class[]
   cohorts             Cohort[]
   sections            Section[]
+  cohortSections      CohortSection[]
   teachers            Teacher[]
   rooms               Room[]
   routines            Routine[]
@@ -176,7 +177,8 @@ model Cohort {
   stream Stream?      @relation(fields: [streamId], references: [id], onDelete: SetNull)
   branch Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
-  sections Section[]
+  // Many-to-many relationship with sections through CohortSection junction table
+  cohortSections CohortSection[]
 
   @@unique([tenantId, yearId, classId, streamId, branchId, name])
   @@map("cohorts")
@@ -192,20 +194,40 @@ enum CohortStatus {
 model Section {
   id        String   @id @default(cuid())
   tenantId  String
-  cohortId  String?  // Optional - sections can exist independently or be linked to cohorts
   name      String
-  capacity  Int
+  capacity  Int      @default(0) // 0 = unlimited
   note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cohort      Cohort?             @relation(fields: [cohortId], references: [id], onDelete: SetNull)
   routines    Routine[]
   enrollments StudentEnrollment[]
 
+  // Many-to-many relationship with cohorts through CohortSection junction table
+  cohortSections CohortSection[]
+
+  // Section name must be unique per tenant (sections are now independent resources)
   @@unique([tenantId, name])
   @@map("sections")
+}
+
+// Junction table for many-to-many relationship between Cohorts and Sections
+model CohortSection {
+  id        String   @id @default(cuid())
+  tenantId  String
+  cohortId  String
+  sectionId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohort  Cohort  @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  // A section can only be linked to a cohort once
+  @@unique([tenantId, cohortId, sectionId])
+  @@map("cohort_sections")
 }
 
 model Teacher {

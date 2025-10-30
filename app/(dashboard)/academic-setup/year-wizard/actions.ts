@@ -11,6 +11,8 @@ const wizardSchema = z.object({
   classIds: z.array(z.string()).min(1, 'At least one class is required'),
   streamIds: z.array(z.string()).optional().default([]),
   sectionNames: z.array(z.string()).optional().default([]),
+  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  enrollmentOpen: z.boolean(),
 })
 
 type PreviewItem = {
@@ -224,24 +226,43 @@ export async function executeYearWizard(data: z.infer<typeof wizardSchema>) {
                 streamId: stream.id || undefined,
                 branchId: validated.branchId,
                 name: cohortName,
-                status: 'PLANNED',
-                enrollmentOpen: false,
+                status: validated.status,
+                enrollmentOpen: validated.enrollmentOpen,
               },
             })
 
             cohortsCreated++
 
-            // Create section if section name provided
+            // Link section to cohort if section name provided
             if (sectionName) {
-              await tx.section.create({
+              // Check if section already exists
+              let section = await tx.section.findFirst({
+                where: {
+                  tenantId,
+                  name: sectionName,
+                },
+              })
+
+              // If section doesn't exist, create it
+              if (!section) {
+                section = await tx.section.create({
+                  data: {
+                    tenantId,
+                    name: sectionName,
+                    capacity: 0, // Default unlimited
+                  },
+                })
+                sectionsCreated++
+              }
+
+              // Link section to cohort via junction table
+              await tx.cohortSection.create({
                 data: {
                   tenantId,
                   cohortId: cohort.id,
-                  name: sectionName,
-                  capacity: 0, // Default unlimited
+                  sectionId: section.id,
                 },
               })
-              sectionsCreated++
             }
           }
         }
