@@ -485,7 +485,7 @@ export function YearWizardClient({
               </TableHeader>
               <TableBody>
                 {preview.map((item) => (
-                  <TableRow key={item.classId}>
+                  <TableRow key={item.cohortName}>
                     <TableCell className="font-medium">{item.className}</TableCell>
                     <TableCell>{item.cohortName}</TableCell>
                     <TableCell>
