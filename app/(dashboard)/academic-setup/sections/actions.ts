@@ -42,7 +42,6 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
       data: {
         ...validated,
         tenantId,
-        cohortId: null, // Sections are independent by default
         note: validated.note || null,
       },
     })

@@ -536,7 +536,13 @@ export function YearWizardClient({
               Create a new independent section that can be used across cohorts.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleCreateSection()
+            }}
+            className="space-y-4 py-4"
+          >
             {/* Section Name */}
             <div className="space-y-2">
               <Label htmlFor="section-name">Section Name *</Label>
@@ -546,6 +552,7 @@ export function YearWizardClient({
                 value={newSectionName}
                 onChange={(e) => setNewSectionName(e.target.value)}
                 maxLength={100}
+                autoFocus
               />
               <p className="text-xs text-muted-foreground">
                 Max 100 characters
@@ -585,30 +592,17 @@ export function YearWizardClient({
                 Additional information about this section (max 500 characters)
               </p>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSectionDialogOpen(false)
-                setNewSectionName('')
-                setNewSectionCapacity(0)
-                setNewSectionNote('')
-              }}
-              disabled={creatingSection}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateSection}
-              disabled={creatingSection || !newSectionName.trim()}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-            >
-              {creatingSection ? 'Creating...' : 'Create Section'}
-            </Button>
-          </div>
+
+            {/* Submit Button Only */}
+            <div className="flex justify-end pt-4">
+              <Button
+                type="submit"
+                disabled={creatingSection || !newSectionName.trim()}
+              >
+                {creatingSection ? 'Creating...' : 'Create Section'}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -233,6 +233,7 @@ export function SectionsClient({
                           <Input
                             placeholder="e.g., Section A, Morning Batch"
                             maxLength={100}
+                            autoFocus
                             {...field}
                           />
                         </FormControl>
@@ -298,7 +299,7 @@ export function SectionsClient({
                       type="submit"
                       disabled={form.formState.isSubmitting}
                     >
-                      {form.formState.isSubmitting ? 'Saving...' : editingSection ? 'Update' : 'Create'}
+                      {form.formState.isSubmitting ? 'Saving...' : editingSection ? 'Update Section' : 'Create Section'}
                     </Button>
                   </div>
                 </form>
