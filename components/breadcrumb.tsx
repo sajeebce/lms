@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 
 export function Breadcrumb() {
   const pathname = usePathname()
-  
+
   // Generate breadcrumb items from pathname
   const pathSegments = pathname.split('/').filter(Boolean)
-  
+
   const breadcrumbItems = [
     { label: 'Dashboard', href: '/dashboard' },
   ]
@@ -29,20 +29,32 @@ export function Breadcrumb() {
     'year-wizard': 'Year Wizard',
     'promotions': 'Promotions',
     'students': 'Students',
+    'admission': 'Admit Student',
     'reports': 'Reports & Analytics',
     'settings': 'Settings',
+    'academic': 'Academic Settings',
   }
+
+  // Paths that don't have their own pages (parent-only routes)
+  // These will be skipped in breadcrumb to avoid 404 errors
+  const skipPaths = ['academic-setup']
 
   // Build breadcrumb path
   let currentPath = ''
   pathSegments.forEach((segment) => {
     currentPath += `/${segment}`
+
+    // Skip parent-only paths that don't have actual pages
+    if (skipPaths.includes(segment)) {
+      return
+    }
+
     const label = labelMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
     breadcrumbItems.push({ label, href: currentPath })
   })
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-6">
       {breadcrumbItems.map((item, index) => {
         const isLast = index === breadcrumbItems.length - 1
 

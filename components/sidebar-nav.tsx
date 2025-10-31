@@ -84,11 +84,11 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   ]
 
   return (
-    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-900 dark:to-slate-800 rounded-xl border border-violet-100 dark:border-slate-700 shadow-lg p-4 relative">
+    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-xl border border-violet-100 dark:border-slate-700 shadow-lg p-4 relative">
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-6 z-10 bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] border-2 border-white dark:border-slate-700 rounded-full p-1.5 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
+        className="absolute -right-3 top-6 z-10 bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] border-2 border-white dark:border-slate-600 rounded-full p-1.5 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
         title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? (
