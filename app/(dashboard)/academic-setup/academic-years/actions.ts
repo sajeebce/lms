@@ -14,7 +14,7 @@ const academicYearSchema = z.object({
     .max(20, 'Code must be 20 characters or less'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  state: z.enum(['PLANNED', 'ENROLLING', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']).default('PLANNED'),
+  state: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']).default('PLANNED'),
 })
 
 export async function createAcademicYear(data: z.infer<typeof academicYearSchema>) {

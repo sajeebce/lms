@@ -11,7 +11,7 @@ const wizardSchema = z.object({
   classIds: z.array(z.string()).min(1, 'At least one class is required'),
   streamIds: z.array(z.string()).optional().default([]),
   sectionNames: z.array(z.string()).optional().default([]),
-  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
 })
 

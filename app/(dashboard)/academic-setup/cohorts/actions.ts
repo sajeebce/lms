@@ -14,7 +14,7 @@ const cohortSchema = z.object({
   streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
   sectionId: z.string().optional(), // Optional section to link
-  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
   startDate: z.string().optional(),
 })

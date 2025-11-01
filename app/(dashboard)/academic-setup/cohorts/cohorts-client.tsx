@@ -65,7 +65,7 @@ const formSchema = z.object({
   streamId: z.string().optional(),
   branchId: z.string().min(1, 'Branch is required'),
   sectionId: z.string().optional(), // Optional section
-  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
   startDate: z.string().optional(),
 })
@@ -75,7 +75,7 @@ type FormValues = z.infer<typeof formSchema>
 type Cohort = {
   id: string
   name: string
-  status: 'PLANNED' | 'RUNNING' | 'FINISHED' | 'ARCHIVED'
+  status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'
   enrollmentOpen: boolean
   startDate: Date | null
   year: { id: string; name: string }
@@ -307,15 +307,32 @@ export function CohortsClient({
   }
 
   const getStatusBadge = (status: Cohort['status']) => {
-    const styles = {
-      PLANNED: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400',
-      RUNNING: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-      FINISHED: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300',
-      ARCHIVED: 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400',
+    const config = {
+      PLANNED: {
+        style: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400',
+        icon: '📋',
+        label: 'Planned'
+      },
+      ACTIVE: {
+        style: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        icon: '🎓',
+        label: 'Active'
+      },
+      COMPLETED: {
+        style: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300',
+        icon: '✅',
+        label: 'Completed'
+      },
+      ARCHIVED: {
+        style: 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400',
+        icon: '📦',
+        label: 'Archived'
+      },
     }
+    const { style, icon, label } = config[status]
     return (
-      <Badge className={`${styles[status]} hover:${styles[status]}`}>
-        {status}
+      <Badge className={`${style} hover:${style}`}>
+        {icon} {label}
       </Badge>
     )
   }
@@ -378,10 +395,10 @@ export function CohortsClient({
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
-                { value: 'PLANNED', label: 'PLANNED' },
-                { value: 'RUNNING', label: 'RUNNING' },
-                { value: 'FINISHED', label: 'FINISHED' },
-                { value: 'ARCHIVED', label: 'ARCHIVED' },
+                { value: 'PLANNED', label: '📋 Planned' },
+                { value: 'ACTIVE', label: '🎓 Active' },
+                { value: 'COMPLETED', label: '✅ Completed' },
+                { value: 'ARCHIVED', label: '📦 Archived' },
               ]}
               value={filters.status}
               onChange={(value) => setFilters({ ...filters, status: value })}
@@ -639,10 +656,10 @@ export function CohortsClient({
                         <FormControl>
                           <SearchableDropdown
                             options={[
-                              { value: 'PLANNED', label: 'PLANNED' },
-                              { value: 'RUNNING', label: 'RUNNING' },
-                              { value: 'FINISHED', label: 'FINISHED' },
-                              { value: 'ARCHIVED', label: 'ARCHIVED' },
+                              { value: 'PLANNED', label: '📋 Planned' },
+                              { value: 'ACTIVE', label: '🎓 Active' },
+                              { value: 'COMPLETED', label: '✅ Completed' },
+                              { value: 'ARCHIVED', label: '📦 Archived' },
                             ]}
                             value={field.value}
                             onChange={field.onChange}

@@ -16,19 +16,19 @@ export default async function StudentsPage() {
     where: { tenantId },
     include: {
       user: true,
+      guardians: true,
       enrollments: {
         include: {
-          section: {
+          section: true,
+          cohort: {
             include: {
-              cohort: {
-                include: {
-                  year: true,
-                  class: true,
-                  stream: true,
-                },
-              },
+              year: true,
+              class: true,
             },
           },
+          academicYear: true,
+          class: true,
+          branch: true,
         },
       },
     },

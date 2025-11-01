@@ -35,21 +35,31 @@ import { deleteStudent, getStudentWithEnrollments } from './actions'
 
 type Student = {
   id: string
+  studentId: string | null
+  name: string
+  email: string | null
+  phone: string | null
   status: string
   user: {
     name: string
     email: string
-    phone: string | null
   }
+  guardians: Array<{
+    name: string
+    relationship: string
+    phone: string
+  }>
   enrollments: Array<{
     section: {
       name: string
-      cohort: {
-        year: { name: string }
-        class: { name: string }
-        stream: { name: string } | null
-      }
     }
+    cohort: {
+      year: { name: string }
+      class: { name: string }
+    } | null
+    academicYear: { name: string }
+    class: { name: string }
+    branch: { name: string }
   }>
 }
 
@@ -149,14 +159,14 @@ export function StudentsClient({ students }: StudentsClientProps) {
             ) : (
               students.map((student) => {
                 const enrollment = student.enrollments[0]
-                const cohort = enrollment?.section?.cohort
+                const className = enrollment?.cohort?.class?.name || enrollment?.class?.name || '-'
 
                 return (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.user.name}</TableCell>
-                    <TableCell>{student.user.email}</TableCell>
-                    <TableCell>{student.user.phone || '-'}</TableCell>
-                    <TableCell>{cohort?.class?.name || '-'}</TableCell>
+                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.email || '-'}</TableCell>
+                    <TableCell>{student.phone || '-'}</TableCell>
+                    <TableCell>{className}</TableCell>
                     <TableCell>{enrollment?.section?.name || '-'}</TableCell>
                     <TableCell>
                       <Badge
@@ -193,7 +203,7 @@ export function StudentsClient({ students }: StudentsClientProps) {
               <DialogTitle className="text-xl">Student Has Active Enrollments</DialogTitle>
             </div>
             <DialogDescription className="text-base pt-2">
-              <span className="font-semibold text-foreground">{studentToDelete?.user.name}</span> is currently enrolled in:
+              <span className="font-semibold text-foreground">{studentToDelete?.name}</span> is currently enrolled in:
             </DialogDescription>
           </DialogHeader>
 
@@ -268,7 +278,7 @@ export function StudentsClient({ students }: StudentsClientProps) {
               <AlertDialogTitle className="text-xl">Delete Student</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-base">
-              Are you sure you want to delete <span className="font-semibold text-foreground">{studentToDelete?.user.name}</span>? This action cannot be undone.
+              Are you sure you want to delete <span className="font-semibold text-foreground">{studentToDelete?.name}</span>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">

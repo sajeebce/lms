@@ -36,6 +36,8 @@ model Tenant {
   themeSettings       ThemeSettings?
   tenantSettings      TenantSettings?
   students            Student[]
+  guardians           Guardian[]
+  studentDocuments    StudentDocument[]
   courses             Course[]
   studentEnrollments  StudentEnrollment[]
   courseEnrollments   CourseEnrollment[]
@@ -81,8 +83,9 @@ model Branch {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cohorts Cohort[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohorts     Cohort[]
+  enrollments StudentEnrollment[]
 
   @@unique([tenantId, name])
   @@map("branches")
@@ -105,8 +108,9 @@ model AcademicYear {
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
-  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cohorts Cohort[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cohorts     Cohort[]
+  enrollments StudentEnrollment[]
 
   @@unique([tenantId, code])
   @@map("academic_years")
@@ -114,8 +118,7 @@ model AcademicYear {
 
 enum AcademicYearState {
   PLANNED
-  ENROLLING
-  IN_SESSION
+  ACTIVE
   COMPLETED
   ARCHIVED
 }
@@ -146,9 +149,10 @@ model Class {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  stream           Stream?           @relation(fields: [streamId], references: [id], onDelete: SetNull)
-  cohorts          Cohort[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stream      Stream?             @relation(fields: [streamId], references: [id], onDelete: SetNull)
+  cohorts     Cohort[]
+  enrollments StudentEnrollment[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, order])
@@ -179,6 +183,7 @@ model Cohort {
 
   // Many-to-many relationship with sections through CohortSection junction table
   cohortSections CohortSection[]
+  enrollments    StudentEnrollment[]
 
   @@unique([tenantId, yearId, classId, streamId, branchId, name])
   @@map("cohorts")
@@ -186,8 +191,8 @@ model Cohort {
 
 enum CohortStatus {
   PLANNED
-  RUNNING
-  FINISHED
+  ACTIVE
+  COMPLETED
   ARCHIVED
 }
 
@@ -355,29 +360,105 @@ model Student {
   id              String   @id @default(cuid())
   tenantId        String
   userId          String   @unique
-  rollNumber      String?
+
+  // Auto-generated student ID (e.g., STU-2025-001)
+  studentId       String?
+
+  // Personal Information
+  name            String
+  email           String?
+  phone           String?
   dateOfBirth     DateTime?
-  gender          String?
-  address         String?
-  fatherName      String?
-  fatherPhone     String?
+  gender          Gender?
+  bloodGroup      String?
+  photoUrl        String?
+
+  // Address
+  presentAddress  String?
+  permanentAddress String?
+
+  // Academic Information
+  rollNumber      String?
+  admissionDate   DateTime @default(now())
+
+  // Previous School (Optional)
+  previousSchoolName    String?
+  previousSchoolAddress String?
+  previousClass         String?
+  previousBoard         String?
+  tcNumber              String?
+
+  // Status
   status          StudentStatus @default(ACTIVE)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guardians       Guardian[]
   enrollments     StudentEnrollment[]
   courseEnrollments CourseEnrollment[]
+  documents       StudentDocument[]
 
+  @@unique([tenantId, studentId])
+  @@unique([tenantId, email])
   @@map("students")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
 
 enum StudentStatus {
   ACTIVE
   INACTIVE
   GRADUATED
+  TRANSFERRED
   DROPPED
+}
+
+// Guardian Model
+model Guardian {
+  id              String   @id @default(cuid())
+  tenantId        String
+  studentId       String
+
+  name            String
+  relationship    String
+  phone           String
+  email           String?
+  occupation      String?
+  address         String?
+  isPrimary       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("guardians")
+}
+
+// Student Documents
+model StudentDocument {
+  id              String   @id @default(cuid())
+  tenantId        String
+  studentId       String
+
+  documentType    String
+  fileName        String
+  fileUrl         String
+  fileSize        Int
+
+  uploadedAt      DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("student_documents")
 }
 
 // ============================================
@@ -410,17 +491,36 @@ model StudentEnrollment {
   tenantId        String
   studentId       String
   sectionId       String
+
+  // Enrollment Type (based on cohort setting)
+  enrollmentType  EnrollmentType @default(DIRECT)
+  cohortId        String?  // Only if enrollmentType = COHORT_BASED
+
+  // Academic Info
+  academicYearId  String
+  classId         String
+  branchId        String
+
   enrollmentDate  DateTime @default(now())
   status          EnrollmentStatus @default(ACTIVE)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  section         Section  @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  section         Section       @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+  cohort          Cohort?       @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  class           Class         @relation(fields: [classId], references: [id], onDelete: Restrict)
+  branch          Branch        @relation(fields: [branchId], references: [id], onDelete: Restrict)
 
-  @@unique([tenantId, studentId, sectionId])
+  @@unique([tenantId, studentId, academicYearId])
   @@map("student_enrollments")
+}
+
+enum EnrollmentType {
+  COHORT_BASED
+  DIRECT
 }
 
 model CourseEnrollment {

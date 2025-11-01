@@ -71,7 +71,7 @@ const formSchema = z.object({
     .max(20, 'Code must be 20 characters or less'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  state: z.enum(['PLANNED', 'ENROLLING', 'IN_SESSION', 'COMPLETED', 'ARCHIVED']),
+  state: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
 }).refine((data) => {
   // Validate end date > start date
   if (data.startDate && data.endDate) {
@@ -94,7 +94,7 @@ function getCurrentStateFromDates(startDate: string, endDate: string): string {
   if (now < start) {
     return '📋 Planned (not started yet)'
   } else if (now >= start && now <= end) {
-    return '🟢 In Session (currently active)'
+    return '🎓 Active (currently running)'
   } else {
     return '✅ Completed (ended)'
   }
@@ -104,17 +104,15 @@ function getCurrentStateFromDates(startDate: string, endDate: string): string {
 function getStatusBadgeClass(state: string): string {
   switch (state) {
     case 'PLANNED':
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-    case 'ENROLLING':
-      return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-    case 'IN_SESSION':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      return 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400'
+    case 'ACTIVE':
+      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
     case 'COMPLETED':
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+      return 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300'
     case 'ARCHIVED':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+      return 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400'
     default:
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+      return 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400'
   }
 }
 
@@ -123,9 +121,7 @@ function getStatusIcon(state: string): string {
   switch (state) {
     case 'PLANNED':
       return '📋'
-    case 'ENROLLING':
-      return '🚀'
-    case 'IN_SESSION':
+    case 'ACTIVE':
       return '🎓'
     case 'COMPLETED':
       return '✅'
@@ -141,10 +137,8 @@ function getStatusLabel(state: string): string {
   switch (state) {
     case 'PLANNED':
       return 'Planned'
-    case 'ENROLLING':
-      return 'Enrolling'
-    case 'IN_SESSION':
-      return 'In Session'
+    case 'ACTIVE':
+      return 'Active'
     case 'COMPLETED':
       return 'Completed'
     case 'ARCHIVED':
@@ -160,7 +154,7 @@ type AcademicYear = {
   code: string
   startDate: Date
   endDate: Date
-  state: 'PLANNED' | 'ENROLLING' | 'IN_SESSION' | 'COMPLETED' | 'ARCHIVED'
+  state: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'
   isCurrent: boolean
   _count: {
     cohorts: number
@@ -375,7 +369,7 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                         <SearchableDropdown
                           options={[
                             { value: 'PLANNED', label: '📋 Planned' },
-                            { value: 'IN_SESSION', label: '🎓 In Session' },
+                            { value: 'ACTIVE', label: '🎓 Active' },
                             { value: 'COMPLETED', label: '✅ Completed' },
                             { value: 'ARCHIVED', label: '📦 Archived' },
                           ]}

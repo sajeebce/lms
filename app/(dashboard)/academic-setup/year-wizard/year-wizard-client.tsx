@@ -61,7 +61,7 @@ const formSchema = z.object({
   classIds: z.array(z.string()).min(1, 'At least one class is required'),
   streamIds: z.array(z.string()).optional().default([]),
   sectionIds: z.array(z.string()).optional().default([]),
-  status: z.enum(['PLANNED', 'RUNNING', 'FINISHED', 'ARCHIVED']),
+  status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
 })
 
@@ -396,10 +396,10 @@ export function YearWizardClient({
                       <FormControl>
                         <SearchableDropdown
                           options={[
-                            { value: 'PLANNED', label: 'Planned' },
-                            { value: 'RUNNING', label: 'Running' },
-                            { value: 'FINISHED', label: 'Finished' },
-                            { value: 'ARCHIVED', label: 'Archived' },
+                            { value: 'PLANNED', label: '📋 Planned' },
+                            { value: 'ACTIVE', label: '🎓 Active' },
+                            { value: 'COMPLETED', label: '✅ Completed' },
+                            { value: 'ARCHIVED', label: '📦 Archived' },
                           ]}
                           value={field.value}
                           onChange={field.onChange}

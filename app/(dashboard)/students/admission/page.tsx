@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getTenantId, requireRole } from '@/lib/auth'
 import { PageHeader } from '@/components/page-header'
 import { UserPlus } from 'lucide-react'
-import { AdmissionForm } from './admission-form'
+import { NewAdmissionForm } from './new-admission-form'
 
 export default async function AdmissionPage() {
   await requireRole('ADMIN')
@@ -16,7 +16,7 @@ export default async function AdmissionPage() {
   const enableCohorts = tenantSettings?.enableCohorts ?? true
 
   // Fetch all required data
-  const [branches, academicYears, classes, streams] = await Promise.all([
+  const [branches, academicYears, classes] = await Promise.all([
     prisma.branch.findMany({
       where: { tenantId, status: 'ACTIVE' },
       orderBy: { name: 'asc' },
@@ -24,17 +24,13 @@ export default async function AdmissionPage() {
     prisma.academicYear.findMany({
       where: {
         tenantId,
-        state: { in: ['PLANNED', 'IN_SESSION'] }, // Only show PLANNED and IN_SESSION years
+        state: { in: ['PLANNED', 'ACTIVE'] },
       },
       orderBy: { startDate: 'desc' },
     }),
     prisma.class.findMany({
       where: { tenantId },
       orderBy: { order: 'asc' },
-    }),
-    prisma.stream.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
     }),
   ])
 
@@ -48,12 +44,11 @@ export default async function AdmissionPage() {
         iconBgColor="bg-blue-600"
       />
 
-      <div className="max-w-2xl">
-        <AdmissionForm
+      <div className="max-w-5xl mx-auto">
+        <NewAdmissionForm
           branches={branches}
           academicYears={academicYears}
           classes={classes}
-          streams={streams}
           enableCohorts={enableCohorts}
         />
       </div>
