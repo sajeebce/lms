@@ -1,3 +1,7 @@
+---
+type: "always_apply"
+---
+
 
 
 
@@ -602,6 +606,365 @@ When creating any new form in Academic Setup (or similar modules):
 ---
 
 **IMPORTANT:** These standards are MANDATORY for all future forms. Do NOT create forms without these features.
+
+---
+
+## 📁 FILE STORAGE & SECURITY STANDARDS (MANDATORY)
+
+### **Storage Architecture Overview**
+
+The LMS uses a **Storage Adapter Pattern** that supports:
+- **Local Storage** (development/testing) - Files stored in `./storage` directory
+- **Cloudflare R2** (production) - S3-compatible object storage with zero egress fees
+
+All file operations MUST go through the `StorageService` layer, which provides:
+- ✅ Tenant isolation (all files scoped to `tenants/{tenantId}/`)
+- ✅ Automatic adapter selection based on settings
+- ✅ Cascade delete (files deleted when entity deleted)
+- ✅ Public vs Private file handling
+
+---
+
+### **1. File Classification & Security Rules**
+
+#### **PUBLIC FILES (`isPublic: true`)**
+Files that are NOT sensitive and can be cached/shared:
+
+**Examples:**
+- ✅ Student profile photos
+- ✅ Teacher profile photos
+- ✅ School logo, banners
+- ✅ Public course materials (syllabus, general notes)
+- ✅ Public announcements/notices
+
+**Storage Behavior:**
+- **Local Storage:** `/api/storage/tenants/{tenantId}/students/photos/{studentId}/profile.jpg`
+  - Predictable URL
+  - 1 year cache
+  - Tenant isolation enforced by API route
+
+- **R2 (Public Mode):** `https://cdn.yourdomain.com/tenants/{tenantId}/students/photos/{studentId}/profile.jpg`
+  - Predictable URL
+  - CDN cached (fast)
+  - Public bucket or custom domain
+
+**Security:**
+- ⚠️ URLs are predictable but tenant-isolated
+- ✅ Acceptable for non-sensitive data
+- ✅ Performance optimized (caching)
+
+---
+
+#### **PRIVATE FILES (`isPublic: false`)**
+Files that contain sensitive/confidential information:
+
+**Examples:**
+- ✅ Student documents (birth certificate, transfer certificate, marksheets)
+- ✅ Exam papers (before exam date)
+- ✅ Grade reports, transcripts
+- ✅ Assignment submissions
+- ✅ Financial documents (invoices, receipts)
+- ✅ Staff documents (contracts, salary slips)
+
+**Storage Behavior:**
+- **Local Storage:** `/api/storage/tenants/{tenantId}/students/documents/{studentId}/birth_cert.pdf`
+  - Predictable URL
+  - ⚠️ MUST add permission checks in API route (see below)
+
+- **R2 (Private Mode):** `https://account.r2.cloudflarestorage.com/bucket/file?X-Amz-Signature=...&X-Amz-Expires=3600`
+  - Unpredictable signed URL
+  - Expires after 1 hour (default)
+  - Cannot be guessed or shared permanently
+  - ✅ Secure by default
+
+**Security:**
+- ✅ Signed URLs (R2) or permission checks (Local)
+- ✅ Time-limited access
+- ✅ Role-based access control required
+
+---
+
+### **2. Implementation Pattern**
+
+#### **When Uploading Files:**
+
+```typescript
+import { getStorageService } from '@/lib/storage/storage-service'
+
+const storageService = getStorageService()
+
+// PUBLIC FILE (Student Photo)
+const photoUrl = await storageService.uploadStudentPhoto(studentId, file)
+// Returns: /api/storage/tenants/tenant_1/students/photos/{id}/profile.jpg (Local)
+//      OR: https://cdn.com/tenants/tenant_1/students/photos/{id}/profile.jpg (R2 Public)
+
+// PRIVATE FILE (Student Document)
+const docUrl = await storageService.uploadStudentDocument(
+  studentId,
+  'birth_certificate',
+  file
+)
+// Returns: /api/storage/tenants/tenant_1/students/documents/{id}/birth_cert.pdf (Local)
+//      OR: https://r2.com/...?signature=abc&expires=3600 (R2 Private - Signed URL)
+```
+
+#### **Storage Service Methods:**
+
+**Public Files:**
+- `uploadStudentPhoto(studentId, file)` → `isPublic: true`
+- `uploadTeacherPhoto(teacherId, file)` → `isPublic: true`
+- `uploadSchoolLogo(file)` → `isPublic: true`
+
+**Private Files:**
+- `uploadStudentDocument(studentId, documentType, file)` → `isPublic: false`
+- `uploadAssignmentSubmission(assignmentId, studentId, file)` → `isPublic: false`
+- `uploadExamPaper(examId, file)` → `isPublic: false`
+- `uploadGradeReport(studentId, file)` → `isPublic: false`
+
+---
+
+### **3. Permission Checks for Private Files (LOCAL STORAGE)**
+
+When using **Local Storage**, the API route MUST implement permission checks for private files:
+
+**File:** `app/api/storage/[...path]/route.ts`
+
+```typescript
+export async function GET(request, { params }) {
+  const { path: pathArray } = await params
+  const filePath = pathArray.join('/')
+  const tenantId = await getTenantId()
+  const currentUser = await getCurrentUser()
+
+  // Security: Tenant isolation
+  if (!filePath.startsWith(`tenants/${tenantId}/`)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+
+  // Determine file type
+  const isPublicFile = filePath.includes('/photos/') || filePath.includes('/public/')
+  const isPrivateFile = filePath.includes('/documents/') || filePath.includes('/private/')
+
+  if (isPrivateFile) {
+    // Extract entity ID from path
+    const studentId = extractStudentIdFromPath(filePath)
+    const assignmentId = extractAssignmentIdFromPath(filePath)
+
+    // Permission check
+    const hasPermission = await checkFilePermission(currentUser, {
+      studentId,
+      assignmentId,
+      filePath,
+    })
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
+  // Serve file
+  return serveFile(filePath)
+}
+
+async function checkFilePermission(user, context) {
+  // ADMIN: Can access all files
+  if (user.role === 'ADMIN') return true
+
+  // STUDENT: Can only access their own files
+  if (user.role === 'STUDENT') {
+    const student = await prisma.student.findFirst({
+      where: { userId: user.id, id: context.studentId }
+    })
+    return !!student
+  }
+
+  // TEACHER: Can access their students' files
+  if (user.role === 'TEACHER') {
+    // Check if teacher teaches this student
+    const enrollment = await prisma.studentEnrollment.findFirst({
+      where: {
+        studentId: context.studentId,
+        section: {
+          routines: {
+            some: { teacherId: user.teacherId }
+          }
+        }
+      }
+    })
+    return !!enrollment
+  }
+
+  return false
+}
+```
+
+---
+
+### **4. File Upload Validation Rules**
+
+**ALL file uploads MUST validate:**
+
+1. **File Type:**
+   ```typescript
+   // Images
+   const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+
+   // Documents
+   const allowedDocTypes = [
+     'application/pdf',
+     'image/jpeg', 'image/jpg', 'image/png',
+     'application/msword',
+     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+   ]
+   ```
+
+2. **File Size:**
+   ```typescript
+   // Photos: 5MB max
+   const maxPhotoSize = 5 * 1024 * 1024
+
+   // Documents: 10MB max
+   const maxDocSize = 10 * 1024 * 1024
+
+   // Videos: 100MB max
+   const maxVideoSize = 100 * 1024 * 1024
+   ```
+
+3. **Filename Sanitization:**
+   ```typescript
+   // Remove special characters, spaces
+   const sanitizedName = filename
+     .replace(/[^a-zA-Z0-9._-]/g, '_')
+     .toLowerCase()
+   ```
+
+---
+
+### **5. Cascade Delete Rules**
+
+When deleting entities, ALWAYS delete associated files:
+
+```typescript
+// Delete student → Delete all student files
+await storageService.deleteStudentFiles(studentId)
+// Deletes: photos/{studentId}/* AND documents/{studentId}/*
+
+// Delete assignment → Delete all submissions
+await storageService.deleteAssignmentFiles(assignmentId)
+
+// Delete course → Delete all materials
+await storageService.deleteCourseFiles(courseId)
+```
+
+**Implementation in server actions:**
+```typescript
+export async function deleteStudent(studentId: string) {
+  await requireRole('ADMIN')
+  const tenantId = await getTenantId()
+
+  // Delete from database
+  await prisma.student.delete({
+    where: { id: studentId, tenantId }
+  })
+
+  // Delete files from storage
+  const storageService = getStorageService()
+  await storageService.deleteStudentFiles(studentId)
+
+  revalidatePath('/students')
+  return { success: true }
+}
+```
+
+---
+
+### **6. Migration from Base64 to Physical Files**
+
+**NEVER store files as base64 in database.** Always use physical files.
+
+**Why:**
+- ❌ Base64 increases database size by 33%
+- ❌ Slows down queries (large text fields)
+- ❌ Cannot use CDN/caching
+- ❌ Cannot migrate to R2 easily
+
+**If you find base64 data:**
+1. Create migration script to extract and save as files
+2. Update database to store file path instead
+3. See `scripts/migrate-base64-photos.ts` for example
+
+---
+
+### **7. Future Enhancements (Medium Priority)**
+
+#### **Audit Trail for Sensitive Files:**
+```typescript
+model FileAccessLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String
+  filePath    String
+  action      String   // VIEW, DOWNLOAD, DELETE
+  ipAddress   String?
+  userAgent   String?
+  accessedAt  DateTime @default(now())
+}
+```
+
+#### **Signed URLs for Local Storage:**
+Generate temporary tokens for local storage private files:
+```typescript
+// Generate token
+const token = jwt.sign(
+  { filePath, userId, expiresAt: Date.now() + 3600000 },
+  process.env.JWT_SECRET
+)
+
+// URL: /api/storage/signed?path=...&token=...
+```
+
+#### **Image Optimization:**
+- Auto-resize photos to 500x500 (profile)
+- Generate thumbnails (100x100)
+- Compress images (WebP format)
+- Use Next.js Image Optimization API
+
+---
+
+### **8. Checklist for New File Upload Features**
+
+When implementing ANY new file upload feature:
+
+- [ ] Determine if file is PUBLIC or PRIVATE
+- [ ] Use appropriate `StorageService` method with correct `isPublic` flag
+- [ ] Add file type validation (client + server)
+- [ ] Add file size validation (client + server)
+- [ ] Sanitize filename
+- [ ] Store file path in database (NOT base64)
+- [ ] Implement cascade delete
+- [ ] Add permission checks for private files (if using local storage)
+- [ ] Add loading states and progress indicators
+- [ ] Add error handling with user-friendly messages
+- [ ] Test with both Local and R2 storage adapters
+
+---
+
+### **9. Security Summary**
+
+| File Type | Local Storage | R2 Storage | Security Level |
+|-----------|---------------|------------|----------------|
+| **Public Photos** | Predictable URL + Tenant isolation | CDN URL (fast) | ⚠️ Low (acceptable) |
+| **Private Documents** | Predictable URL + Permission checks | Signed URL (expires) | ✅ High |
+| **Exam Papers** | Permission checks required | Signed URL (expires) | ✅ High |
+| **Grade Reports** | Permission checks required | Signed URL (expires) | ✅ High |
+
+**Key Principles:**
+1. ✅ **Tenant Isolation** - Always enforced
+2. ✅ **Public vs Private** - Clearly defined
+3. ✅ **Permission Checks** - Required for private files on local storage
+4. ✅ **Signed URLs** - Automatic on R2 for private files
+5. ✅ **Cascade Delete** - Files deleted with entities
+6. ✅ **No Base64** - Always use physical files
 
 ---
 

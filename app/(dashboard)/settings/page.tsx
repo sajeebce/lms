@@ -1,31 +1,63 @@
 import Link from 'next/link'
-import { Settings as SettingsIcon, Palette, Bell, Shield, Users, BookOpen } from 'lucide-react'
+import { Settings as SettingsIcon, Palette, Bell, Shield, Users, BookOpen, Building2, Mail, CreditCard, HardDrive } from 'lucide-react'
 
 export default function SettingsPage() {
   const settingsCategories = [
+    {
+      title: 'General Settings',
+      description: 'Institute name, logo, signature, currency, and country settings',
+      icon: Building2,
+      href: '/settings/general',
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: 'from-blue-50 to-indigo-50',
+    },
     {
       title: 'Academic Settings',
       description: 'Configure academic setup including cohorts and enrollment modes',
       icon: BookOpen,
       href: '/settings/academic',
-      color: 'from-blue-500 to-indigo-600',
-      bgColor: 'from-blue-50 to-indigo-50',
+      color: 'from-violet-500 to-purple-600',
+      bgColor: 'from-violet-50 to-purple-50',
+    },
+    {
+      title: 'Email Settings',
+      description: 'Configure email carrier (SMTP) and email templates',
+      icon: Mail,
+      href: '/settings/email',
+      color: 'from-emerald-500 to-teal-600',
+      bgColor: 'from-emerald-50 to-teal-50',
+    },
+    {
+      title: 'Payment Methods',
+      description: 'Configure payment gateways (Stripe, PayPal, Razorpay, etc.)',
+      icon: CreditCard,
+      href: '/settings/payment',
+      color: 'from-amber-500 to-orange-600',
+      bgColor: 'from-amber-50 to-orange-50',
+    },
+    {
+      title: 'Storage Settings',
+      description: 'Configure file storage (Local or Cloudflare R2)',
+      icon: HardDrive,
+      href: '/settings/storage',
+      color: 'from-cyan-500 to-blue-600',
+      bgColor: 'from-cyan-50 to-blue-50',
     },
     {
       title: 'Theme Settings',
       description: 'Customize your LMS appearance with colors and themes',
       icon: Palette,
       href: '/settings/theme',
-      color: 'from-violet-500 to-purple-600',
-      bgColor: 'from-violet-50 to-purple-50',
+      color: 'from-pink-500 to-rose-600',
+      bgColor: 'from-pink-50 to-rose-50',
     },
     {
       title: 'Notifications',
       description: 'Manage email and push notification preferences',
       icon: Bell,
       href: '/settings/notifications',
-      color: 'from-blue-500 to-cyan-600',
-      bgColor: 'from-blue-50 to-cyan-50',
+      color: 'from-indigo-500 to-purple-600',
+      bgColor: 'from-indigo-50 to-purple-50',
       disabled: true,
     },
     {
@@ -33,8 +65,8 @@ export default function SettingsPage() {
       description: 'Password, two-factor authentication, and security settings',
       icon: Shield,
       href: '/settings/security',
-      color: 'from-emerald-500 to-teal-600',
-      bgColor: 'from-emerald-50 to-teal-50',
+      color: 'from-red-500 to-pink-600',
+      bgColor: 'from-red-50 to-pink-50',
       disabled: true,
     },
     {
@@ -42,8 +74,8 @@ export default function SettingsPage() {
       description: 'Manage users, roles, and permissions',
       icon: Users,
       href: '/settings/users',
-      color: 'from-amber-500 to-orange-600',
-      bgColor: 'from-amber-50 to-orange-50',
+      color: 'from-slate-500 to-gray-600',
+      bgColor: 'from-slate-50 to-gray-50',
       disabled: true,
     },
   ]

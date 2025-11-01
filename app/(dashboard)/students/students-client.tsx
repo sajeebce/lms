@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, ShieldAlert } from 'lucide-react'
+import { Trash2, ShieldAlert, Eye, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { CopyablePhone, CopyableEmail } from '@/components/ui/copyable-contact'
 import {
   Table,
   TableBody,
@@ -71,9 +73,10 @@ type EnrollmentInfo = {
 
 type StudentsClientProps = {
   students: Student[]
+  phonePrefix?: string
 }
 
-export function StudentsClient({ students }: StudentsClientProps) {
+export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientProps) {
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [enrollmentModalOpen, setEnrollmentModalOpen] = useState(false)
@@ -164,8 +167,20 @@ export function StudentsClient({ students }: StudentsClientProps) {
                 return (
                   <TableRow key={student.id}>
                     <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.email || '-'}</TableCell>
-                    <TableCell>{student.phone || '-'}</TableCell>
+                    <TableCell>
+                      {student.email ? (
+                        <CopyableEmail email={student.email} />
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {student.phone ? (
+                        <CopyablePhone phone={student.phone} prefix={phonePrefix} />
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
                     <TableCell>{className}</TableCell>
                     <TableCell>{enrollment?.section?.name || '-'}</TableCell>
                     <TableCell>
@@ -176,13 +191,26 @@ export function StudentsClient({ students }: StudentsClientProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClick(student)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/students/${student.id}`}>
+                          <Button variant="ghost" size="sm" title="View Profile">
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </Link>
+                        <Link href={`/students/${student.id}/edit`}>
+                          <Button variant="ghost" size="sm" title="Edit Student">
+                            <Edit className="h-4 w-4 text-amber-600" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(student)}
+                          title="Delete Student"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )

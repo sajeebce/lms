@@ -79,10 +79,24 @@ export function ReviewSubmitStep({
             <p className="text-muted-foreground">Blood Group</p>
             <p className="font-medium">{values.bloodGroup || 'N/A'}</p>
           </div>
+          <div>
+            <p className="text-muted-foreground">Username</p>
+            <p className="font-medium font-mono text-blue-600 dark:text-blue-400">{values.username || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Password</p>
+            <p className="font-medium font-mono">{'•'.repeat(values.password?.length || 0) || 'N/A'}</p>
+          </div>
           <div className="col-span-2">
             <p className="text-muted-foreground">Present Address</p>
             <p className="font-medium">{values.presentAddress || 'N/A'}</p>
           </div>
+          {values.permanentAddress && (
+            <div className="col-span-2">
+              <p className="text-muted-foreground">Permanent Address</p>
+              <p className="font-medium">{values.permanentAddress}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -184,23 +198,64 @@ export function ReviewSubmitStep({
               <Edit className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">School Name</p>
-              <p className="font-medium">{values.previousSchoolName}</p>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">School Name</p>
+                <p className="font-medium">{values.previousSchoolName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Address</p>
+                <p className="font-medium">{values.previousSchoolAddress || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Last Class</p>
+                <p className="font-medium">{values.previousClass || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Board</p>
+                <p className="font-medium">{values.previousBoard || 'N/A'}</p>
+              </div>
+              {values.tcNumber && (
+                <div>
+                  <p className="text-muted-foreground">TC Number</p>
+                  <p className="font-medium">{values.tcNumber}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-muted-foreground">Address</p>
-              <p className="font-medium">{values.previousSchoolAddress || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Last Class</p>
-              <p className="font-medium">{values.previousClass || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Board</p>
-              <p className="font-medium">{values.previousBoard || 'N/A'}</p>
-            </div>
+
+            {/* Previous Academic Results */}
+            {values.previousAcademicResults && values.previousAcademicResults.length > 0 && (
+              <div className="pt-4 border-t">
+                <p className="text-sm font-semibold mb-3 text-amber-700 dark:text-amber-400">
+                  Academic Results ({values.previousAcademicResults.length})
+                </p>
+                <div className="space-y-3">
+                  {values.previousAcademicResults.map((result: any, index: number) => (
+                    <div key={index} className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground text-xs">Exam Name</p>
+                          <p className="font-medium">{result.examName || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Year</p>
+                          <p className="font-medium">{result.year || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">GPA/Marks</p>
+                          <p className="font-medium">{result.gpa || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-xs">Grade</p>
+                          <p className="font-medium">{result.grade || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

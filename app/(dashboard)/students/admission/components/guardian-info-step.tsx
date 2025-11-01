@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Users, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
-export function GuardianInfoStep({ form }: { form: UseFormReturn<any> }) {
+export function GuardianInfoStep({ form, phonePrefix = '+1' }: { form: UseFormReturn<any>; phonePrefix?: string }) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'guardians',
@@ -132,7 +132,12 @@ export function GuardianInfoStep({ form }: { form: UseFormReturn<any> }) {
                     <FormItem>
                       <FormLabel>Mobile Number *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter mobile number" maxLength={20} {...field} />
+                        <div className="flex gap-2">
+                          <div className="w-20 flex items-center justify-center border rounded-md bg-neutral-50 text-sm font-medium text-neutral-700">
+                            {phonePrefix}
+                          </div>
+                          <Input placeholder="Enter mobile number" maxLength={20} {...field} className="flex-1" />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

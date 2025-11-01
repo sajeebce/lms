@@ -11,6 +11,12 @@ export default async function StudentsPage() {
   await requireRole('ADMIN')
   const tenantId = await getTenantId()
 
+  // Fetch tenant settings for phone prefix
+  const tenantSettings = await prisma.tenantSettings.findUnique({
+    where: { tenantId },
+  })
+  const phonePrefix = tenantSettings?.phonePrefix || '+1'
+
   // Fetch all students with their enrollments
   const students = await prisma.student.findMany({
     where: { tenantId },
@@ -66,7 +72,7 @@ export default async function StudentsPage() {
               </Link>
             </div>
           ) : (
-            <StudentsClient students={students} />
+            <StudentsClient students={students} phonePrefix={phonePrefix} />
           )}
         </CardContent>
       </Card>

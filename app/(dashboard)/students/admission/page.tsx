@@ -8,12 +8,13 @@ export default async function AdmissionPage() {
   await requireRole('ADMIN')
   const tenantId = await getTenantId()
 
-  // Fetch tenant settings to check if cohorts are enabled
+  // Fetch tenant settings to check if cohorts are enabled and get phone prefix
   const tenantSettings = await prisma.tenantSettings.findUnique({
     where: { tenantId },
   })
 
   const enableCohorts = tenantSettings?.enableCohorts ?? true
+  const phonePrefix = tenantSettings?.phonePrefix ?? '+1'
 
   // Fetch all required data
   const [branches, academicYears, classes] = await Promise.all([
@@ -48,6 +49,7 @@ export default async function AdmissionPage() {
         <NewAdmissionForm
           branches={branches}
           academicYears={academicYears}
+          phonePrefix={phonePrefix}
           classes={classes}
           enableCohorts={enableCohorts}
         />

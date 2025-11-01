@@ -25,14 +25,18 @@ type Class = { id: string; name: string }
 const admissionSchema = z.object({
   // Student Identity
   name: z.string().min(1, 'Name is required').max(100),
-  email: z.string().email('Invalid email').max(100).optional().or(z.literal('')),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  email: z.string().min(1, 'Email is required').email('Invalid email').max(100),
+  phone: z.string().min(1, 'Phone number is required').max(20),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { required_error: 'Gender is required' }),
   bloodGroup: z.string().max(10).optional().or(z.literal('')),
   photoUrl: z.string().optional().or(z.literal('')),
   presentAddress: z.string().max(200).optional().or(z.literal('')),
   permanentAddress: z.string().max(200).optional().or(z.literal('')),
+
+  // Login Credentials
+  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100),
 
   // Academic Information
   branchId: z.string().optional().or(z.literal('')),
@@ -63,6 +67,14 @@ const admissionSchema = z.object({
   previousClass: z.string().max(50).optional().or(z.literal('')),
   previousBoard: z.string().max(100).optional().or(z.literal('')),
   tcNumber: z.string().max(50).optional().or(z.literal('')),
+  previousAcademicResults: z.array(
+    z.object({
+      examName: z.string().max(100),
+      year: z.string().max(4),
+      gpa: z.string().max(20).optional().or(z.literal('')),
+      grade: z.string().max(50).optional().or(z.literal('')),
+    })
+  ).optional(),
 })
 
 type FormValues = z.infer<typeof admissionSchema>
@@ -80,11 +92,13 @@ export function NewAdmissionForm({
   academicYears,
   classes,
   enableCohorts,
+  phonePrefix = '+1',
 }: {
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
   enableCohorts: boolean
+  phonePrefix?: string
 }) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
@@ -102,6 +116,8 @@ export function NewAdmissionForm({
       photoUrl: '',
       presentAddress: '',
       permanentAddress: '',
+      username: '',
+      password: '',
       branchId: branches.length === 1 ? branches[0].id : '',
       academicYearId: '',
       classId: '',
@@ -114,6 +130,7 @@ export function NewAdmissionForm({
       previousClass: '',
       previousBoard: '',
       tcNumber: '',
+      previousAcademicResults: [],
     },
   })
 
@@ -132,7 +149,7 @@ export function NewAdmissionForm({
 
     switch (step) {
       case 0: // Student Identity
-        fieldsToValidate = ['name', 'dateOfBirth', 'gender']
+        fieldsToValidate = ['name', 'email', 'phone', 'dateOfBirth', 'gender', 'username', 'password']
         break
       case 1: // Academic Info
         fieldsToValidate = ['academicYearId', 'classId', 'sectionId']
@@ -169,16 +186,44 @@ export function NewAdmissionForm({
     }
   }
 
-  const onSubmit = async (data: FormValues) => {
-    setLoading(true)
-    const result = await admitStudent(data, enableCohorts)
-    setLoading(false)
+  const goToStep = async (targetStep: number) => {
+    // If going backwards, no validation needed
+    if (targetStep < currentStep) {
+      setCurrentStep(targetStep)
+      return
+    }
 
-    if (result.success) {
-      toast.success('Student admitted successfully! 🎉')
-      router.push('/students')
-    } else {
-      toast.error(result.error || 'Failed to admit student')
+    // If going forward, validate all intermediate steps
+    for (let i = currentStep; i < targetStep; i++) {
+      const isValid = await validateStep(i)
+      if (!isValid) {
+        toast.error(`Please complete step ${i + 1} first`)
+        return
+      }
+    }
+
+    setCurrentStep(targetStep)
+  }
+
+  const onSubmit = async (data: FormValues) => {
+    try {
+      setLoading(true)
+      const result = await admitStudent(data, enableCohorts)
+
+      if (result.success) {
+        toast.success('Student admitted successfully! 🎉')
+        // Add delay before redirect so user can see the success message
+        setTimeout(() => {
+          router.push('/students')
+        }, 2000) // 2 second delay
+      } else {
+        toast.error(result.error || 'Failed to admit student')
+      }
+    } catch (error) {
+      console.error('Admission error:', error)
+      toast.error('An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -188,15 +233,19 @@ export function NewAdmissionForm({
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
           <div key={step.id} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-1">
+            <div
+              className="flex flex-col items-center flex-1 cursor-pointer group"
+              onClick={() => goToStep(index)}
+              title={`Go to ${step.name}`}
+            >
               <div
                 className={cn(
                   'flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all',
                   currentStep > index
-                    ? 'bg-emerald-500 text-white'
+                    ? 'bg-emerald-500 text-white group-hover:bg-emerald-600'
                     : currentStep === index
                     ? 'bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-900/30'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
                 )}
               >
                 {currentStep > index ? <Check className="w-5 h-5" /> : step.icon}
@@ -227,7 +276,7 @@ export function NewAdmissionForm({
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {currentStep === 0 && <StudentIdentityStep form={form} />}
+              {currentStep === 0 && <StudentIdentityStep form={form} phonePrefix={phonePrefix} />}
               {currentStep === 1 && (
                 <AcademicInfoStep
                   form={form}
@@ -239,7 +288,7 @@ export function NewAdmissionForm({
                   onFetchSections={handleFetchSections}
                 />
               )}
-              {currentStep === 2 && <GuardianInfoStep form={form} />}
+              {currentStep === 2 && <GuardianInfoStep form={form} phonePrefix={phonePrefix} />}
               {currentStep === 3 && <PreviousSchoolStep form={form} />}
               {currentStep === 4 && (
                 <ReviewSubmitStep

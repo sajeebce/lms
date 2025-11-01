@@ -50,6 +50,8 @@ model User {
   tenantId  String
   email     String
   name      String
+  username  String?
+  password  String?
   role      UserRole @default(STUDENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -59,6 +61,7 @@ model User {
   student         Student?
 
   @@unique([tenantId, email])
+  @@unique([tenantId, username])
   @@map("users")
 }
 
@@ -344,6 +347,41 @@ model TenantSettings {
   id              String   @id @default(cuid())
   tenantId        String   @unique
   enableCohorts   Boolean  @default(true)  // Enable/disable cohort-based enrollment
+
+  // General Settings
+  instituteName   String?
+  logoUrl         String?
+  signatureUrl    String?
+  currencyName    String?  @default("USD")
+  currencySymbol  String?  @default("$")
+  countryCode     String?  @default("US")
+  phonePrefix     String?  @default("+1")
+
+  // Email Carrier Settings (SMTP)
+  emailEnabled    Boolean  @default(false)
+  smtpHost        String?
+  smtpPort        Int?
+  smtpUser        String?
+  smtpPassword    String?
+  smtpFromEmail   String?
+  smtpFromName    String?
+  smtpEncryption  String?  @default("tls") // tls, ssl, none
+
+  // Email Templates (JSON stored as text)
+  emailTemplates  String? // JSON: { admissionTemplate, invoiceTemplate, etc. }
+
+  // Payment Methods (JSON stored as text)
+  paymentMethods  String? // JSON: { stripe: {...}, paypal: {...}, etc. }
+
+  // Storage Settings
+  storageType              String?  @default("LOCAL") // LOCAL, R2
+  storageLocalPath         String?  @default("./storage")
+  storageR2AccountId       String?
+  storageR2AccessKeyId     String?
+  storageR2SecretAccessKey String?
+  storageR2Bucket          String?
+  storageR2PublicUrl       String?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -387,6 +425,10 @@ model Student {
   previousClass         String?
   previousBoard         String?
   tcNumber              String?
+
+  // Previous School Academic Results (JSON array)
+  // Format: [{ examName: string, year: string, gpa: string, grade: string }]
+  previousAcademicResults String?
 
   // Status
   status          StudentStatus @default(ACTIVE)
