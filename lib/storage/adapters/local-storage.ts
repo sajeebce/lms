@@ -19,9 +19,9 @@ export class LocalStorageAdapter implements StorageAdapter {
     await fs.mkdir(dir, { recursive: true })
 
     // Write file
-    const buffer = params.file instanceof Buffer 
-      ? params.file 
-      : Buffer.from(await params.file.arrayBuffer())
+    const buffer = params.file instanceof Buffer
+      ? params.file
+      : Buffer.from(await (params.file as File).arrayBuffer())
     
     await fs.writeFile(fullPath, buffer)
 

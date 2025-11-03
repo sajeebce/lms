@@ -17,7 +17,6 @@ export default async function EmailSettingsPage() {
         tenantId,
         enableCohorts: true,
         emailEnabled: false,
-        storageProvider: 'local',
       },
     })
   }

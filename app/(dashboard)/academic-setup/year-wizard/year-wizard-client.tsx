@@ -59,8 +59,8 @@ const formSchema = z.object({
   yearId: z.string().min(1, 'Academic year is required'),
   branchId: z.string().min(1, 'Branch is required'),
   classIds: z.array(z.string()).min(1, 'At least one class is required'),
-  streamIds: z.array(z.string()).optional().default([]),
-  sectionIds: z.array(z.string()).optional().default([]),
+  streamIds: z.array(z.string()),
+  sectionIds: z.array(z.string()),
   status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
   enrollmentOpen: z.boolean(),
 })

@@ -43,8 +43,8 @@ type Course = {
   id: string
   name: string
   code: string
-  description?: string
-  credits?: number
+  description?: string | null
+  credits?: number | null
   _count: { enrollments: number }
 }
 type AcademicYear = { id: string; name: string }
@@ -123,7 +123,7 @@ export function CoursesClient({
       name: course.name,
       code: course.code,
       description: course.description || '',
-      credits: course.credits,
+      credits: course.credits || undefined,
     })
     setOpen(true)
   }

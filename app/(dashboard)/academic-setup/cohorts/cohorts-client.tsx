@@ -768,17 +768,38 @@ export function CohortsClient({
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setCohortToDelete(cohort)
-                          setDeleteDialogOpen(true)
-                        }}
-                        title="Delete cohort"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
+                      {(() => {
+                        // Check direct enrollments to THIS cohort (not all linked sections)
+                        const directEnrollments = cohort._count?.enrollments || 0
+                        const hasEnrollments = directEnrollments > 0
+
+                        if (hasEnrollments) {
+                          return (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled
+                              title={`Cannot delete: ${directEnrollments} student${directEnrollments > 1 ? 's' : ''} enrolled in this cohort`}
+                            >
+                              <Lock className="h-4 w-4 text-gray-400" />
+                            </Button>
+                          )
+                        }
+
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setCohortToDelete(cohort)
+                              setDeleteDialogOpen(true)
+                            }}
+                            title="Delete cohort"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        )
+                      })()}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -82,7 +82,7 @@ async function main() {
       code: '2024-25',
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-12-31'),
-      state: 'IN_SESSION' as const,
+      state: 'ACTIVE' as const,
     },
     {
       name: '2025-26',
@@ -153,7 +153,7 @@ async function main() {
       classId: createdClasses[0].id,
       streamId: createdStreams[0].id,
       branchId: createdBranches[0].id,
-      status: 'RUNNING' as const,
+      status: 'ACTIVE' as const,
       enrollmentOpen: true,
     },
     {
@@ -162,7 +162,7 @@ async function main() {
       classId: createdClasses[0].id,
       streamId: createdStreams[0].id,
       branchId: createdBranches[0].id,
-      status: 'RUNNING' as const,
+      status: 'ACTIVE' as const,
       enrollmentOpen: true,
     },
     {
@@ -171,26 +171,27 @@ async function main() {
       classId: createdClasses[0].id,
       streamId: createdStreams[1].id,
       branchId: createdBranches[1].id,
-      status: 'RUNNING' as const,
+      status: 'ACTIVE' as const,
       enrollmentOpen: true,
     },
   ]
 
   const createdCohorts = []
   for (const cohort of cohortData) {
-    const created = await prisma.cohort.upsert({
+    // Find existing cohort
+    const existing = await prisma.cohort.findFirst({
       where: {
-        tenantId_yearId_classId_streamId_branchId_name: {
-          tenantId: tenant.id,
-          yearId: cohort.yearId,
-          classId: cohort.classId,
-          streamId: cohort.streamId || null,
-          branchId: cohort.branchId,
-          name: cohort.name,
-        },
+        tenantId: tenant.id,
+        yearId: cohort.yearId,
+        classId: cohort.classId,
+        streamId: cohort.streamId || null,
+        branchId: cohort.branchId,
+        name: cohort.name,
       },
-      update: {},
-      create: {
+    })
+
+    const created = existing || await prisma.cohort.create({
+      data: {
         tenantId: tenant.id,
         ...cohort,
       },
@@ -202,20 +203,38 @@ async function main() {
   for (const cohort of createdCohorts) {
     const sectionNames = ['Morning A', 'Morning B', 'Evening A']
     for (let i = 0; i < sectionNames.length; i++) {
-      await prisma.section.upsert({
+      const sectionName = `${cohort.name} - ${sectionNames[i]}`
+
+      // Create or find section
+      const section = await prisma.section.upsert({
         where: {
-          tenantId_cohortId_name: {
+          tenantId_name: {
+            tenantId: tenant.id,
+            name: sectionName,
+          },
+        },
+        update: {},
+        create: {
+          tenantId: tenant.id,
+          name: sectionName,
+          capacity: 40,
+        },
+      })
+
+      // Link section to cohort via CohortSection junction table
+      await prisma.cohortSection.upsert({
+        where: {
+          tenantId_cohortId_sectionId: {
             tenantId: tenant.id,
             cohortId: cohort.id,
-            name: sectionNames[i],
+            sectionId: section.id,
           },
         },
         update: {},
         create: {
           tenantId: tenant.id,
           cohortId: cohort.id,
-          name: sectionNames[i],
-          capacity: 40,
+          sectionId: section.id,
         },
       })
     }
@@ -335,11 +354,9 @@ async function main() {
       create: {
         tenantId: tenant.id,
         userId: studentUser.id,
+        name: data.fullName,
         dateOfBirth: new Date(data.dateOfBirth),
-        gender: data.gender,
-        address: data.address,
-        fatherName: data.fatherName,
-        fatherPhone: data.fatherPhone,
+        gender: data.gender.toUpperCase() as 'MALE' | 'FEMALE' | 'OTHER',
         status: 'ACTIVE',
       },
     })
@@ -347,17 +364,23 @@ async function main() {
     // Enroll student in first cohort's first section
     const firstCohort = createdCohorts[0]
     const sections = await prisma.section.findMany({
-      where: { cohortId: firstCohort.id },
+      where: {
+        cohortSections: {
+          some: {
+            cohortId: firstCohort.id,
+          },
+        },
+      },
       take: 1,
     })
 
     if (sections.length > 0) {
       await prisma.studentEnrollment.upsert({
         where: {
-          tenantId_studentId_sectionId: {
+          tenantId_studentId_academicYearId: {
             tenantId: tenant.id,
             studentId: student.id,
-            sectionId: sections[0].id,
+            academicYearId: firstCohort.yearId,
           },
         },
         update: {},
@@ -365,6 +388,9 @@ async function main() {
           tenantId: tenant.id,
           studentId: student.id,
           sectionId: sections[0].id,
+          academicYearId: firstCohort.yearId,
+          classId: firstCohort.classId,
+          branchId: firstCohort.branchId,
           status: 'ACTIVE',
         },
       })

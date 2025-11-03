@@ -47,7 +47,7 @@ export async function createClass(data: z.infer<typeof classSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -91,7 +91,7 @@ export async function updateClass(
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }

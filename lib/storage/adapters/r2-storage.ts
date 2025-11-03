@@ -37,9 +37,9 @@ export class R2StorageAdapter implements StorageAdapter {
   }
 
   async upload(params: UploadParams): Promise<UploadResult> {
-    const buffer = params.file instanceof Buffer 
-      ? params.file 
-      : Buffer.from(await params.file.arrayBuffer())
+    const buffer = params.file instanceof Buffer
+      ? params.file
+      : Buffer.from(await (params.file as File).arrayBuffer())
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,

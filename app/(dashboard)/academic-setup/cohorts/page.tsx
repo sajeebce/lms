@@ -21,7 +21,10 @@ export default async function CohortsPage() {
           },
         },
         _count: {
-          select: { cohortSections: true },
+          select: {
+            cohortSections: true,
+            enrollments: true, // Count direct enrollments to this cohort
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

@@ -128,20 +128,47 @@ export function GuardianInfoStep({ form, phonePrefix = '+1' }: { form: UseFormRe
                 <FormField
                   control={form.control}
                   name={`guardians.${index}.phone`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mobile Number *</FormLabel>
-                      <FormControl>
-                        <div className="flex gap-2">
-                          <div className="w-20 flex items-center justify-center border rounded-md bg-neutral-50 text-sm font-medium text-neutral-700">
-                            {phonePrefix}
+                  render={({ field }) => {
+                    // Extract country code from existing phone number or use default
+                    let displayPrefix = phonePrefix
+                    let displayNumber = field.value || ''
+
+                    console.log('Guardian phone field.value:', field.value)
+
+                    if (field.value && field.value.startsWith('+')) {
+                      // Extract country code (e.g., +880 from +8801711111111)
+                      const match = field.value.match(/^(\+\d{1,4})(.*)$/)
+                      if (match) {
+                        displayPrefix = match[1]
+                        displayNumber = match[2]
+                        console.log('Extracted prefix:', displayPrefix, 'number:', displayNumber)
+                      }
+                    }
+
+                    return (
+                      <FormItem>
+                        <FormLabel>Mobile Number *</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <div className="w-20 flex items-center justify-center border rounded-md bg-neutral-50 text-sm font-medium text-neutral-700">
+                              {displayPrefix}
+                            </div>
+                            <Input
+                              placeholder="Enter mobile number"
+                              maxLength={20}
+                              value={displayNumber}
+                              onChange={(e) => {
+                                // Combine prefix + number when saving
+                                field.onChange(displayPrefix + e.target.value)
+                              }}
+                              className="flex-1"
+                            />
                           </div>
-                          <Input placeholder="Enter mobile number" maxLength={20} {...field} className="flex-1" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
                 />
 
                 <FormField

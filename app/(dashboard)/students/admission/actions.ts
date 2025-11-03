@@ -12,7 +12,7 @@ const admissionSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   dateOfBirth: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
   address: z.string().optional(),
   fatherName: z.string().optional(),
   fatherPhone: z.string().optional(),
@@ -91,11 +91,9 @@ export async function admitStudent(data: z.infer<typeof admissionSchema>) {
         data: {
           tenantId,
           userId: user.id,
+          name: validated.fullName,
           dateOfBirth: validated.dateOfBirth ? new Date(validated.dateOfBirth) : null,
           gender: validated.gender || null,
-          address: validated.address || null,
-          fatherName: validated.fatherName || null,
-          fatherPhone: validated.fatherPhone || null,
           status: 'ACTIVE',
         },
       })
@@ -106,6 +104,9 @@ export async function admitStudent(data: z.infer<typeof admissionSchema>) {
           tenantId,
           studentId: student.id,
           sectionId: validated.sectionId,
+          academicYearId: validated.yearId,
+          classId: validated.classId,
+          branchId: validated.branchId || '',
           status: 'ACTIVE',
         },
       })
@@ -117,7 +118,7 @@ export async function admitStudent(data: z.infer<typeof admissionSchema>) {
     return { success: true, data: result }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -177,7 +178,11 @@ export async function getAvailableSections(cohortId: string) {
     const sections = await prisma.section.findMany({
       where: {
         tenantId,
-        cohortId,
+        cohortSections: {
+          some: {
+            cohortId,
+          },
+        },
       },
       include: {
         _count: {

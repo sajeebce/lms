@@ -52,7 +52,7 @@ export async function updateStorageSettings(data: z.infer<typeof storageSettings
   } catch (error: any) {
     console.error('Update storage settings error:', error)
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     return { success: false, error: error.message || 'Failed to update storage settings' }
   }

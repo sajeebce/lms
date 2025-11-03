@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { updateEmailCarrier, updateEmailTemplates, testEmailConnection } from './actions'
+import { updateEmailCarrier, updateEmailTemplates, testEmailConnection, sendTestEmail } from './actions'
 import { Mail, Send, FileText } from 'lucide-react'
 import {
   Form,
@@ -24,6 +24,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const carrierFormSchema = z.object({
   emailEnabled: z.boolean(),
@@ -58,6 +66,9 @@ export function EmailSettingsClient({ settings }: EmailSettingsClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [activeTab, setActiveTab] = useState('carrier')
+  const [testEmailDialog, setTestEmailDialog] = useState<{ open: boolean; templateId: string }>({ open: false, templateId: '' })
+  const [testEmailAddress, setTestEmailAddress] = useState('')
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
 
   const carrierForm = useForm<CarrierFormValues>({
     resolver: zodResolver(carrierFormSchema),
@@ -107,12 +118,17 @@ export function EmailSettingsClient({ settings }: EmailSettingsClientProps) {
   }
 
   // Parse email templates
-  let templates: any = {}
+  let parsedTemplates: any = {}
   try {
-    templates = settings.emailTemplates ? JSON.parse(settings.emailTemplates) : {}
+    parsedTemplates = settings.emailTemplates ? JSON.parse(settings.emailTemplates) : {}
   } catch (e) {
-    templates = {}
+    parsedTemplates = {}
   }
+
+  // Template state (each template has subject, body, enabled)
+  const [templates, setTemplates] = useState<Record<string, { subject: string; body: string; enabled: boolean }>>(
+    parsedTemplates
+  )
 
   const emailTemplatesList = [
     { id: 'admission', name: 'Student Admission Email', description: 'Sent when a student is admitted' },
@@ -138,18 +154,69 @@ export function EmailSettingsClient({ settings }: EmailSettingsClientProps) {
     { name: '[SCHOOL_NAME]', description: 'School/Institute name' },
   ]
 
+  const updateTemplate = (templateId: string, field: 'subject' | 'body' | 'enabled', value: string | boolean) => {
+    setTemplates((prev) => ({
+      ...prev,
+      [templateId]: {
+        ...prev[templateId],
+        [field]: value,
+      },
+    }))
+  }
+
+  const saveTemplate = async (templateId: string) => {
+    setIsSubmitting(true)
+    try {
+      const result = await updateEmailTemplates(templates)
+      if (result.success) {
+        toast.success('Template saved successfully')
+      } else {
+        toast.error(result.error || 'Failed to save template')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailAddress) {
+      toast.error('Please enter an email address')
+      return
+    }
+
+    setSendingTestEmail(true)
+    try {
+      const template = templates[testEmailDialog.templateId]
+      const result = await sendTestEmail(testEmailDialog.templateId, testEmailAddress, template?.subject || '', template?.body || '')
+      if (result.success) {
+        toast.success('Test email sent successfully')
+        setTestEmailDialog({ open: false, templateId: '' })
+        setTestEmailAddress('')
+      } else {
+        toast.error(result.error || 'Failed to send test email')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred')
+    } finally {
+      setSendingTestEmail(false)
+    }
+  }
+
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="carrier">
-          <Mail className="h-4 w-4 mr-2" />
-          Email Carrier
-        </TabsTrigger>
-        <TabsTrigger value="templates">
-          <FileText className="h-4 w-4 mr-2" />
-          Email Templates
-        </TabsTrigger>
-      </TabsList>
+    <>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="carrier">
+            <Mail className="h-4 w-4 mr-2" />
+            Email Carrier
+          </TabsTrigger>
+          <TabsTrigger value="templates">
+            <FileText className="h-4 w-4 mr-2" />
+            Email Templates
+          </TabsTrigger>
+        </TabsList>
 
       {/* Email Carrier Tab */}
       <TabsContent value="carrier">
@@ -402,39 +469,115 @@ export function EmailSettingsClient({ settings }: EmailSettingsClientProps) {
 
             {/* Template List */}
             <div className="space-y-4">
-              {emailTemplatesList.map((template) => (
-                <div key={template.id} className="rounded-lg border p-4 space-y-3">
-                  <div>
-                    <h4 className="font-medium text-neutral-900">{template.name}</h4>
-                    <p className="text-sm text-neutral-600">{template.description}</p>
+              {emailTemplatesList.map((template) => {
+                const templateData = templates[template.id] || { subject: '', body: '', enabled: false }
+                return (
+                  <div key={template.id} className="rounded-lg border p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium text-neutral-900 dark:text-neutral-100">{template.name}</h4>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{template.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`enable-${template.id}`} className="text-sm">
+                          {templateData.enabled ? 'Enabled' : 'Disabled'}
+                        </Label>
+                        <Switch
+                          id={`enable-${template.id}`}
+                          checked={templateData.enabled}
+                          onCheckedChange={(checked) => updateTemplate(template.id, 'enabled', checked)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email Subject</Label>
+                      <Input
+                        placeholder="Enter email subject"
+                        value={templateData.subject}
+                        onChange={(e) => updateTemplate(template.id, 'subject', e.target.value)}
+                        maxLength={200}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email Body</Label>
+                      <Textarea
+                        placeholder="Enter email body (use variables like [STUDENT_NAME], [CLASS], etc.)"
+                        rows={4}
+                        value={templateData.body}
+                        onChange={(e) => updateTemplate(template.id, 'body', e.target.value)}
+                        maxLength={2000}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTestEmailDialog({ open: true, templateId: template.id })}
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Send Test
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => saveTemplate(template.id)}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Saving...' : 'Save Template'}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Email Subject</Label>
-                    <Input placeholder="Enter email subject" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email Body</Label>
-                    <Textarea
-                      placeholder="Enter email body (use variables like [STUDENT_NAME], [CLASS], etc.)"
-                      rows={4}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm">
-                      <Send className="h-3 w-3 mr-1" />
-                      Send Test
-                    </Button>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                      Save Template
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
       </TabsContent>
-    </Tabs>
+      </Tabs>
+
+      {/* Test Email Dialog */}
+      <Dialog open={testEmailDialog.open} onOpenChange={(open) => setTestEmailDialog({ open, templateId: testEmailDialog.templateId })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Test Email</DialogTitle>
+            <DialogDescription>
+              Enter an email address to send a test email with sample data
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email">Email Address</Label>
+              <Input
+                id="test-email"
+                type="email"
+                placeholder="test@example.com"
+                value={testEmailAddress}
+                onChange={(e) => setTestEmailAddress(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTestEmailDialog({ open: false, templateId: '' })
+                setTestEmailAddress('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail || !testEmailAddress}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {sendingTestEmail ? 'Sending...' : 'Send Test Email'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

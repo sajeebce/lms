@@ -8,12 +8,12 @@ import { StorageService } from '@/lib/storage/storage-service'
 import { promises as fs } from 'fs'
 import path from 'path'
 
-// Check for duplicate phone or email
-export async function checkDuplicateContact(phone?: string, email?: string) {
+// Check for duplicate phone, email, or username
+export async function checkDuplicateContact(phone?: string, email?: string, username?: string) {
   try {
     const tenantId = await getTenantId()
 
-    if (!phone && !email) {
+    if (!phone && !email && !username) {
       return { exists: false }
     }
 
@@ -37,23 +37,61 @@ export async function checkDuplicateContact(phone?: string, email?: string) {
         phone: true,
         email: true,
         status: true,
+        user: {
+          select: {
+            username: true,
+          },
+        },
       },
     })
 
-    if (existingStudent) {
+    // Also check for duplicate username in User table
+    let existingUser = null
+    if (username) {
+      existingUser = await prisma.user.findFirst({
+        where: {
+          tenantId,
+          username,
+        },
+        select: {
+          id: true,
+          username: true,
+          student: {
+            select: {
+              id: true,
+              name: true,
+              studentId: true,
+              status: true,
+            },
+          },
+        },
+      })
+    }
+
+    if (existingStudent || existingUser) {
       // Determine which field(s) matched
       const matchedFields: string[] = []
-      if (phone && existingStudent.phone === phone) {
-        matchedFields.push('phone')
+
+      if (existingStudent) {
+        if (phone && existingStudent.phone === phone) {
+          matchedFields.push('phone')
+        }
+        if (email && existingStudent.email === email) {
+          matchedFields.push('email')
+        }
       }
-      if (email && existingStudent.email === email) {
-        matchedFields.push('email')
+
+      if (existingUser && username && existingUser.username === username) {
+        matchedFields.push('username')
       }
+
+      // Return the student info (prefer existingStudent, fallback to existingUser's student)
+      const studentInfo = existingStudent || existingUser?.student
 
       return {
         exists: true,
-        student: existingStudent,
-        matchedFields, // ['phone'], ['email'], or ['phone', 'email']
+        student: studentInfo,
+        matchedFields, // ['phone'], ['email'], ['username'], or combinations
       }
     }
 
@@ -169,7 +207,7 @@ const admissionSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email').max(100),
   phone: z.string().min(1, 'Phone number is required').max(20),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { required_error: 'Gender is required' }),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: 'Gender is required' }),
   bloodGroup: z.string().max(10).optional().or(z.literal('')),
   photoUrl: z.string().optional().or(z.literal('')),
   presentAddress: z.string().max(200).optional().or(z.literal('')),
@@ -443,7 +481,7 @@ export async function admitStudent(data: z.infer<typeof admissionSchema>, enable
   } catch (error) {
     console.error('Admission error:', error)
     if (error instanceof z.ZodError) {
-      const firstError = error.errors?.[0]?.message || 'Validation failed'
+      const firstError = error.issues?.[0]?.message || 'Validation failed'
       return { success: false, error: firstError }
     }
     if (error instanceof Error) {

@@ -45,8 +45,8 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
     notFound()
   }
 
-  // Fetch branches, academic years, classes for dropdowns
-  const [branches, academicYears, classes] = await Promise.all([
+  // Fetch branches, academic years, classes, and tenant settings for dropdowns
+  const [branches, academicYears, classes, tenantSettings] = await Promise.all([
     prisma.branch.findMany({
       where: { tenantId, status: 'ACTIVE' },
       orderBy: { name: 'asc' },
@@ -59,7 +59,12 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
       where: { tenantId },
       orderBy: { order: 'asc' },
     }),
+    prisma.tenantSettings.findUnique({
+      where: { tenantId },
+    }),
   ])
+
+  const phonePrefix = tenantSettings?.phonePrefix || '+1'
 
   // Parse previous academic results
   let previousAcademicResults: any[] = []
@@ -128,6 +133,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
         branches={branches}
         academicYears={academicYears}
         classes={classes}
+        phonePrefix={phonePrefix}
       />
     </div>
   )

@@ -17,6 +17,7 @@ import { GuardianInfoStep } from '../../admission/components/guardian-info-step'
 import { PreviousSchoolStep } from '../../admission/components/previous-school-step'
 import { ReviewSubmitStep } from '../../admission/components/review-submit-step'
 import { updateStudent } from './actions'
+import { getAvailableSections } from '../../admission/new-actions'
 import Link from 'next/link'
 
 type Branch = { id: string; name: string }
@@ -29,7 +30,7 @@ const editStudentSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email').max(100),
   phone: z.string().min(1, 'Phone number is required').max(20),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { required_error: 'Gender is required' }),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: 'Gender is required' }),
   bloodGroup: z.string().max(10).optional().or(z.literal('')),
   photoUrl: z.string().optional().or(z.literal('')),
   presentAddress: z.string().max(200).optional().or(z.literal('')),
@@ -56,7 +57,7 @@ const editStudentSchema = z.object({
         email: z.string().email('Invalid email').max(100).optional().or(z.literal('')),
         occupation: z.string().max(100).optional().or(z.literal('')),
         address: z.string().max(200).optional().or(z.literal('')),
-        isPrimary: z.boolean().default(false),
+        isPrimary: z.boolean(),
       })
     )
     .min(1, 'At least one guardian is required'),
@@ -94,11 +95,13 @@ export function EditStudentForm({
   branches,
   academicYears,
   classes,
+  phonePrefix = '+1',
 }: {
   student: any
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
+  phonePrefix?: string
 }) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
@@ -133,6 +136,11 @@ export function EditStudentForm({
       previousAcademicResults: student.previousAcademicResults || [],
     },
   })
+
+  const handleFetchSections = async (cohortId?: string, classId?: string) => {
+    const result = await getAvailableSections(cohortId, classId)
+    return result.success ? result.data : []
+  }
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -278,7 +286,7 @@ export function EditStudentForm({
         {/* Form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {currentStep === 0 && <StudentIdentityStep form={form} />}
+            {currentStep === 0 && <StudentIdentityStep form={form} phonePrefix={phonePrefix} mode="edit" />}
             {currentStep === 1 && (
               <AcademicInfoStep
                 form={form}
@@ -286,6 +294,8 @@ export function EditStudentForm({
                 academicYears={academicYears}
                 classes={classes}
                 enableCohorts={false}
+                onFetchCohorts={async () => []}
+                onFetchSections={handleFetchSections}
               />
             )}
             {currentStep === 2 && <GuardianInfoStep form={form} />}

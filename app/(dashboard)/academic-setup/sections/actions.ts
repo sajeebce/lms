@@ -52,7 +52,7 @@ export async function createSection(data: z.infer<typeof sectionSchema>) {
     return { success: true, section: { id: createdSection.id, name: createdSection.name } }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -79,7 +79,7 @@ export async function updateSection(id: string, data: z.infer<typeof sectionSche
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }

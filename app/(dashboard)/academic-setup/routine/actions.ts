@@ -106,7 +106,7 @@ export async function createRoutine(data: z.infer<typeof routineSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -185,7 +185,7 @@ export async function updateRoutine(
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -252,7 +252,7 @@ export async function createTeacher(data: z.infer<typeof teacherSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -293,7 +293,7 @@ export async function updateTeacher(id: string, data: z.infer<typeof teacherSche
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -370,7 +370,7 @@ export async function createRoom(data: z.infer<typeof roomSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -410,7 +410,7 @@ export async function updateRoom(id: string, data: z.infer<typeof roomSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }

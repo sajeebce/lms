@@ -11,7 +11,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { checkDuplicateContact, generateUsername, uploadStudentPhotoTemp } from '../new-actions'
 import { toast } from 'sonner'
 
-export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFormReturn<any>; phonePrefix?: string }) {
+export function StudentIdentityStep({
+  form,
+  phonePrefix = '+1',
+  mode = 'create'
+}: {
+  form: UseFormReturn<any>
+  phonePrefix?: string
+  mode?: 'create' | 'edit'
+}) {
   const [photoPreview, setPhotoPreview] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [duplicateWarning, setDuplicateWarning] = useState<any>(null)
@@ -19,6 +27,16 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
   const [showPassword, setShowPassword] = useState(false)
   const [generatingUsername, setGeneratingUsername] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  // Initialize photo preview from existing photoUrl in edit mode
+  useEffect(() => {
+    if (mode === 'edit') {
+      const existingPhotoUrl = form.getValues('photoUrl')
+      if (existingPhotoUrl) {
+        setPhotoPreview(existingPhotoUrl)
+      }
+    }
+  }, [mode, form])
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -65,17 +83,27 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
     }
   }
 
+  const handleRemovePhoto = () => {
+    setPhotoPreview('')
+    form.setValue('photoUrl', '')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    toast.success('Photo removed')
+  }
+
   const checkDuplicate = async () => {
     const phone = form.getValues('phone')
     const email = form.getValues('email')
+    const username = form.getValues('username')
 
-    if (!phone && !email) {
+    if (!phone && !email && !username) {
       setDuplicateWarning(null)
       return
     }
 
     setCheckingDuplicate(true)
-    const result = await checkDuplicateContact(phone, email)
+    const result = await checkDuplicateContact(phone, email, username)
     setCheckingDuplicate(false)
 
     if (result.exists && result.student) {
@@ -113,16 +141,18 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
   // Get duplicate message based on matched fields
   const getDuplicateMessage = () => {
     if (!duplicateWarning || !duplicateWarning.matchedFields) return ''
-    
+
     const fields = duplicateWarning.matchedFields
-    if (fields.length === 2) {
-      return 'phone number and email'
-    } else if (fields.includes('phone')) {
-      return 'phone number'
-    } else if (fields.includes('email')) {
-      return 'email'
-    }
-    return ''
+    const fieldNames: string[] = []
+
+    if (fields.includes('phone')) fieldNames.push('phone number')
+    if (fields.includes('email')) fieldNames.push('email')
+    if (fields.includes('username')) fieldNames.push('username')
+
+    if (fieldNames.length === 0) return ''
+    if (fieldNames.length === 1) return fieldNames[0]
+    if (fieldNames.length === 2) return `${fieldNames[0]} and ${fieldNames[1]}`
+    return `${fieldNames[0]}, ${fieldNames[1]}, and ${fieldNames[2]}`
   }
 
   return (
@@ -162,6 +192,20 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
                 <Upload className="w-4 h-4" />
               )}
             </button>
+            {photoPreview && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                disabled={uploadingPhoto}
+                className="absolute bottom-0 left-0 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Remove photo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -172,7 +216,7 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
             />
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {uploadingPhoto ? 'Uploading...' : 'Max 5MB • JPG/PNG/WebP'}
+            {uploadingPhoto ? 'Uploading...' : photoPreview ? 'Click upload to change • Click X to remove' : 'Max 5MB • JPG/PNG/WebP'}
           </p>
         </div>
       </div>
@@ -345,6 +389,10 @@ export function StudentIdentityStep({ form, phonePrefix = '+1' }: { form: UseFor
                     maxLength={50}
                     {...field}
                     className="flex-1"
+                    onBlur={(e) => {
+                      field.onBlur()
+                      checkDuplicate()
+                    }}
                   />
                   <Button
                     type="button"

@@ -246,7 +246,7 @@ export function ClassesClient({
                               label: stream.name,
                             })),
                           ]}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={field.onChange}
                           placeholder="Select stream"
                         />

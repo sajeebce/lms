@@ -34,6 +34,23 @@ export function AcademicInfoStep({
   const [availableSections, setAvailableSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(false)
 
+  // Load sections on mount if classId is already set (edit mode)
+  useEffect(() => {
+    const loadInitialSections = async () => {
+      const classId = form.getValues('classId')
+      const sectionId = form.getValues('sectionId')
+
+      if (classId && sectionId && !enableCohorts) {
+        setLoading(true)
+        const sections = await onFetchSections(undefined, classId)
+        setAvailableSections(sections)
+        setLoading(false)
+      }
+    }
+
+    loadInitialSections()
+  }, []) // Run only on mount
+
   const handleYearChange = async (yearId: string) => {
     form.setValue('cohortId', '')
     form.setValue('sectionId', '')

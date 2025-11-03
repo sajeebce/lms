@@ -42,7 +42,7 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -81,7 +81,7 @@ export async function updateCourse(id: string, data: z.infer<typeof courseSchema
     return { success: true }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -130,9 +130,9 @@ export async function searchStudents(query: string) {
       where: {
         tenantId,
         OR: [
-          { user: { name: { contains: query, mode: 'insensitive' } } },
-          { user: { email: { contains: query, mode: 'insensitive' } } },
-          { user: { phone: { contains: query, mode: 'insensitive' } } },
+          { user: { name: { contains: query } } },
+          { user: { email: { contains: query } } },
+          { studentId: { contains: query } },
         ],
       },
       include: {
@@ -141,10 +141,14 @@ export async function searchStudents(query: string) {
           include: {
             section: {
               include: {
-                cohort: {
+                cohortSections: {
                   include: {
-                    year: true,
-                    class: true,
+                    cohort: {
+                      include: {
+                        year: true,
+                        class: true,
+                      },
+                    },
                   },
                 },
               },
@@ -178,10 +182,14 @@ export async function getStudentsByFilters(
           some: {
             section: {
               id: sectionId,
-              cohort: {
-                yearId,
-                classId,
-                streamId: streamId || undefined,
+              cohortSections: {
+                some: {
+                  cohort: {
+                    yearId,
+                    classId,
+                    streamId: streamId || undefined,
+                  },
+                },
               },
             },
           },
@@ -193,10 +201,14 @@ export async function getStudentsByFilters(
           include: {
             section: {
               include: {
-                cohort: {
+                cohortSections: {
                   include: {
-                    year: true,
-                    class: true,
+                    cohort: {
+                      include: {
+                        year: true,
+                        class: true,
+                      },
+                    },
                   },
                 },
               },

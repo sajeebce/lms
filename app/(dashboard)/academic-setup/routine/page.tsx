@@ -13,10 +13,14 @@ export default async function RoutinePage() {
       include: {
         section: {
           include: {
-            cohort: {
+            cohortSections: {
               include: {
-                branch: true,
-                class: true,
+                cohort: {
+                  include: {
+                    branch: true,
+                    class: true,
+                  },
+                },
               },
             },
           },
@@ -33,10 +37,14 @@ export default async function RoutinePage() {
     prisma.section.findMany({
       where: { tenantId },
       include: {
-        cohort: {
+        cohortSections: {
           include: {
-            branch: true,
-            class: true,
+            cohort: {
+              include: {
+                branch: true,
+                class: true,
+              },
+            },
           },
         },
       },

@@ -67,10 +67,12 @@ type Routine = {
   section: {
     id: string
     name: string
-    cohort: {
-      branch: { id: string; name: string }
-      class: { name: string }
-    }
+    cohortSections: {
+      cohort: {
+        branch: { id: string; name: string }
+        class: { name: string }
+      }
+    }[]
   }
   teacher: { id: string; name: string }
   room: { id: string; name: string }
@@ -80,10 +82,12 @@ type Branch = { id: string; name: string }
 type Section = {
   id: string
   name: string
-  cohort: {
-    branch: { id: string; name: string }
-    class: { name: string }
-  }
+  cohortSections: {
+    cohort: {
+      branch: { id: string; name: string }
+      class: { name: string }
+    }
+  }[]
 }
 type Teacher = { id: string; name: string }
 type Room = { id: string; name: string }
@@ -130,12 +134,13 @@ export function RoutineClient({
 
   const filteredSections = useMemo(() => {
     if (!filters.branchId || filters.branchId === 'all') return sections
-    return sections.filter((s) => s.cohort.branch.id === filters.branchId)
+    return sections.filter((s) => s.cohortSections[0]?.cohort.branch.id === filters.branchId)
   }, [sections, filters.branchId])
 
   const filteredRoutines = useMemo(() => {
     return routines.filter((routine) => {
-      if (filters.branchId && filters.branchId !== 'all' && routine.section.cohort.branch.id !== filters.branchId)
+      const cohort = routine.section.cohortSections[0]?.cohort
+      if (filters.branchId && filters.branchId !== 'all' && cohort?.branch.id !== filters.branchId)
         return false
       if (filters.sectionId && filters.sectionId !== 'all' && routine.section.id !== filters.sectionId) return false
       if (filters.dayOfWeek && filters.dayOfWeek !== 'all' && routine.dayOfWeek !== parseInt(filters.dayOfWeek))
@@ -230,7 +235,7 @@ export function RoutineClient({
                 { value: 'all', label: 'All' },
                 ...filteredSections.map((section) => ({
                   value: section.id,
-                  label: `${section.name} (${section.cohort.class.name})`,
+                  label: `${section.name} (${section.cohortSections[0]?.cohort.class.name || 'No Class'})`,
                 })),
               ]}
               value={filters.sectionId}
@@ -296,7 +301,7 @@ export function RoutineClient({
                           <SearchableDropdown
                             options={sections.map((section) => ({
                               value: section.id,
-                              label: `${section.name} (${section.cohort.class.name} - ${section.cohort.branch.name})`,
+                              label: `${section.name} (${section.cohortSections[0]?.cohort.class.name || 'No Class'} - ${section.cohortSections[0]?.cohort.branch.name || 'No Branch'})`,
                             }))}
                             value={field.value}
                             onChange={field.onChange}

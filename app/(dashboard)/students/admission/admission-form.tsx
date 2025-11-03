@@ -40,7 +40,7 @@ const admissionSchema = z.object({
     .max(20, 'Phone must be 20 characters or less')
     .optional(),
   dateOfBirth: z.string().optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
   address: z.string()
     .max(200, 'Address must be 200 characters or less')
     .optional(),
@@ -123,7 +123,7 @@ export function AdmissionForm({
 
     if (enableCohorts && yearId && classId && branchId) {
       setLoading(true)
-      const result = await getAvailableCohorts({ yearId, classId, branchId, streamId })
+      const result = await getAvailableCohorts(yearId, classId, branchId, streamId)
       setLoading(false)
       if (result.success) {
         setAvailableCohorts(result.data as Cohort[])
@@ -143,7 +143,7 @@ export function AdmissionForm({
 
     if (enableCohorts && yearId && classId && branchId) {
       setLoading(true)
-      const result = await getAvailableCohorts({ yearId, classId, branchId, streamId })
+      const result = await getAvailableCohorts(yearId, classId, branchId, streamId)
       setLoading(false)
       if (result.success) {
         setAvailableCohorts(result.data as Cohort[])
@@ -345,7 +345,7 @@ export function AdmissionForm({
                               value: branch.id,
                               label: branch.name,
                             }))}
-                            value={field.value}
+                            value={field.value || ''}
                             onChange={(value) => { field.onChange(value); handleBranchChange(value) }}
                             placeholder="Select branch"
                           />
@@ -368,7 +368,7 @@ export function AdmissionForm({
                             value: year.id,
                             label: `${year.name} (${year.code})`,
                           }))}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={(value) => { field.onChange(value); handleYearChange(value) }}
                           placeholder="Select academic year"
                         />
@@ -390,7 +390,7 @@ export function AdmissionForm({
                             value: cls.id,
                             label: cls.name,
                           }))}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={(value) => { field.onChange(value); handleClassChange(value) }}
                           placeholder="Select class"
                         />
@@ -437,7 +437,7 @@ export function AdmissionForm({
                               value: cohort.id,
                               label: cohort.name,
                             }))}
-                            value={field.value}
+                            value={field.value || ''}
                             onChange={(value) => { field.onChange(value); handleCohortChange(value) }}
                             placeholder={availableCohorts.length === 0 ? "Select year, class & branch first" : "Select cohort"}
                             disabled={availableCohorts.length === 0}
@@ -464,7 +464,7 @@ export function AdmissionForm({
                             value: section.id,
                             label: `${section.name} (${section._count.enrollments}/${section.capacity} enrolled)`,
                           }))}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={field.onChange}
                           placeholder={enableCohorts && availableSections.length === 0 ? "Select cohort first" : "Select section"}
                           disabled={enableCohorts ? availableSections.length === 0 : false}

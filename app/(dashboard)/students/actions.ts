@@ -18,12 +18,16 @@ export async function getStudentWithEnrollments(id: string) {
           include: {
             section: {
               include: {
-                cohort: {
+                cohortSections: {
                   include: {
-                    year: true,
-                    class: true,
-                    stream: true,
-                    branch: true,
+                    cohort: {
+                      include: {
+                        year: true,
+                        class: true,
+                        stream: true,
+                        branch: true,
+                      },
+                    },
                   },
                 },
               },

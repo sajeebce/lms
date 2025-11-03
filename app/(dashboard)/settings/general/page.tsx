@@ -26,7 +26,6 @@ export default async function GeneralSettingsPage() {
         countryCode: 'US',
         phonePrefix: '+1',
         emailEnabled: false,
-        storageProvider: 'local',
       },
     })
   }

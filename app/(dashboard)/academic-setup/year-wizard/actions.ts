@@ -132,7 +132,7 @@ export async function previewYearWizard(data: z.infer<typeof wizardSchema>) {
     return { success: true, preview, year: year.name, branch: branch.name }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }
@@ -279,7 +279,7 @@ export async function executeYearWizard(data: z.infer<typeof wizardSchema>) {
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      return { success: false, error: error.issues[0].message }
     }
     if (error instanceof Error) {
       return { success: false, error: error.message }

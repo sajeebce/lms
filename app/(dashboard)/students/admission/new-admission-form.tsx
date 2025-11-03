@@ -28,7 +28,7 @@ const admissionSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email').max(100),
   phone: z.string().min(1, 'Phone number is required').max(20),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { required_error: 'Gender is required' }),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: 'Gender is required' }),
   bloodGroup: z.string().max(10).optional().or(z.literal('')),
   photoUrl: z.string().optional().or(z.literal('')),
   presentAddress: z.string().max(200).optional().or(z.literal('')),
@@ -56,7 +56,7 @@ const admissionSchema = z.object({
         email: z.string().email('Invalid email').max(100).optional().or(z.literal('')),
         occupation: z.string().max(100).optional().or(z.literal('')),
         address: z.string().max(200).optional().or(z.literal('')),
-        isPrimary: z.boolean().default(false),
+        isPrimary: z.boolean(),
       })
     )
     .min(1, 'At least one guardian is required'),
