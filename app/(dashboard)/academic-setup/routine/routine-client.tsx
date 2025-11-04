@@ -208,10 +208,10 @@ export function RoutineClient({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label className="text-xs">Branch</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Branch</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -229,7 +229,7 @@ export function RoutineClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Section</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Section</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -245,7 +245,7 @@ export function RoutineClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Day of Week</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Day of Week</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -431,30 +431,30 @@ export function RoutineClient({
         <Table>
           <TableHeader>
             <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-              <TableHead>Day</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Section</TableHead>
-              <TableHead>Teacher</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Day</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Time</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Section</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Teacher</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Room</TableHead>
+              <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRoutines.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                   No routines found. Create your first session to get started.
                 </TableCell>
               </TableRow>
             ) : (
               filteredRoutines.map((routine) => (
-                <TableRow key={routine.id}>
+                <TableRow key={routine.id} className="dark:border-slate-700">
                   <TableCell>
-                    <Badge variant="outline">{DAYS[routine.dayOfWeek]}</Badge>
+                    <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">{DAYS[routine.dayOfWeek]}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
+                    <div className="flex items-center gap-1 text-sm text-foreground dark:text-slate-300">
+                      <Clock className="h-3 w-3 text-muted-foreground dark:text-slate-400" />
                       {routine.startTime} - {routine.endTime}
                     </div>
                   </TableCell>

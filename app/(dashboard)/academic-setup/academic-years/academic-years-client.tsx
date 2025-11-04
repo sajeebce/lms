@@ -417,35 +417,35 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead>Year Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Date Range</TableHead>
-            <TableHead>State</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Year Name</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Code</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Date Range</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">State</TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {academicYears.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={5} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                 No academic years found. Create your first academic year to get started.
               </TableCell>
             </TableRow>
           ) : (
             academicYears.map((year) => (
-              <TableRow key={year.id}>
-                <TableCell className="font-medium">
+              <TableRow key={year.id} className="dark:border-slate-700">
+                <TableCell className="font-medium text-foreground dark:text-slate-200">
                   <div className="flex items-center gap-2">
                     {year.name}
                     {year.isCurrent && (
-                      <Badge className="bg-white text-gray-700 border border-gray-300 hover:bg-white dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
+                      <Badge className="bg-white text-gray-700 border border-gray-300 hover:bg-white dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600">
                         Current
                       </Badge>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{year.code}</TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground dark:text-slate-300">{year.code}</TableCell>
+                <TableCell className="text-muted-foreground dark:text-slate-300">
                   {format(new Date(year.startDate), 'dd/MM/yyyy')} → {format(new Date(year.endDate), 'dd/MM/yyyy')}
                 </TableCell>
                 <TableCell>

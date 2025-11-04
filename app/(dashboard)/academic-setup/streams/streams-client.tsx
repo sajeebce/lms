@@ -211,26 +211,26 @@ export function StreamsClient({ streams }: { streams: Stream[] }) {
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead>Stream Name</TableHead>
-            <TableHead>Note</TableHead>
-            <TableHead>Classes</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Stream Name</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Note</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Classes</TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {streams.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={4} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                 No streams found. Create your first stream to get started.
               </TableCell>
             </TableRow>
           ) : (
             streams.map((stream) => (
-              <TableRow key={stream.id}>
-                <TableCell className="font-medium">{stream.name}</TableCell>
-                <TableCell className="text-muted-foreground">{stream.note || '-'}</TableCell>
+              <TableRow key={stream.id} className="dark:border-slate-700">
+                <TableCell className="font-medium text-foreground dark:text-slate-200">{stream.name}</TableCell>
+                <TableCell className="text-muted-foreground dark:text-slate-300">{stream.note || '-'}</TableCell>
                 <TableCell>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground dark:text-slate-300">
                     {stream._count.classes} {stream._count.classes === 1 ? 'class' : 'classes'}
                   </span>
                 </TableCell>

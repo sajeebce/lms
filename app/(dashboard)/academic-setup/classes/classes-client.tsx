@@ -301,22 +301,22 @@ export function ClassesClient({
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
               <div className="flex items-center gap-1">
                 Order <ArrowUp className="h-3 w-3" />
               </div>
             </TableHead>
-            <TableHead>Class Name</TableHead>
-            <TableHead>Alias</TableHead>
-            <TableHead>Stream</TableHead>
-            <TableHead>Usage</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Class Name</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Alias</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Stream</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Usage</TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {classes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={6} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                 No classes found. Create your first class to get started.
               </TableCell>
             </TableRow>
@@ -327,14 +327,14 @@ export function ClassesClient({
               const nextClass = classes.find((c) => c.order === nextOrder)
 
               return (
-                <TableRow key={classItem.id}>
+                <TableRow key={classItem.id} className="dark:border-slate-700">
                   <TableCell>
-                    <Badge variant="outline" className="font-mono">
+                    <Badge variant="outline" className="font-mono dark:border-slate-600 dark:text-slate-300">
                       {classItem.order}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium">{classItem.name}</TableCell>
-                  <TableCell className="text-neutral-600">
+                  <TableCell className="font-medium text-foreground dark:text-slate-200">{classItem.name}</TableCell>
+                  <TableCell className="text-neutral-600 dark:text-slate-300">
                     {classItem.alias || '-'}
                   </TableCell>
                   <TableCell>
@@ -343,7 +343,7 @@ export function ClassesClient({
                         {classItem.stream.name}
                       </Badge>
                     ) : (
-                      <span className="text-neutral-400 text-sm">-</span>
+                      <span className="text-neutral-400 dark:text-slate-400 text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell>

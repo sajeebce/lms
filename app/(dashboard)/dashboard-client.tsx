@@ -30,24 +30,42 @@ export function DashboardClient({
       </header>
 
       {/* Body - Full Width, No Gaps */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 relative overflow-hidden">
         {/* Sidebar - Touch Header, Fixed Width */}
         <aside
-          className="flex-shrink-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-hidden"
+          className="flex-shrink-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-y-auto"
           style={{
             width: isSidebarCollapsed ? '4rem' : 'clamp(240px, 280px, 280px)'
           }}
         >
-          <div className="h-full overflow-y-auto">
-            <SidebarNav
-              isCollapsed={isSidebarCollapsed}
-              onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            />
-          </div>
+          <SidebarNav
+            isCollapsed={isSidebarCollapsed}
+            onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
         </aside>
 
+        {/* Toggle Button - Outside Sidebar */}
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute top-6 z-10 bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] border-2 border-white dark:border-slate-600 rounded-full p-1.5 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
+          style={{
+            left: isSidebarCollapsed ? 'calc(4rem - 14px)' : 'calc(clamp(240px, 280px, 280px) - 14px)'
+          }}
+          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isSidebarCollapsed ? (
+            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          ) : (
+            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          )}
+        </button>
+
         {/* Main Content - Touch Sidebar, Flex Grow */}
-        <main className="flex-1 min-w-0 bg-background dark:bg-slate-950">
+        <main className="flex-1 min-w-0 bg-background dark:bg-slate-950 overflow-y-auto">
           <div className="p-4 md:p-6 max-w-[1600px]">
             {/* Breadcrumb in Body */}
             <Breadcrumb />

@@ -16,8 +16,6 @@ import {
   Wand2,
   ArrowRight,
   BarChart,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
@@ -84,20 +82,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   ]
 
   return (
-    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-none border-0 shadow-none p-4 relative h-full">
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className="absolute -right-3 top-6 z-10 bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] border-2 border-white dark:border-slate-600 rounded-full p-1.5 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
-        title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="h-3.5 w-3.5 text-white" />
-        ) : (
-          <ChevronLeft className="h-3.5 w-3.5 text-white" />
-        )}
-      </button>
-
+    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-none border-0 shadow-none p-4 h-full">
       <div className="space-y-1">
         {/* Dashboard */}
         <Link

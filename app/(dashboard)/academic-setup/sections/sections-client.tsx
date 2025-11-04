@@ -181,10 +181,10 @@ export function SectionsClient({
   return (
     <div className="space-y-4">
       {/* Search Bar */}
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <Label className="text-xs">Search Sections</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Search Sections</Label>
             <Input
               placeholder="Search by section name..."
               value={searchQuery}
@@ -196,9 +196,9 @@ export function SectionsClient({
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-lg border border-border">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-card-foreground">
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700">
+        <div className="p-4 border-b border-border dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground dark:text-slate-200">
             All Sections ({filteredSections.length})
           </h2>
           <Dialog
@@ -311,27 +311,27 @@ export function SectionsClient({
         <Table>
           <TableHeader>
             <TableRow className="bg-cyan-50/50 dark:bg-slate-800/50">
-              <TableHead>Section Name</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Enrollments</TableHead>
-              <TableHead>Routines</TableHead>
-              <TableHead>Linked Cohort</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Section Name</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Capacity</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Enrollments</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Routines</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Linked Cohort</TableHead>
+              <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSections.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                   No sections found. Create your first section to get started.
                 </TableCell>
               </TableRow>
             ) : (
               filteredSections.map((section) => (
-                <TableRow key={section.id}>
-                  <TableCell className="font-medium">{section.name}</TableCell>
+                <TableRow key={section.id} className="dark:border-slate-700">
+                  <TableCell className="font-medium text-foreground dark:text-slate-200">{section.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
                       {section.capacity === 0 ? '∞ Unlimited' : `${section.capacity} students`}
                     </Badge>
                   </TableCell>

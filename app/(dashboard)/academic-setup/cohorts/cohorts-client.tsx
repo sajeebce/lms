@@ -340,10 +340,10 @@ export function CohortsClient({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-card rounded-lg border border-border p-4">
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <Label className="text-xs">Branch</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Branch</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -359,7 +359,7 @@ export function CohortsClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Academic Year</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Academic Year</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -375,7 +375,7 @@ export function CohortsClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Class</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Class</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -391,7 +391,7 @@ export function CohortsClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Status</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Status</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -407,7 +407,7 @@ export function CohortsClient({
             />
           </div>
           <div>
-            <Label className="text-xs">Enrollment</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">Enrollment</Label>
             <SearchableDropdown
               options={[
                 { value: 'all', label: 'All' },
@@ -424,9 +424,9 @@ export function CohortsClient({
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-lg border border-border">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-card-foreground">
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700">
+        <div className="p-4 border-b border-border dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-card-foreground dark:text-slate-200">
             All Cohorts ({filteredCohorts.length})
           </h2>
           <Dialog
@@ -706,39 +706,39 @@ export function CohortsClient({
         <Table>
           <TableHeader>
             <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-              <TableHead>Cohort Name</TableHead>
-              <TableHead>Academic Year</TableHead>
-              <TableHead>Class</TableHead>
-              <TableHead>Stream</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Enrollment</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Cohort Name</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Academic Year</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Class</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Stream</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Branch</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Status</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">Enrollment</TableHead>
+              <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCohorts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                   No cohorts found. Create your first cohort to get started.
                 </TableCell>
               </TableRow>
             ) : (
               filteredCohorts.map((cohort) => (
-                <TableRow key={cohort.id}>
-                  <TableCell className="font-medium">{cohort.name}</TableCell>
-                  <TableCell>{cohort.year.name}</TableCell>
-                  <TableCell>{cohort.class.name}</TableCell>
+                <TableRow key={cohort.id} className="dark:border-slate-700">
+                  <TableCell className="font-medium text-foreground dark:text-slate-200">{cohort.name}</TableCell>
+                  <TableCell className="text-foreground dark:text-slate-300">{cohort.year.name}</TableCell>
+                  <TableCell className="text-foreground dark:text-slate-300">{cohort.class.name}</TableCell>
                   <TableCell>
                     {cohort.stream ? (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                         {cohort.stream.name}
                       </Badge>
                     ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
+                      <span className="text-muted-foreground dark:text-slate-400 text-sm">-</span>
                     )}
                   </TableCell>
-                  <TableCell>{cohort.branch.name}</TableCell>
+                  <TableCell className="text-foreground dark:text-slate-300">{cohort.branch.name}</TableCell>
                   <TableCell>{getStatusBadge(cohort.status)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

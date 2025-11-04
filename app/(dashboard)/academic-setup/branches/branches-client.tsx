@@ -299,25 +299,25 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead>Branch Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Branch Name</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Code</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Status</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">Phone</TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {branches.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={5} className="text-center text-muted-foreground dark:text-slate-400 py-8">
                 No branches found. Create your first branch to get started.
               </TableCell>
             </TableRow>
           ) : (
             branches.map((branch) => (
-              <TableRow key={branch.id}>
-                <TableCell className="font-medium">{branch.name}</TableCell>
-                <TableCell>{branch.code || '-'}</TableCell>
+              <TableRow key={branch.id} className="dark:border-slate-700">
+                <TableCell className="font-medium text-foreground dark:text-slate-200">{branch.name}</TableCell>
+                <TableCell className="text-foreground dark:text-slate-300">{branch.code || '-'}</TableCell>
                 <TableCell>
                   <Badge
                     className={
@@ -329,7 +329,7 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                     {branch.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{branch.phone || '-'}</TableCell>
+                <TableCell className="text-foreground dark:text-slate-300">{branch.phone || '-'}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
