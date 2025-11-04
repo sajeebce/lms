@@ -65,6 +65,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
   ])
 
   const phonePrefix = tenantSettings?.phonePrefix || '+1'
+  const enableCohorts = tenantSettings?.enableCohorts ?? true
 
   // Parse previous academic results
   let previousAcademicResults: any[] = []
@@ -134,6 +135,7 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
         academicYears={academicYears}
         classes={classes}
         phonePrefix={phonePrefix}
+        enableCohorts={enableCohorts}
       />
     </div>
   )

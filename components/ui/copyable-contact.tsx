@@ -133,7 +133,6 @@ export function CopyableText({ text, label, className, showIcon = true }: Copyab
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <span>{text}</span>
       {showIcon && (
         <Button
           variant="ghost"

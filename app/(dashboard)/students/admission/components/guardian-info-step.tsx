@@ -133,15 +133,12 @@ export function GuardianInfoStep({ form, phonePrefix = '+1' }: { form: UseFormRe
                     let displayPrefix = phonePrefix
                     let displayNumber = field.value || ''
 
-                    console.log('Guardian phone field.value:', field.value)
-
                     if (field.value && field.value.startsWith('+')) {
                       // Extract country code (e.g., +880 from +8801711111111)
                       const match = field.value.match(/^(\+\d{1,4})(.*)$/)
                       if (match) {
                         displayPrefix = match[1]
                         displayNumber = match[2]
-                        console.log('Extracted prefix:', displayPrefix, 'number:', displayNumber)
                       }
                     }
 
@@ -150,21 +147,26 @@ export function GuardianInfoStep({ form, phonePrefix = '+1' }: { form: UseFormRe
                         <FormLabel>Mobile Number *</FormLabel>
                         <FormControl>
                           <div className="flex gap-2">
-                            <div className="w-20 flex items-center justify-center border rounded-md bg-neutral-50 text-sm font-medium text-neutral-700">
+                            <div className="w-20 flex items-center justify-center border rounded-md bg-neutral-50 dark:bg-neutral-900 text-sm font-medium text-neutral-700 dark:text-neutral-300">
                               {displayPrefix}
                             </div>
                             <Input
                               placeholder="Enter mobile number"
                               maxLength={20}
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={displayNumber}
                               onChange={(e) => {
+                                // Only allow numeric input
+                                const numericValue = e.target.value.replace(/[^0-9]/g, '')
                                 // Combine prefix + number when saving
-                                field.onChange(displayPrefix + e.target.value)
+                                field.onChange(displayPrefix + numericValue)
                               }}
                               className="flex-1"
                             />
                           </div>
                         </FormControl>
+                        <FormDescription className="text-xs">Numbers only</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )

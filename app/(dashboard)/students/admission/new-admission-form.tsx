@@ -165,8 +165,11 @@ export function NewAdmissionForm({
         break
       case 3: // Previous School (optional, always valid)
         return true
-      case 4: // Review (validate all)
-        return form.trigger()
+      case 4: // Review (validate all) - but don't trigger form submission
+        // Validate all fields without triggering form submission
+        const allFieldsValid = await form.trigger()
+        // Return validation result without submitting
+        return allFieldsValid
     }
 
     const result = await form.trigger(fieldsToValidate)
@@ -275,7 +278,19 @@ export function NewAdmissionForm({
       <Card>
         <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form
+              onSubmit={(e) => {
+                // Prevent any form submission - we handle it manually via button click
+                e.preventDefault()
+              }}
+              onKeyDown={(e) => {
+                // Prevent accidental submission with Enter key
+                if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+                  e.preventDefault()
+                }
+              }}
+              className="space-y-8"
+            >
               {currentStep === 0 && <StudentIdentityStep form={form} phonePrefix={phonePrefix} />}
               {currentStep === 1 && (
                 <AcademicInfoStep
@@ -313,7 +328,17 @@ export function NewAdmissionForm({
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
-                  <Button type="submit" disabled={loading}>
+                  <Button
+                    type="button"
+                    disabled={loading}
+                    onClick={async () => {
+                      // Manually validate and submit
+                      const isValid = await form.trigger()
+                      if (isValid) {
+                        await onSubmit(form.getValues())
+                      }
+                    }}
+                  >
                     {loading ? 'Submitting...' : 'Submit Admission'}
                   </Button>
                 )}

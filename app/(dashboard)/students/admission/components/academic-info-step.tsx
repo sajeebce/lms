@@ -34,22 +34,42 @@ export function AcademicInfoStep({
   const [availableSections, setAvailableSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Load sections on mount if classId is already set (edit mode)
+  // Load cohorts and sections on mount if values are already set (edit mode)
   useEffect(() => {
-    const loadInitialSections = async () => {
+    const loadInitialData = async () => {
+      const yearId = form.getValues('academicYearId')
       const classId = form.getValues('classId')
+      const branchId = form.getValues('branchId')
+      const cohortId = form.getValues('cohortId')
       const sectionId = form.getValues('sectionId')
 
-      if (classId && sectionId && !enableCohorts) {
-        setLoading(true)
-        const sections = await onFetchSections(undefined, classId)
-        setAvailableSections(sections)
-        setLoading(false)
+      if (enableCohorts) {
+        // Load cohorts if year, class, and branch are set
+        if (yearId && classId && branchId) {
+          setLoading(true)
+          const cohorts = await onFetchCohorts(yearId, classId, branchId)
+          setAvailableCohorts(cohorts)
+
+          // Load sections if cohort is set
+          if (cohortId) {
+            const sections = await onFetchSections(cohortId)
+            setAvailableSections(sections)
+          }
+          setLoading(false)
+        }
+      } else {
+        // Load sections directly for this class (non-cohort mode)
+        if (classId && sectionId) {
+          setLoading(true)
+          const sections = await onFetchSections(undefined, classId)
+          setAvailableSections(sections)
+          setLoading(false)
+        }
       }
     }
 
-    loadInitialSections()
-  }, []) // Run only on mount
+    loadInitialData()
+  }, [enableCohorts]) // Run on mount and when enableCohorts changes
 
   const handleYearChange = async (yearId: string) => {
     form.setValue('cohortId', '')
@@ -122,14 +142,21 @@ export function AcademicInfoStep({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {enableCohorts && branches.length > 1 && (
-          <FormField
-            control={form.control}
-            name="branchId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Branch *</FormLabel>
-                <FormControl>
+        {/* Branch field - always show, whether cohorts enabled or not */}
+        <FormField
+          control={form.control}
+          name="branchId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Branch *</FormLabel>
+              <FormControl>
+                {branches.length === 1 ? (
+                  // Single branch - show as read-only display
+                  <div className="flex items-center h-10 px-3 border rounded-md bg-neutral-50 dark:bg-neutral-900 text-sm">
+                    <span className="text-neutral-700 dark:text-neutral-300 font-medium">{branches[0].name}</span>
+                  </div>
+                ) : (
+                  // Multiple branches - show dropdown
                   <SearchableDropdown
                     options={branches.map((branch) => ({
                       value: branch.id,
@@ -142,12 +169,15 @@ export function AcademicInfoStep({
                     }}
                     placeholder="Select branch"
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+                )}
+              </FormControl>
+              <FormDescription className="text-xs">
+                {branches.length === 1 ? 'Only one branch available' : 'Select your branch'}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

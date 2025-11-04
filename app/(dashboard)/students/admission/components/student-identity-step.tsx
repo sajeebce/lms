@@ -293,8 +293,15 @@ export function StudentIdentityStep({
                   <Input
                     placeholder="Enter mobile number"
                     maxLength={20}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     {...field}
                     className="flex-1"
+                    onChange={(e) => {
+                      // Only allow numeric input
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '')
+                      field.onChange(numericValue)
+                    }}
                     onBlur={(e) => {
                       field.onBlur()
                       checkDuplicate()
@@ -303,7 +310,7 @@ export function StudentIdentityStep({
                 </div>
               </FormControl>
               <FormDescription className="text-xs">
-                Country code: {phonePrefix} (configured in Settings)
+                Country code: {phonePrefix} (configured in Settings) • Numbers only
               </FormDescription>
               <FormMessage />
             </FormItem>

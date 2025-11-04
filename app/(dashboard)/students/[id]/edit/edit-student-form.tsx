@@ -17,12 +17,15 @@ import { GuardianInfoStep } from '../../admission/components/guardian-info-step'
 import { PreviousSchoolStep } from '../../admission/components/previous-school-step'
 import { ReviewSubmitStep } from '../../admission/components/review-submit-step'
 import { updateStudent } from './actions'
-import { getAvailableSections } from '../../admission/new-actions'
+import { getAvailableSections, getAvailableCohorts } from '../../admission/new-actions'
 import Link from 'next/link'
+import { useEffect } from 'react'
 
 type Branch = { id: string; name: string }
 type AcademicYear = { id: string; name: string; code: string }
 type Class = { id: string; name: string }
+type Cohort = { id: string; name: string }
+type Section = { id: string; name: string }
 
 const editStudentSchema = z.object({
   // Student Identity
@@ -96,16 +99,20 @@ export function EditStudentForm({
   academicYears,
   classes,
   phonePrefix = '+1',
+  enableCohorts = false,
 }: {
   student: any
   branches: Branch[]
   academicYears: AcademicYear[]
   classes: Class[]
   phonePrefix?: string
+  enableCohorts?: boolean
 }) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [availableCohorts, setAvailableCohorts] = useState<any[]>([])
+  const [availableSections, setAvailableSections] = useState<any[]>([])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(editStudentSchema),
@@ -136,6 +143,34 @@ export function EditStudentForm({
       previousAcademicResults: student.previousAcademicResults || [],
     },
   })
+
+  // Initialize available cohorts and sections on mount
+  useEffect(() => {
+    const initializeEnrollmentData = async () => {
+      if (student.academicYearId && student.classId && student.branchId) {
+        // Fetch available cohorts
+        const cohortsResult = await handleFetchCohorts(
+          student.academicYearId,
+          student.classId,
+          student.branchId
+        )
+        setAvailableCohorts(cohortsResult)
+
+        // Fetch available sections if cohort is selected
+        if (student.cohortId) {
+          const sectionsResult = await handleFetchSections(student.cohortId)
+          setAvailableSections(sectionsResult)
+        }
+      }
+    }
+
+    initializeEnrollmentData()
+  }, [])
+
+  const handleFetchCohorts = async (yearId: string, classId: string, branchId: string) => {
+    const result = await getAvailableCohorts(yearId, classId, branchId)
+    return result.success ? result.data : []
+  }
 
   const handleFetchSections = async (cohortId?: string, classId?: string) => {
     const result = await getAvailableSections(cohortId, classId)
@@ -293,12 +328,12 @@ export function EditStudentForm({
                 branches={branches}
                 academicYears={academicYears}
                 classes={classes}
-                enableCohorts={false}
-                onFetchCohorts={async () => []}
+                enableCohorts={enableCohorts}
+                onFetchCohorts={handleFetchCohorts}
                 onFetchSections={handleFetchSections}
               />
             )}
-            {currentStep === 2 && <GuardianInfoStep form={form} />}
+            {currentStep === 2 && <GuardianInfoStep form={form} phonePrefix={phonePrefix} />}
             {currentStep === 3 && <PreviousSchoolStep form={form} />}
             {currentStep === 4 && (
               <ReviewSubmitStep

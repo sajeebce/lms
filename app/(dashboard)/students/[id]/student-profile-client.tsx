@@ -51,28 +51,28 @@ export function StudentProfileClient({ student, phonePrefix = '+1' }: StudentPro
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            Student Profile
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Complete information about {student.name}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
           <Link href="/students">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Students
             </Button>
           </Link>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              Student Profile
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Complete information about {student.name}
-            </p>
-          </div>
+          <Link href={`/students/${student.id}/edit`}>
+            <Button size="sm" className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          </Link>
         </div>
-        <Link href={`/students/${student.id}/edit`}>
-          <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Profile
-          </Button>
-        </Link>
       </div>
 
       {/* Profile Header Card */}
@@ -101,6 +101,7 @@ export function StudentProfileClient({ student, phonePrefix = '+1' }: StudentPro
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{student.name}</h2>
                   <CopyableText text={student.name} label="Name" />
                 </div>
+                {/* Removed duplicate name display */}
                 <div className="flex flex-wrap items-center gap-3 mt-2">
                   <Badge className="bg-violet-600 hover:bg-violet-700 text-white">
                     {student.studentId || 'No ID'}

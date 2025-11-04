@@ -4,9 +4,11 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 
 export function Breadcrumb() {
   const pathname = usePathname()
+  const [studentUsername, setStudentUsername] = useState<string | null>(null)
 
   // Generate breadcrumb items from pathname
   const pathSegments = pathname.split('/').filter(Boolean)
@@ -39,9 +41,27 @@ export function Breadcrumb() {
   // These will be skipped in breadcrumb to avoid 404 errors
   const skipPaths = ['academic-setup']
 
+  // Fetch student username if this is a student profile page
+  useEffect(() => {
+    if (pathSegments[0] === 'students' && pathSegments[1] && pathSegments[1] !== 'admission') {
+      const studentId = pathSegments[1]
+      // Fetch student data to get username
+      fetch(`/api/students/${studentId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.user?.username) {
+            setStudentUsername(data.user.username)
+          }
+        })
+        .catch(() => {
+          // Silently fail, breadcrumb will show ID
+        })
+    }
+  }, [pathSegments])
+
   // Build breadcrumb path
   let currentPath = ''
-  pathSegments.forEach((segment) => {
+  pathSegments.forEach((segment, index) => {
     currentPath += `/${segment}`
 
     // Skip parent-only paths that don't have actual pages
@@ -49,7 +69,15 @@ export function Breadcrumb() {
       return
     }
 
-    const label = labelMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
+    // For student profile pages, use username instead of ID
+    let label = labelMap[segment]
+    if (!label) {
+      if (pathSegments[0] === 'students' && index === 1 && studentUsername) {
+        label = studentUsername
+      } else {
+        label = segment.charAt(0).toUpperCase() + segment.slice(1)
+      }
+    }
     breadcrumbItems.push({ label, href: currentPath })
   })
 
