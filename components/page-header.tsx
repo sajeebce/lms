@@ -35,24 +35,24 @@ export function PageHeader({
 
   return (
     <div className={cn(
-      'rounded-xl p-6 border border-border',
+      'rounded-xl p-6 border border-border flex-1 min-w-0',
       bgColor,
       getDarkBgClass()
     )}>
       {/* Content */}
       <div className="flex items-center gap-4">
-        {/* Icon with shadow */}
+        {/* Icon with shadow - Fixed size to prevent shift */}
         <div className={cn(
-          'p-3 rounded-xl shadow-md',
+          'p-3 rounded-xl shadow-md flex-shrink-0',
           iconBgColor
         )}>
           <Icon className="h-8 w-8 text-white" />
         </div>
 
-        {/* Text */}
-        <div>
-          <h1 className="text-2xl font-bold text-card-foreground">{title}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        {/* Text - Truncate if needed */}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-card-foreground truncate">{title}</h1>
+          <p className="text-sm text-muted-foreground mt-1 truncate">{description}</p>
         </div>
       </div>
     </div>

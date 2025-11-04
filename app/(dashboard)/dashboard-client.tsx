@@ -33,12 +33,12 @@ export function DashboardClient({
       <div className="flex flex-1">
         {/* Sidebar - Touch Header, Fixed Width */}
         <aside
-          className="flex-shrink-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900"
+          className="flex-shrink-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-hidden"
           style={{
             width: isSidebarCollapsed ? '4rem' : 'clamp(240px, 280px, 280px)'
           }}
         >
-          <div className="h-full overflow-y-auto p-4">
+          <div className="h-full overflow-y-auto">
             <SidebarNav
               isCollapsed={isSidebarCollapsed}
               onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}

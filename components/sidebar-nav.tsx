@@ -84,7 +84,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   ]
 
   return (
-    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-xl border border-violet-100 dark:border-slate-700 shadow-lg p-4 relative">
+    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-none border-0 shadow-none p-4 relative h-full">
       {/* Toggle Button */}
       <button
         onClick={onToggle}
