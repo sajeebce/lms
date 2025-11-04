@@ -110,41 +110,42 @@ export default function SingleCourseForm({ categories }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/course-management/courses/new">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
+      <div>
+        <Link href="/course-management/courses/new">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </Link>
+
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
               Create Single Course
             </h1>
             <p className="text-neutral-600 dark:text-neutral-400 mt-1">
               Fill in the course details across different tabs
             </p>
           </div>
-        </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleSave('DRAFT')}
-            disabled={saving || !formData.title || !formData.slug}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save as Draft
-          </Button>
-          <Button
-            onClick={() => handleSave('PUBLISHED')}
-            disabled={saving || !formData.title || !formData.slug}
-            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Publish Course
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSave('DRAFT')}
+              disabled={saving || !formData.title || !formData.slug}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save as Draft
+            </Button>
+            <Button
+              onClick={() => handleSave('PUBLISHED')}
+              disabled={saving || !formData.title || !formData.slug}
+              className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Publish Course
+            </Button>
+          </div>
         </div>
       </div>
 

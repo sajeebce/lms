@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Eye, Edit, Trash2, Package, BookOpen } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash2, Package, BookOpen, Grid3x3, List } from 'lucide-react'
 import Link from 'next/link'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import {
@@ -16,6 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { deleteCourse } from './actions'
 
@@ -50,6 +59,7 @@ export default function CoursesClient({ courses: initialCourses, categories }: P
   const [filterCategory, setFilterCategory] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
 
@@ -111,53 +121,75 @@ export default function CoursesClient({ courses: initialCourses, categories }: P
       </div>
 
       {/* Filters */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <Input
-            placeholder="Search courses..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+      <div className="flex items-center gap-4">
+        <div className="flex-1 grid md:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Input
+              placeholder="Search courses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Categories' },
+              ...categories.map((cat) => ({
+                value: cat.id,
+                label: `${cat.icon || '📚'} ${cat.name}`,
+              })),
+            ]}
+            value={filterCategory}
+            onChange={setFilterCategory}
+            placeholder="Filter by category"
+          />
+
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Types' },
+              { value: 'SINGLE', label: '📖 Single Course' },
+              { value: 'BUNDLE', label: '📦 Bundle' },
+            ]}
+            value={filterType}
+            onChange={setFilterType}
+            placeholder="Filter by type"
+          />
+
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Status' },
+              { value: 'DRAFT', label: '📝 Draft' },
+              { value: 'PUBLISHED', label: '✅ Published' },
+              { value: 'SCHEDULED', label: '⏰ Scheduled' },
+              { value: 'PRIVATE', label: '🔒 Private' },
+            ]}
+            value={filterStatus}
+            onChange={setFilterStatus}
+            placeholder="Filter by status"
           />
         </div>
 
-        <SearchableDropdown
-          options={[
-            { value: '', label: 'All Categories' },
-            ...categories.map((cat) => ({
-              value: cat.id,
-              label: `${cat.icon || '📚'} ${cat.name}`,
-            })),
-          ]}
-          value={filterCategory}
-          onChange={setFilterCategory}
-          placeholder="Filter by category"
-        />
-
-        <SearchableDropdown
-          options={[
-            { value: '', label: 'All Types' },
-            { value: 'SINGLE', label: '📖 Single Course' },
-            { value: 'BUNDLE', label: '📦 Bundle' },
-          ]}
-          value={filterType}
-          onChange={setFilterType}
-          placeholder="Filter by type"
-        />
-
-        <SearchableDropdown
-          options={[
-            { value: '', label: 'All Status' },
-            { value: 'DRAFT', label: '📝 Draft' },
-            { value: 'PUBLISHED', label: '✅ Published' },
-            { value: 'SCHEDULED', label: '⏰ Scheduled' },
-            { value: 'PRIVATE', label: '🔒 Private' },
-          ]}
-          value={filterStatus}
-          onChange={setFilterStatus}
-          placeholder="Filter by status"
-        />
+        {/* View Toggle */}
+        <div className="flex gap-1 border rounded-lg p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className={viewMode === 'grid' ? 'bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white' : ''}
+          >
+            <Grid3x3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            className={viewMode === 'table' ? 'bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white' : ''}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -186,7 +218,7 @@ export default function CoursesClient({ courses: initialCourses, categories }: P
         </div>
       </div>
 
-      {/* Courses Grid */}
+      {/* Courses List */}
       {filteredCourses.length === 0 ? (
         <div className="text-center py-12 border rounded-lg">
           <BookOpen className="h-12 w-12 mx-auto text-neutral-400 mb-4" />
@@ -196,7 +228,7 @@ export default function CoursesClient({ courses: initialCourses, categories }: P
               : 'No courses yet. Create your first course to get started!'}
           </p>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
             <div
@@ -265,6 +297,86 @@ export default function CoursesClient({ courses: initialCourses, categories }: P
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Course</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-center">Topics</TableHead>
+                <TableHead className="text-center">Students</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCourses.map((course) => (
+                <TableRow key={course.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {course.courseType === 'BUNDLE' ? (
+                        <Package className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                      ) : (
+                        <BookOpen className="h-4 w-4 text-violet-600 flex-shrink-0" />
+                      )}
+                      <div>
+                        <p className="font-medium">{course.title}</p>
+                        {course.isFeatured && (
+                          <span className="text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-0.5 rounded-full">
+                            ⭐ Featured
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {course.category ? (
+                      <span className="text-sm">
+                        {course.category.icon} {course.category.name}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-neutral-400">No category</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm">
+                      {course.courseType === 'BUNDLE' ? '📦 Bundle' : '📖 Single'}
+                    </span>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(course.status)}</TableCell>
+                  <TableCell className="text-center">{course._count.topics}</TableCell>
+                  <TableCell className="text-center">{course._count.enrollments}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      <Link href={`/course-management/courses/${course.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/course-management/courses/${course.id}/edit`}>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCourseToDelete(course)
+                          setDeleteDialogOpen(true)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

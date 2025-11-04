@@ -252,7 +252,7 @@ export default function CategoryForm({ initialData, onSubmit, onCancel }: Props)
           <Button
             type="submit"
             disabled={form.formState.isSubmitting}
-            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
+            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
           >
             {form.formState.isSubmitting
               ? 'Saving...'
