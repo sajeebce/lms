@@ -16,6 +16,8 @@ import {
   Wand2,
   ArrowRight,
   BarChart,
+  FolderTree,
+  Package,
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
@@ -29,9 +31,10 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   const pathname = usePathname()
   const isAcademicSetupActive = pathname.startsWith('/academic-setup')
   const isStudentManagementActive = pathname.startsWith('/students')
-  const isCoursesActive = pathname.startsWith('/courses')
+  const isCourseManagementActive = pathname.startsWith('/course-management')
   const [isAcademicSetupOpen, setIsAcademicSetupOpen] = useState(isAcademicSetupActive)
   const [isStudentManagementOpen, setIsStudentManagementOpen] = useState(isStudentManagementActive)
+  const [isCourseManagementOpen, setIsCourseManagementOpen] = useState(isCourseManagementActive)
 
   const academicSetupItems = [
     {
@@ -282,28 +285,85 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
           </Collapsible>
         )}
 
-        {/* Courses */}
-        <Link
-          href="/courses"
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group',
-            isCoursesActive
-              ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
-              : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]',
-            isCollapsed && 'justify-center'
-          )}
-          title={isCollapsed ? 'Courses' : ''}
-        >
-          <div className={cn(
-            'p-1.5 rounded-md',
-            isCoursesActive
-              ? 'bg-white/20'
-              : 'bg-gradient-to-br from-amber-400 to-orange-500 group-hover:from-amber-500 group-hover:to-orange-600'
-          )}>
-            <BookOpen className="h-4 w-4 flex-shrink-0 text-white" />
-          </div>
-          {!isCollapsed && <span>Courses</span>}
-        </Link>
+        {/* Course Management - Collapsible */}
+        {isCollapsed ? (
+          <Link
+            href="/course-management/courses"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group justify-center',
+              isCourseManagementActive
+                ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]'
+            )}
+            title="Course Management"
+          >
+            <div className={cn(
+              'p-1.5 rounded-md',
+              isCourseManagementActive
+                ? 'bg-white/20'
+                : 'bg-gradient-to-br from-amber-400 to-orange-500 group-hover:from-amber-500 group-hover:to-orange-600'
+            )}>
+              <BookOpen className="h-4 w-4 flex-shrink-0 text-white" />
+            </div>
+          </Link>
+        ) : (
+          <Collapsible open={isCourseManagementOpen} onOpenChange={setIsCourseManagementOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-foreground rounded-lg hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)] transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 group-hover:from-amber-500 group-hover:to-orange-600">
+                  <BookOpen className="h-4 w-4 flex-shrink-0 text-white" />
+                </div>
+                <span>Course Management</span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  isCourseManagementOpen && 'rotate-180'
+                )}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-[var(--theme-border)] pl-3">
+              <Link
+                href="/course-management/categories"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group',
+                  pathname === '/course-management/categories'
+                    ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                    : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]'
+                )}
+              >
+                <div className={cn(
+                  'p-1.5 rounded-md',
+                  pathname === '/course-management/categories'
+                    ? 'bg-white/20'
+                    : 'bg-gradient-to-br from-violet-400 to-purple-500 group-hover:from-violet-500 group-hover:to-purple-600'
+                )}>
+                  <FolderTree className="h-4 w-4 flex-shrink-0 text-white" />
+                </div>
+                <span>Categories</span>
+              </Link>
+              <Link
+                href="/course-management/courses"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group',
+                  pathname.startsWith('/course-management/courses')
+                    ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                    : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]'
+                )}
+              >
+                <div className={cn(
+                  'p-1.5 rounded-md',
+                  pathname.startsWith('/course-management/courses')
+                    ? 'bg-white/20'
+                    : 'bg-gradient-to-br from-amber-400 to-orange-500 group-hover:from-amber-500 group-hover:to-orange-600'
+                )}>
+                  <BookOpen className="h-4 w-4 flex-shrink-0 text-white" />
+                </div>
+                <span>Courses</span>
+              </Link>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
         {/* Reports & Analytics */}
         <Link

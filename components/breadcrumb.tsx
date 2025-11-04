@@ -35,11 +35,19 @@ export function Breadcrumb() {
     'reports': 'Reports & Analytics',
     'settings': 'Settings',
     'academic': 'Academic Settings',
+    'course-management': 'Course Management',
+    'categories': 'Categories',
+    'courses': 'Courses',
+    'new': 'Create New',
+    'create': 'Create',
+    'single': 'Single Course',
+    'bundle': 'Bundle Course',
+    'edit': 'Edit',
   }
 
   // Paths that don't have their own pages (parent-only routes)
   // These will be skipped in breadcrumb to avoid 404 errors
-  const skipPaths = ['academic-setup']
+  const skipPaths = ['academic-setup', 'course-management', 'create']
 
   // Fetch student username if this is a student profile page
   useEffect(() => {

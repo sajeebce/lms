@@ -2,8 +2,219 @@
 type: "always_apply"
 ---
 
+## 🌐 SAAS ARCHITECTURE PRINCIPLES (MANDATORY FOR ALL FEATURES)
 
+### **Core Principle: Build SaaS-Ready from Day 1**
 
+Every feature MUST be designed with multi-tenant SaaS architecture in mind. Future vision:
+- **abc.com** → Client ABC School (custom domain)
+- **def.com** → Client DEF Institute (custom domain)
+- **abc.lms.com** → Client ABC (subdomain)
+- Shared backend with complete tenant isolation
+
+---
+
+### **1. Database Layer Rules (100% MANDATORY)**
+
+**Every Prisma model MUST:**
+```prisma
+model YourModel {
+  id       String @id @default(cuid())
+  tenantId String  // ✅ ALWAYS include
+
+  // Your fields here
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Unique constraints MUST include tenantId
+  @@unique([tenantId, yourUniqueField])
+  @@map("your_table_name")
+}
+```
+
+**Why:**
+- ✅ Complete data isolation between tenants
+- ✅ Cascade delete when tenant is removed
+- ✅ No cross-tenant data leaks
+- ✅ Supports custom domains (abc.com, def.com)
+
+---
+
+### **2. Server Actions Pattern (100% MANDATORY)**
+
+**Every server action MUST follow this pattern:**
+```typescript
+'use server'
+
+import { requireRole } from '@/lib/auth'
+import { getTenantId } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+
+export async function yourAction(data: YourInput) {
+  // 1️⃣ ROLE GUARD - First line, always
+  await requireRole('ADMIN') // or ['ADMIN', 'TEACHER']
+
+  // 2️⃣ TENANT ID - Second line, always
+  const tenantId = await getTenantId()
+
+  // 3️⃣ ZOD VALIDATION - Third
+  const schema = z.object({
+    field: z.string().min(1).max(100),
+  })
+  const validated = schema.parse(data)
+
+  // 4️⃣ TENANT ISOLATION - All queries filtered by tenantId
+  const result = await prisma.yourModel.create({
+    data: {
+      ...validated,
+      tenantId // ✅ ALWAYS include
+    }
+  })
+
+  // 5️⃣ REVALIDATE - Update cache
+  revalidatePath('/your-path')
+
+  return { success: true, data: result }
+}
+```
+
+**Why:**
+- ✅ `getTenantId()` will resolve from domain/subdomain in future
+- ✅ All data operations are tenant-scoped
+- ✅ No hardcoded tenant references
+- ✅ Works with abc.com, def.com automatically
+
+---
+
+### **3. File Storage Pattern (MANDATORY)**
+
+**All file uploads MUST use StorageService:**
+```typescript
+import { getStorageService } from '@/lib/storage/storage-service'
+
+const storageService = getStorageService()
+
+// Files are automatically stored as:
+// tenants/{tenantId}/category/file.jpg
+
+// PUBLIC files (photos, logos)
+const url = await storageService.uploadStudentPhoto(studentId, file)
+// → /api/storage/tenants/tenant_abc/students/photos/...
+// → Can be served from abc.com/storage/... in future
+
+// PRIVATE files (documents, grades)
+const url = await storageService.uploadStudentDocument(studentId, 'birth_cert', file)
+// → Signed URLs with expiration
+```
+
+**Why:**
+- ✅ Tenant isolation in file storage
+- ✅ Supports custom domain CDN (abc.com/storage/...)
+- ✅ Public/private file separation
+- ✅ Works with Cloudflare R2 for production
+
+---
+
+### **4. Theme/Branding Per Tenant (ALREADY IMPLEMENTED)**
+
+**Current system supports:**
+- ✅ Custom colors per tenant (ThemeSettings model)
+- ✅ Custom logo per tenant (TenantSettings model)
+- ✅ Custom domain branding ready
+
+**Future:**
+```
+abc.com → Blue theme, ABC logo
+def.com → Green theme, DEF logo
+```
+
+---
+
+### **5. API Routes Pattern (FOR FUTURE PUBLIC APIs)**
+
+**When creating public API routes:**
+```typescript
+// app/api/courses/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { getTenantId } from '@/lib/auth'
+
+export async function GET(request: NextRequest) {
+  // Tenant resolution from domain
+  const tenantId = await getTenantId()
+
+  const courses = await prisma.course.findMany({
+    where: {
+      tenantId,  // ✅ Always filter
+      status: 'PUBLISHED'
+    }
+  })
+
+  return NextResponse.json(courses)
+}
+```
+
+**Why:**
+- ✅ API works for abc.com and def.com separately
+- ✅ Each domain sees only their data
+- ✅ No code changes needed per tenant
+
+---
+
+### **6. What's NOT Implemented Yet (Future Phase)**
+
+These will be added AFTER core features are complete:
+
+**Phase: Domain Routing (Future)**
+- ❌ Middleware for domain resolution
+- ❌ Custom domain field in Tenant model
+- ❌ DNS verification flow
+
+**Phase: Real Authentication (Future)**
+- ❌ NextAuth.js / Clerk integration
+- ❌ Multi-domain session handling
+- ❌ Tenant-aware login pages
+
+**Phase: Public APIs (Future)**
+- ❌ CORS handling
+- ❌ Rate limiting per tenant
+- ❌ API key authentication
+
+**IMPORTANT:** Do NOT implement these now. Current mock auth (`lib/auth.ts`) is sufficient for development. These will be added in a dedicated "SaaS Infrastructure" phase.
+
+---
+
+### **7. Checklist for Every New Feature**
+
+Before implementing ANY new feature, verify:
+
+- [ ] ✅ All models have `tenantId` field
+- [ ] ✅ All unique constraints include `tenantId`
+- [ ] ✅ All server actions call `getTenantId()`
+- [ ] ✅ All Prisma queries filter by `tenantId`
+- [ ] ✅ File uploads use StorageService (tenant-scoped)
+- [ ] ✅ No hardcoded tenant references
+- [ ] ✅ Theme/branding respects tenant settings
+
+**If ANY checkbox is unchecked, the feature is NOT SaaS-ready.**
+
+---
+
+### **8. Current SaaS Readiness: 70%**
+
+| Component | Status | Ready for Multi-Domain |
+|-----------|--------|------------------------|
+| Database Schema | ✅ 95% | Yes - just add domain field |
+| Server Actions | ✅ 100% | Yes - already perfect |
+| File Storage | ✅ 90% | Yes - supports custom domains |
+| Theme/Branding | ✅ 100% | Yes - per-tenant settings |
+| Authentication | ❌ 0% | No - mock only (future phase) |
+| Domain Routing | ❌ 0% | No - middleware needed (future phase) |
+| Public APIs | ⚠️ 40% | Partial - needs CORS (future phase) |
+
+**Conclusion:** Current architecture is EXCELLENT for SaaS. Just continue following the patterns above, and the future migration to abc.com/def.com will be smooth.
+
+---
 
 ---
 type: "manual"

@@ -280,18 +280,18 @@ async function main() {
     })
   }
 
-  // Create sample courses
+  // Create sample courses (Course Management - new schema)
   const courses = [
-    { name: 'Mathematics', code: 'MATH101', description: 'Basic Mathematics', credits: 3 },
-    { name: 'English', code: 'ENG101', description: 'English Language', credits: 3 },
-    { name: 'Physics', code: 'PHY101', description: 'Physics Fundamentals', credits: 4 },
-    { name: 'Chemistry', code: 'CHM101', description: 'Chemistry Basics', credits: 4 },
-    { name: 'Biology', code: 'BIO101', description: 'Biology Essentials', credits: 4 },
+    { title: 'Mathematics', slug: 'mathematics', description: 'Basic Mathematics' },
+    { title: 'English', slug: 'english', description: 'English Language' },
+    { title: 'Physics', slug: 'physics', description: 'Physics Fundamentals' },
+    { title: 'Chemistry', slug: 'chemistry', description: 'Chemistry Basics' },
+    { title: 'Biology', slug: 'biology', description: 'Biology Essentials' },
   ]
 
   for (const course of courses) {
     await prisma.course.upsert({
-      where: { tenantId_code: { tenantId: tenant.id, code: course.code } },
+      where: { tenantId_slug: { tenantId: tenant.id, slug: course.slug } },
       update: {},
       create: {
         tenantId: tenant.id,
