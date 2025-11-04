@@ -13,7 +13,7 @@ export function DashboardClient({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Sticky Header - Full Width, No Container */}
       <header className="sticky top-0 z-50 bg-card dark:bg-slate-900 border-b border-border dark:border-slate-700">
         <div className="flex items-center justify-between px-6 py-3">
@@ -30,10 +30,10 @@ export function DashboardClient({
       </header>
 
       {/* Body - Full Width, No Gaps */}
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {/* Sidebar - Touch Header, Fixed Width */}
         <aside
-          className="flex-shrink-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-y-auto"
+          className="flex-shrink-0 h-full min-h-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-y-auto overscroll-y-contain"
           style={{
             width: isSidebarCollapsed ? '4rem' : 'clamp(240px, 280px, 280px)'
           }}
@@ -65,7 +65,7 @@ export function DashboardClient({
         </button>
 
         {/* Main Content - Touch Sidebar, Flex Grow */}
-        <main className="flex-1 min-w-0 bg-background dark:bg-slate-950 overflow-y-auto">
+        <main className="flex-1 min-w-0 h-full min-h-0 bg-background dark:bg-slate-950 overflow-y-auto overscroll-y-contain">
           <div className="p-4 md:p-6 max-w-[1600px]">
             {/* Breadcrumb in Body */}
             <Breadcrumb />

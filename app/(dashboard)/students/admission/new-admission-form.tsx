@@ -248,7 +248,7 @@ export function NewAdmissionForm({
                     ? 'bg-emerald-500 text-white group-hover:bg-emerald-600'
                     : currentStep === index
                     ? 'bg-blue-600 text-white ring-4 ring-blue-100 dark:ring-blue-900/30'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-slate-200 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
                 )}
               >
                 {currentStep > index ? <Check className="w-5 h-5" /> : step.icon}
@@ -256,7 +256,7 @@ export function NewAdmissionForm({
               <span
                 className={cn(
                   'mt-2 text-xs font-medium text-center',
-                  currentStep >= index ? 'text-foreground' : 'text-muted-foreground'
+                  currentStep >= index ? 'text-foreground' : 'text-muted-foreground dark:text-slate-200'
                 )}
               >
                 {step.name}

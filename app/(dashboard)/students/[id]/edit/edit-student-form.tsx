@@ -285,7 +285,7 @@ export function EditStudentForm({
                         ? 'bg-emerald-600 text-white group-hover:bg-emerald-700'
                         : index === currentStep
                         ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-slate-200 group-hover:bg-gray-300 dark:group-hover:bg-gray-600'
                     )}
                   >
                     {index < currentStep ? <Check className="h-5 w-5" /> : step.icon}
@@ -294,10 +294,10 @@ export function EditStudentForm({
                     className={cn(
                       'text-xs mt-2 font-medium',
                       index === currentStep
-                        ? 'text-violet-600 dark:text-violet-400'
+                        ? 'text-violet-600 dark:text-violet-300'
                         : index < currentStep
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-gray-500 dark:text-gray-400'
+                        ? 'text-emerald-600 dark:text-emerald-300'
+                        : 'text-gray-500 dark:text-slate-200'
                     )}
                   >
                     {step.name}

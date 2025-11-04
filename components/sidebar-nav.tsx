@@ -82,7 +82,7 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   ]
 
   return (
-    <nav className="bg-gradient-to-br from-white to-violet-50/30 dark:from-slate-800 dark:to-slate-900 rounded-none border-0 shadow-none p-4 h-full">
+    <nav className="h-full p-4 rounded-none border-0 shadow-none bg-sidebar text-sidebar-foreground dark:bg-sidebar">
       <div className="space-y-1">
         {/* Dashboard */}
         <Link

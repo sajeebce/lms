@@ -61,8 +61,12 @@ export function StudentProfileClient({ student, phonePrefix = '+1' }: StudentPro
         </div>
         <div className="flex items-center gap-3">
           <Link href="/students">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="dark:text-white dark:hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2 dark:text-white" />
               Back to Students
             </Button>
           </Link>

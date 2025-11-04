@@ -140,7 +140,7 @@ export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientP
   return (
     <>
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="text-foreground">
           <TableHeader>
             <TableRow className="bg-slate-50 dark:bg-slate-800/50">
               <TableHead>Name</TableHead>
@@ -194,12 +194,12 @@ export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientP
                       <div className="flex items-center justify-end gap-1">
                         <Link href={`/students/${student.id}`}>
                           <Button variant="ghost" size="sm" title="View Profile">
-                            <Eye className="h-4 w-4 text-blue-600" />
+                            <Eye className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                           </Button>
                         </Link>
                         <Link href={`/students/${student.id}/edit`}>
                           <Button variant="ghost" size="sm" title="Edit Student">
-                            <Edit className="h-4 w-4 text-amber-600" />
+                            <Edit className="h-4 w-4 text-amber-600 dark:text-amber-300" />
                           </Button>
                         </Link>
                         <Button
@@ -208,7 +208,7 @@ export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientP
                           onClick={() => handleDeleteClick(student)}
                           title="Delete Student"
                         >
-                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                         </Button>
                       </div>
                     </TableCell>
@@ -263,7 +263,7 @@ export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientP
 
             <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
               <p className="text-sm text-red-900 dark:text-red-100 font-medium">
-                ⚠️ Warning: This action cannot be undone
+                ?? Warning: This action cannot be undone
               </p>
               <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                 Deleting this student will permanently remove all enrollment records and user account.
@@ -326,4 +326,5 @@ export function StudentsClient({ students, phonePrefix = '+1' }: StudentsClientP
     </>
   )
 }
+
 
