@@ -11,6 +11,9 @@ const courseSchema = z.object({
   categoryId: z.string().optional(),
   description: z.string().optional(),
   shortDescription: z.string().max(500).optional(),
+  classId: z.string().optional(),
+  subjectId: z.string().optional(),
+  streamId: z.string().optional(),
   paymentType: z.enum(['FREE', 'ONE_TIME', 'SUBSCRIPTION']),
   invoiceTitle: z.string().max(200).optional(),
   regularPrice: z.number().min(0).optional(),
@@ -79,6 +82,9 @@ export async function updateCourse(id: string, data: z.infer<typeof courseSchema
       data: {
         ...validated,
         categoryId: validated.categoryId || null,
+        classId: validated.classId || null,
+        subjectId: validated.subjectId || null,
+        streamId: validated.streamId || null,
         publishedAt: validated.status === 'PUBLISHED' && !existing.publishedAt ? new Date() : validated.publishedAt,
         faqs: validated.faqs && validated.faqs.length > 0 ? {
           create: validated.faqs.map((faq, index) => ({

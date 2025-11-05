@@ -25,6 +25,25 @@ type Category = {
   color: string | null
 }
 
+type Subject = {
+  id: string
+  name: string
+  code: string | null
+  icon: string | null
+}
+
+type Class = {
+  id: string
+  name: string
+  alias: string | null
+  order: number
+}
+
+type Stream = {
+  id: string
+  name: string
+}
+
 type FAQ = {
   id: string
   question: string
@@ -39,6 +58,9 @@ type Course = {
   categoryId: string | null
   description: string | null
   shortDescription: string | null
+  classId: string | null
+  subjectId: string | null
+  streamId: string | null
   paymentType: string
   invoiceTitle: string | null
   regularPrice: number | null
@@ -64,9 +86,12 @@ type Course = {
 type Props = {
   course: Course
   categories: Category[]
+  subjects: Subject[]
+  classes: Class[]
+  streams: Stream[]
 }
 
-export default function EditCourseForm({ course, categories }: Props) {
+export default function EditCourseForm({ course, categories, subjects, classes, streams }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('basic')
   const [saving, setSaving] = useState(false)
@@ -77,6 +102,9 @@ export default function EditCourseForm({ course, categories }: Props) {
     categoryId: course.categoryId || undefined,
     description: course.description || undefined,
     shortDescription: course.shortDescription || undefined,
+    classId: course.classId || undefined,
+    subjectId: course.subjectId || undefined,
+    streamId: course.streamId || undefined,
     paymentType: course.paymentType as any,
     invoiceTitle: course.invoiceTitle || undefined,
     regularPrice: course.regularPrice || undefined,
@@ -171,6 +199,9 @@ export default function EditCourseForm({ course, categories }: Props) {
                 <BasicInfoTab
                   data={formData}
                   categories={categories}
+                  subjects={subjects}
+                  classes={classes}
+                  streams={streams}
                   onChange={updateFormData}
                 />
               </TabsContent>

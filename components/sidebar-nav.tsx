@@ -29,12 +29,14 @@ interface SidebarNavProps {
 
 export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
   const pathname = usePathname()
-  const isAcademicSetupActive = pathname.startsWith('/academic-setup')
+  const isAcademicSetupActive = pathname.startsWith('/academic-setup') && !pathname.startsWith('/academic-setup/chapters')
   const isStudentManagementActive = pathname.startsWith('/students')
   const isCourseManagementActive = pathname.startsWith('/course-management')
+  const isQuestionBankActive = pathname.startsWith('/question-bank') || pathname.startsWith('/academic-setup/chapters')
   const [isAcademicSetupOpen, setIsAcademicSetupOpen] = useState(isAcademicSetupActive)
   const [isStudentManagementOpen, setIsStudentManagementOpen] = useState(isStudentManagementActive)
   const [isCourseManagementOpen, setIsCourseManagementOpen] = useState(isCourseManagementActive)
+  const [isQuestionBankOpen, setIsQuestionBankOpen] = useState(isQuestionBankActive)
 
   const academicSetupItems = [
     {
@@ -56,6 +58,11 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
       href: '/academic-setup/classes',
       label: 'Classes / Grades',
       icon: Layers,
+    },
+    {
+      href: '/academic-setup/subjects',
+      label: 'Subjects',
+      icon: BookOpen,
     },
     {
       href: '/academic-setup/sections',
@@ -81,6 +88,24 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
       href: '/academic-setup/promotions',
       label: 'Promotions',
       icon: ArrowRight,
+    },
+  ]
+
+  const questionBankItems = [
+    {
+      href: '/academic-setup/chapters',
+      label: 'Chapters',
+      icon: BookOpen,
+    },
+    {
+      href: '/question-bank/topics',
+      label: 'Topics',
+      icon: FileText,
+    },
+    {
+      href: '/question-bank/questions',
+      label: 'Questions',
+      icon: Package,
     },
   ]
 
@@ -361,6 +386,87 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
                 </div>
                 <span>Courses</span>
               </Link>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Question Bank - Collapsible */}
+        {isCollapsed ? (
+          <Link
+            href="/academic-setup/chapters"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all group justify-center',
+              isQuestionBankActive
+                ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]'
+            )}
+            title="Question Bank"
+          >
+            <div className={cn(
+              'p-1.5 rounded-md',
+              isQuestionBankActive
+                ? 'bg-white/20'
+                : 'bg-gradient-to-br from-pink-400 to-rose-500 group-hover:from-pink-500 group-hover:to-rose-600'
+            )}>
+              <Package className="h-4 w-4 flex-shrink-0 text-white" />
+            </div>
+          </Link>
+        ) : (
+          <Collapsible open={isQuestionBankOpen} onOpenChange={setIsQuestionBankOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium text-foreground rounded-lg hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)] transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 rounded-md bg-gradient-to-br from-pink-400 to-rose-500 group-hover:from-pink-500 group-hover:to-rose-600">
+                  <Package className="h-4 w-4 flex-shrink-0 text-white" />
+                </div>
+                <span>Question Bank</span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  isQuestionBankOpen && 'rotate-180'
+                )}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="ml-3 mt-1 space-y-1 border-l-2 border-[var(--theme-border)] pl-3">
+              {questionBankItems.map((item, index) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href || pathname.startsWith(item.href)
+
+                // Different gradient colors for each item
+                const gradients = [
+                  'from-purple-400 to-violet-500',
+                  'from-indigo-400 to-blue-500',
+                  'from-cyan-400 to-teal-500',
+                ]
+                const hoverGradients = [
+                  'from-purple-500 to-violet-600',
+                  'from-indigo-500 to-blue-600',
+                  'from-cyan-500 to-teal-600',
+                ]
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all group',
+                      isActive
+                        ? 'bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] text-white shadow-md'
+                        : 'text-foreground hover:bg-gradient-to-r hover:from-[var(--theme-hover-from)] hover:to-[var(--theme-hover-to)] hover:text-[var(--theme-hover-text)]'
+                    )}
+                  >
+                    <div className={cn(
+                      'p-1.5 rounded-md bg-gradient-to-br transition-all',
+                      isActive
+                        ? 'bg-white/20'
+                        : `${gradients[index]} group-hover:${hoverGradients[index]}`
+                    )}>
+                      <Icon className="h-4 w-4 flex-shrink-0 text-white" />
+                    </div>
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
             </CollapsibleContent>
           </Collapsible>
         )}

@@ -1,0 +1,352 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+import { createTopic, updateTopic } from '@/lib/actions/topic.actions'
+
+const formSchema = z.object({
+  subjectId: z.string().min(1, 'Subject is required'),
+  classId: z.string().min(1, 'Class is required'),
+  chapterId: z.string().min(1, 'Chapter is required'),
+  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
+  code: z.string().max(20, 'Code must be 20 characters or less').optional(),
+  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  order: z.number().min(0).max(9999).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+})
+
+type FormData = z.infer<typeof formSchema>
+
+type Topic = Awaited<ReturnType<typeof import('@/lib/actions/topic.actions').getTopics>>[number]
+type Chapter = Awaited<ReturnType<typeof import('@/lib/actions/chapter.actions').getChapters>>[number]
+type Subject = Awaited<ReturnType<typeof import('@/lib/actions/subject.actions').getSubjects>>[number]
+type Class = Awaited<ReturnType<typeof import('@/lib/actions/class.actions').getClasses>>[number]
+
+interface TopicFormProps {
+  topic?: Topic | null
+  chapters: Chapter[]
+  subjects: Subject[]
+  classes: Class[]
+  onSuccess: (topic: Topic) => void
+  onCancel: () => void
+}
+
+export default function TopicForm({
+  topic,
+  chapters,
+  subjects,
+  classes,
+  onSuccess,
+  onCancel,
+}: TopicFormProps) {
+  const [availableClasses, setAvailableClasses] = useState<Class[]>(classes)
+  const [availableChapters, setAvailableChapters] = useState<Chapter[]>(chapters)
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      subjectId: topic?.chapter.subject.id || '',
+      classId: topic?.chapter.class.id || '',
+      chapterId: topic?.chapter.id || '',
+      name: topic?.name || '',
+      code: topic?.code || '',
+      description: topic?.description || '',
+      order: topic?.order || 0,
+      status: topic?.status || 'ACTIVE',
+    },
+  })
+
+  const selectedSubject = form.watch('subjectId')
+  const selectedClass = form.watch('classId')
+
+  // Cascading filter: Update available classes when subject changes
+  useEffect(() => {
+    if (selectedSubject) {
+      const filteredClasses = classes.filter((cls) =>
+        chapters.some(
+          (ch) => ch.subject.id === selectedSubject && ch.class.id === cls.id
+        )
+      )
+      setAvailableClasses(filteredClasses)
+
+      // Reset class and chapter if current selection is not in filtered list
+      const currentClass = form.getValues('classId')
+      if (currentClass && !filteredClasses.some((cls) => cls.id === currentClass)) {
+        form.setValue('classId', '')
+        form.setValue('chapterId', '')
+      }
+    } else {
+      setAvailableClasses(classes)
+    }
+  }, [selectedSubject, chapters, classes, form])
+
+  // Cascading filter: Update available chapters when subject or class changes
+  useEffect(() => {
+    if (selectedSubject || selectedClass) {
+      const filteredChapters = chapters.filter(
+        (ch) =>
+          (!selectedSubject || ch.subject.id === selectedSubject) &&
+          (!selectedClass || ch.class.id === selectedClass)
+      )
+      setAvailableChapters(filteredChapters)
+
+      // Reset chapter if current selection is not in filtered list
+      const currentChapter = form.getValues('chapterId')
+      if (currentChapter && !filteredChapters.some((ch) => ch.id === currentChapter)) {
+        form.setValue('chapterId', '')
+      }
+    } else {
+      setAvailableChapters(chapters)
+    }
+  }, [selectedSubject, selectedClass, chapters, form])
+
+  const onSubmit = async (data: FormData) => {
+    const { subjectId, classId, ...topicData } = data
+
+    const result = topic
+      ? await updateTopic(topic.id, topicData)
+      : await createTopic(topicData)
+
+    if (result.success && result.data) {
+      onSuccess(result.data)
+    } else {
+      form.setError('root', {
+        message: result.error || 'An error occurred',
+      })
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Subject, Class, Chapter - Cascading Dropdowns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="subjectId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Subject *</FormLabel>
+                <FormControl>
+                  <SearchableDropdown
+                    options={subjects.map((subject) => ({
+                      value: subject.id,
+                      label: `${subject.icon || ''} ${subject.name}`,
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select subject"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="classId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Class *</FormLabel>
+                <FormControl>
+                  <SearchableDropdown
+                    options={availableClasses.map((cls) => ({
+                      value: cls.id,
+                      label: cls.name,
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select class"
+                  />
+                </FormControl>
+                <FormDescription>
+                  {selectedSubject
+                    ? `Classes with ${subjects.find((s) => s.id === selectedSubject)?.name} chapters`
+                    : 'Select subject first'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="chapterId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Chapter *</FormLabel>
+                <FormControl>
+                  <SearchableDropdown
+                    options={availableChapters.map((chapter) => ({
+                      value: chapter.id,
+                      label: `${chapter.name} (${chapter.class.name})`,
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select chapter"
+                  />
+                </FormControl>
+                <FormDescription>
+                  {selectedSubject && selectedClass
+                    ? `Chapters for selected filters`
+                    : 'Select subject and class first'}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Name and Code */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Topic Name *</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter topic name"
+                    maxLength={100}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Max 100 characters</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., T1, T2"
+                    maxLength={20}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Max 20 characters (optional)</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Description */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter topic description"
+                  maxLength={500}
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>Max 500 characters (optional)</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Order and Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="order"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Order</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={9999}
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormDescription>Display order (0-9999)</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <FormControl>
+                  <SearchableDropdown
+                    options={[
+                      { value: 'ACTIVE', label: '✅ Active' },
+                      { value: 'INACTIVE', label: '⏸️ Inactive' },
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select status"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Error Message */}
+        {form.formState.errors.root && (
+          <div className="text-sm text-red-600 dark:text-red-400">
+            {form.formState.errors.root.message}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
+          >
+            {form.formState.isSubmitting
+              ? 'Saving...'
+              : topic
+              ? 'Update Topic'
+              : 'Create Topic'}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
+

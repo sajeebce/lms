@@ -24,8 +24,30 @@ type Category = {
   color: string | null
 }
 
+type Subject = {
+  id: string
+  name: string
+  code: string | null
+  icon: string | null
+}
+
+type Class = {
+  id: string
+  name: string
+  alias: string | null
+  order: number
+}
+
+type Stream = {
+  id: string
+  name: string
+}
+
 type Props = {
   categories: Category[]
+  subjects: Subject[]
+  classes: Class[]
+  streams: Stream[]
 }
 
 export type CourseFormData = {
@@ -35,7 +57,12 @@ export type CourseFormData = {
   categoryId?: string
   description?: string
   shortDescription?: string
-  
+
+  // Academic Integration (Optional)
+  classId?: string
+  subjectId?: string
+  streamId?: string
+
   // Pricing
   paymentType: 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
   invoiceTitle?: string
@@ -67,7 +94,7 @@ export type CourseFormData = {
   faqs: Array<{ question: string; answer: string }>
 }
 
-export default function SingleCourseForm({ categories }: Props) {
+export default function SingleCourseForm({ categories, subjects, classes, streams }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('basic')
   const [saving, setSaving] = useState(false)
@@ -140,7 +167,6 @@ export default function SingleCourseForm({ categories }: Props) {
             <Button
               onClick={() => handleSave('PUBLISHED')}
               disabled={saving || !formData.title || !formData.slug}
-              className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               Publish Course
@@ -166,6 +192,9 @@ export default function SingleCourseForm({ categories }: Props) {
               <BasicInfoTab
                 data={formData}
                 categories={categories}
+                subjects={subjects}
+                classes={classes}
+                streams={streams}
                 onChange={updateFormData}
               />
             </TabsContent>
@@ -218,7 +247,6 @@ export default function SingleCourseForm({ categories }: Props) {
             }
           }}
           disabled={activeTab === 'faq'}
-          className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
         >
           Next
         </Button>

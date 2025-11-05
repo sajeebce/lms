@@ -133,7 +133,6 @@ export default function BundleCourseForm({ categories, availableCourses }: Props
             <Button
               onClick={() => handleSave('PUBLISHED')}
               disabled={saving}
-              className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
             >
               <Save className="h-4 w-4 mr-2" />
               Publish Bundle

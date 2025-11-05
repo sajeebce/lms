@@ -15,13 +15,35 @@ type Category = {
   color: string | null
 }
 
+type Subject = {
+  id: string
+  name: string
+  code: string | null
+  icon: string | null
+}
+
+type Class = {
+  id: string
+  name: string
+  alias: string | null
+  order: number
+}
+
+type Stream = {
+  id: string
+  name: string
+}
+
 type Props = {
   data: CourseFormData
   categories: Category[]
+  subjects: Subject[]
+  classes: Class[]
+  streams: Stream[]
   onChange: (data: Partial<CourseFormData>) => void
 }
 
-export default function BasicInfoTab({ data, categories, onChange }: Props) {
+export default function BasicInfoTab({ data, categories, subjects, classes, streams, onChange }: Props) {
   // Auto-generate slug from title
   useEffect(() => {
     if (data.title && !data.slug) {
@@ -75,6 +97,88 @@ export default function BasicInfoTab({ data, categories, onChange }: Props) {
           onChange={(value) => onChange({ categoryId: value })}
           placeholder="Select category (optional)"
         />
+      </div>
+
+      {/* Academic Integration Section */}
+      <div className="space-y-4 p-4 border rounded-lg bg-gradient-to-r from-violet-50 to-orange-50 dark:from-violet-950/20 dark:to-orange-950/20 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-1 bg-gradient-to-b from-violet-600 to-orange-500 rounded-full" />
+          <div>
+            <h3 className="font-semibold text-sm bg-gradient-to-r from-violet-600 to-orange-500 bg-clip-text text-transparent">
+              Academic Integration (Optional)
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Link this course to a specific class, subject, and stream for academic courses
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Class */}
+          <div className="space-y-2">
+            <Label htmlFor="class">Class / Grade</Label>
+            <SearchableDropdown
+              options={[
+                { value: '', label: 'None (Public Course)' },
+                ...classes.map((cls) => ({
+                  value: cls.id,
+                  label: `${cls.name}${cls.alias ? ` (${cls.alias})` : ''}`,
+                })),
+              ]}
+              value={data.classId || ''}
+              onChange={(value) => onChange({ classId: value || undefined })}
+              placeholder="Select class"
+            />
+          </div>
+
+          {/* Subject */}
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <SearchableDropdown
+              options={[
+                { value: '', label: 'None' },
+                ...subjects.map((subject) => ({
+                  value: subject.id,
+                  label: `${subject.icon || '📚'} ${subject.name}`,
+                })),
+              ]}
+              value={data.subjectId || ''}
+              onChange={(value) => onChange({ subjectId: value || undefined })}
+              placeholder="Select subject"
+            />
+          </div>
+
+          {/* Stream */}
+          <div className="space-y-2">
+            <Label htmlFor="stream">Stream / Department</Label>
+            <SearchableDropdown
+              options={[
+                { value: '', label: 'None (General)' },
+                ...streams.map((stream) => ({
+                  value: stream.id,
+                  label: stream.name,
+                })),
+              ]}
+              value={data.streamId || ''}
+              onChange={(value) => onChange({ streamId: value || undefined })}
+              placeholder="Select stream"
+            />
+          </div>
+        </div>
+
+        {/* Info Message */}
+        {(data.classId || data.subjectId || data.streamId) && (
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <span className="text-blue-600 dark:text-blue-400 text-sm">ℹ️</span>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Academic Course:</strong> This course will be linked to{' '}
+              {data.classId && classes.find((c) => c.id === data.classId)?.name}
+              {data.subjectId && ` - ${subjects.find((s) => s.id === data.subjectId)?.name}`}
+              {data.streamId && ` (${streams.find((s) => s.id === data.streamId)?.name})`}
+              . Students enrolled in this class/stream will see this course.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Short Description */}

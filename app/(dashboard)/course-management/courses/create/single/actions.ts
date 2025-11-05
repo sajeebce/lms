@@ -12,7 +12,12 @@ const courseSchema = z.object({
   categoryId: z.string().optional(),
   description: z.string().optional(),
   shortDescription: z.string().max(500).optional(),
-  
+
+  // Academic Integration (Optional)
+  classId: z.string().optional(),
+  subjectId: z.string().optional(),
+  streamId: z.string().optional(),
+
   // Pricing
   paymentType: z.enum(['FREE', 'ONE_TIME', 'SUBSCRIPTION']),
   invoiceTitle: z.string().max(200).optional(),
@@ -77,6 +82,10 @@ export async function createSingleCourse(data: z.infer<typeof courseSchema>) {
         categoryId: validated.categoryId,
         description: validated.description,
         shortDescription: validated.shortDescription,
+        // Academic Integration
+        classId: validated.classId,
+        subjectId: validated.subjectId,
+        streamId: validated.streamId,
         paymentType: validated.paymentType,
         invoiceTitle: validated.invoiceTitle,
         regularPrice: validated.regularPrice,
