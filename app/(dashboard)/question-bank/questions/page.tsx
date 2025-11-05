@@ -1,12 +1,28 @@
 import { PageHeader } from '@/components/page-header'
 import { Package } from 'lucide-react'
+import { getQuestions } from '@/lib/actions/question.actions'
+import { getSubjects } from '@/lib/actions/subject.actions'
+import { getClasses } from '@/lib/actions/class.actions'
+import { getChapters } from '@/lib/actions/chapter.actions'
+import { getTopics } from '@/lib/actions/topic.actions'
+import { getQuestionSources } from '@/lib/actions/question-source.actions'
+import QuestionsClient from './questions-client'
 
 export const metadata = {
   title: 'Questions | Question Bank',
   description: 'Manage questions for topics',
 }
 
-export default function QuestionsPage() {
+export default async function QuestionsPage() {
+  const [questionsData, subjects, classes, chapters, topics, sources] = await Promise.all([
+    getQuestions(),
+    getSubjects(),
+    getClasses(),
+    getChapters(),
+    getTopics(),
+    getQuestionSources(),
+  ])
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -16,24 +32,15 @@ export default function QuestionsPage() {
         bgColor="bg-cyan-50"
         iconBgColor="bg-cyan-600"
       />
-      
-      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-12">
-        <div className="text-center space-y-4">
-          <div className="text-6xl">🚧</div>
-          <h2 className="text-2xl font-bold text-foreground dark:text-slate-200">
-            Question Bank Coming Soon
-          </h2>
-          <p className="text-muted-foreground dark:text-slate-400 max-w-md mx-auto">
-            You&apos;ll be able to create and manage questions with multiple choice, true/false, and descriptive types. Questions will be linked to topics for easy organization.
-          </p>
-          <div className="pt-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-sm font-medium">
-              <Package className="h-4 w-4" />
-              <span>Feature in Development</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QuestionsClient
+        initialQuestions={questionsData.questions}
+        pagination={questionsData.pagination}
+        subjects={subjects}
+        classes={classes}
+        chapters={chapters}
+        topics={topics}
+        sources={sources}
+      />
     </div>
   )
 }

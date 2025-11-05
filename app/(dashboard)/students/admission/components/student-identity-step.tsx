@@ -30,13 +30,21 @@ export function StudentIdentityStep({
 
   // Initialize photo preview from existing photoUrl in edit mode
   useEffect(() => {
-    if (mode === 'edit') {
-      const existingPhotoUrl = form.getValues('photoUrl')
-      if (existingPhotoUrl) {
-        setPhotoPreview(existingPhotoUrl)
-      }
+    const existingPhotoUrl = form.getValues('photoUrl')
+    if (existingPhotoUrl && existingPhotoUrl !== '') {
+      setPhotoPreview(existingPhotoUrl)
     }
-  }, [mode, form])
+  }, [form])
+
+  // Watch for photoUrl changes to update preview
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'photoUrl' && value.photoUrl && value.photoUrl !== photoPreview) {
+        setPhotoPreview(value.photoUrl)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form, photoPreview])
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -295,7 +303,9 @@ export function StudentIdentityStep({
                     maxLength={20}
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    {...field}
+                    value={field.value || ''}
+                    name={field.name}
+                    ref={field.ref}
                     className="flex-1"
                     onChange={(e) => {
                       // Only allow numeric input

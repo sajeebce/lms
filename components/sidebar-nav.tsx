@@ -18,6 +18,7 @@ import {
   BarChart,
   FolderTree,
   Package,
+  Database,
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
@@ -101,6 +102,11 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
       href: '/question-bank/topics',
       label: 'Topics',
       icon: FileText,
+    },
+    {
+      href: '/question-bank/sources',
+      label: 'Question Sources',
+      icon: Database,
     },
     {
       href: '/question-bank/questions',
@@ -436,11 +442,13 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
                 const gradients = [
                   'from-purple-400 to-violet-500',
                   'from-indigo-400 to-blue-500',
+                  'from-amber-400 to-orange-500',
                   'from-cyan-400 to-teal-500',
                 ]
                 const hoverGradients = [
                   'from-purple-500 to-violet-600',
                   'from-indigo-500 to-blue-600',
+                  'from-amber-500 to-orange-600',
                   'from-cyan-500 to-teal-600',
                 ]
 

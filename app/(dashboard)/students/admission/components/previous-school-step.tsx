@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,17 @@ export function PreviousSchoolStep({ form }: { form: UseFormReturn<any> }) {
   const [academicResults, setAcademicResults] = useState<AcademicResult[]>(
     form.getValues('previousAcademicResults') || []
   )
+
+  // Sync state with form values when they change (important for edit mode)
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'previousAcademicResults' || !name) {
+        const results = form.getValues('previousAcademicResults') || []
+        setAcademicResults(results)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form])
 
   const addResult = () => {
     const newResults = [...academicResults, { examName: '', year: '', gpa: '', grade: '' }]

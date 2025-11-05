@@ -117,35 +117,65 @@ export function EditStudentForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(editStudentSchema),
     defaultValues: {
-      name: student.name,
-      email: student.email,
-      phone: student.phone,
-      dateOfBirth: student.dateOfBirth,
-      gender: student.gender,
-      bloodGroup: student.bloodGroup,
-      photoUrl: student.photoUrl,
-      presentAddress: student.presentAddress,
-      permanentAddress: student.permanentAddress,
-      username: student.username,
-      password: student.password,
-      branchId: student.branchId,
-      academicYearId: student.academicYearId,
-      classId: student.classId,
-      cohortId: student.cohortId,
-      sectionId: student.sectionId,
-      rollNumber: student.rollNumber,
-      guardians: student.guardians,
-      previousSchoolName: student.previousSchoolName,
-      previousSchoolAddress: student.previousSchoolAddress,
-      previousClass: student.previousClass,
-      previousBoard: student.previousBoard,
-      tcNumber: student.tcNumber,
+      name: student.name || '',
+      email: student.email || '',
+      phone: student.phone || '',
+      dateOfBirth: student.dateOfBirth || '',
+      gender: student.gender || 'MALE',
+      bloodGroup: student.bloodGroup || '',
+      photoUrl: student.photoUrl || '',
+      presentAddress: student.presentAddress || '',
+      permanentAddress: student.permanentAddress || '',
+      username: student.username || '',
+      password: student.password || '',
+      branchId: student.branchId || '',
+      academicYearId: student.academicYearId || '',
+      classId: student.classId || '',
+      cohortId: student.cohortId || '',
+      sectionId: student.sectionId || '',
+      rollNumber: student.rollNumber || '',
+      guardians: student.guardians || [],
+      previousSchoolName: student.previousSchoolName || '',
+      previousSchoolAddress: student.previousSchoolAddress || '',
+      previousClass: student.previousClass || '',
+      previousBoard: student.previousBoard || '',
+      tcNumber: student.tcNumber || '',
       previousAcademicResults: student.previousAcademicResults || [],
     },
   })
 
-  // Initialize available cohorts and sections on mount
+  // Initialize form values and enrollment data on mount
   useEffect(() => {
+    // Reset form with student data to ensure all fields are populated
+    const formData = {
+      name: student.name || '',
+      email: student.email || '',
+      phone: student.phone || '',
+      dateOfBirth: student.dateOfBirth || '',
+      gender: student.gender || 'MALE',
+      bloodGroup: student.bloodGroup || '',
+      photoUrl: student.photoUrl || '',
+      presentAddress: student.presentAddress || '',
+      permanentAddress: student.permanentAddress || '',
+      username: student.username || '',
+      password: student.password || '',
+      branchId: student.branchId || '',
+      academicYearId: student.academicYearId || '',
+      classId: student.classId || '',
+      cohortId: student.cohortId || '',
+      sectionId: student.sectionId || '',
+      rollNumber: student.rollNumber || '',
+      guardians: student.guardians || [],
+      previousSchoolName: student.previousSchoolName || '',
+      previousSchoolAddress: student.previousSchoolAddress || '',
+      previousClass: student.previousClass || '',
+      previousBoard: student.previousBoard || '',
+      tcNumber: student.tcNumber || '',
+      previousAcademicResults: student.previousAcademicResults || [],
+    }
+
+    form.reset(formData)
+
     const initializeEnrollmentData = async () => {
       if (student.academicYearId && student.classId && student.branchId) {
         // Fetch available cohorts
@@ -165,7 +195,7 @@ export function EditStudentForm({
     }
 
     initializeEnrollmentData()
-  }, [])
+  }, [student, form])
 
   const handleFetchCohorts = async (yearId: string, classId: string, branchId: string) => {
     const result = await getAvailableCohorts(yearId, classId, branchId)

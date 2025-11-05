@@ -12,7 +12,7 @@ export class StorageService {
    * Generate storage key with tenant isolation
    */
   private async generateKey(
-    category: 'students' | 'teachers' | 'courses' | 'assignments' | 'exams' | 'library' | 'notices' | 'reports',
+    category: 'students' | 'teachers' | 'courses' | 'assignments' | 'exams' | 'library' | 'notices' | 'reports' | 'questions',
     subPath: string
   ): Promise<string> {
     const tenantId = await getTenantId()
@@ -231,6 +231,42 @@ export class StorageService {
   async listFiles(prefix: string): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
     const storage = await this.getStorageAdapter()
     return await storage.list(prefix)
+  }
+}
+
+// Singleton instance
+let serviceInstance: StorageService | null = null
+
+  /**
+   * Upload question image
+   */
+  async uploadQuestionImage(questionId: string, file: File): Promise<string> {
+    const storage = await this.getStorageAdapter()
+    const extension = file.name.split('.').pop()
+    const timestamp = Date.now()
+    const key = await this.generateKey('questions', `images/${questionId}/${timestamp}.${extension}`)
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        questionId,
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: false, // Question images are private
+    })
+
+    return result.url
+  }
+
+  /**
+   * Delete question files
+   */
+  async deleteQuestionFiles(questionId: string): Promise<void> {
+    const storage = await this.getStorageAdapter()
+    const prefix = await this.generateKey('questions', `images/${questionId}/`)
+    await storage.deleteByPrefix(prefix)
   }
 }
 
