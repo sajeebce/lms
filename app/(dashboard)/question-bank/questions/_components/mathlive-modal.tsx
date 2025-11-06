@@ -146,24 +146,35 @@ export default function MathLiveModal({ open, onClose, onInsert }: MathLiveModal
       return
     }
 
-    onInsert(trimmedLatex)
+    // ✅ Close modal FIRST, then insert (prevents aria-hidden warning)
+    const latexToInsert = trimmedLatex
     handleClose()
+
+    // Wait for modal to fully close before inserting
+    setTimeout(() => {
+      onInsert(latexToInsert)
+    }, 200)
   }
 
   const handleClose = () => {
+    // Blur all focused elements inside dialog
+    const activeElement = document.activeElement as HTMLElement | null
+    if (activeElement) {
+      activeElement.blur()
+    }
+
+    // Reset MathLive field
     const mathField = mathFieldRef.current
     if (mathField) {
       mathField.blur()
       mathField.value = ''
     }
 
-    const activeElement = document.activeElement as HTMLElement | null
-    if (activeElement && activeElement.closest('[data-radix-dialog-content]')) {
-      activeElement.blur()
-    }
-
+    // Reset state
     setLatex('')
     setLoadError(null)
+
+    // Close dialog
     onClose()
   }
 
@@ -245,13 +256,13 @@ export default function MathLiveModal({ open, onClose, onInsert }: MathLiveModal
     }}>
       <DialogContent
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
-        tabIndex={-1}
         onOpenAutoFocus={(e) => {
+          // Prevent auto-focus to avoid focus issues
           e.preventDefault()
-          const dialogContent = e.currentTarget as HTMLElement
-          requestAnimationFrame(() => {
-            dialogContent.focus()
-          })
+        }}
+        onCloseAutoFocus={(e) => {
+          // Prevent auto-focus on close to avoid aria-hidden warning
+          e.preventDefault()
         }}
         onInteractOutside={(event) => {
           const target = event.target as HTMLElement | null
