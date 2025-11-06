@@ -178,6 +178,7 @@ export async function createTopic(data: TopicInput) {
         select: {
           id: true,
           name: true,
+          code: true,
           subject: {
             select: {
               id: true,
@@ -193,6 +194,11 @@ export async function createTopic(data: TopicInput) {
               alias: true,
             },
           },
+        },
+      },
+      _count: {
+        select: {
+          questions: true,
         },
       },
     },
@@ -253,6 +259,7 @@ export async function updateTopic(id: string, data: TopicInput) {
         select: {
           id: true,
           name: true,
+          code: true,
           subject: {
             select: {
               id: true,
@@ -268,6 +275,11 @@ export async function updateTopic(id: string, data: TopicInput) {
               alias: true,
             },
           },
+        },
+      },
+      _count: {
+        select: {
+          questions: true,
         },
       },
     },

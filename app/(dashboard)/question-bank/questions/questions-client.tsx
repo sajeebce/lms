@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Package } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -85,6 +87,7 @@ export default function QuestionsClient({
   topics,
   sources,
 }: Props) {
+  const router = useRouter()
   const [questions, setQuestions] = useState(initialQuestions)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterSubject, setFilterSubject] = useState('')
@@ -168,20 +171,32 @@ export default function QuestionsClient({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+    <div className="space-y-4 md:space-y-6">
+      {/* Filters - Two Row Layout */}
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
+        {/* Row 1: Search + Add Button */}
+        <div className="flex gap-3 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
             />
           </div>
+          <Button
+            onClick={() => router.push('/question-bank/questions/new')}
+            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Add Question</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </div>
 
+        {/* Row 2: Filters Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <SearchableDropdown
             options={[
               { value: '', label: 'All Subjects' },
@@ -189,7 +204,7 @@ export default function QuestionsClient({
             ]}
             value={filterSubject}
             onChange={setFilterSubject}
-            placeholder="Subject"
+            placeholder="All Subjects"
           />
 
           <SearchableDropdown
@@ -199,7 +214,7 @@ export default function QuestionsClient({
             ]}
             value={filterClass}
             onChange={setFilterClass}
-            placeholder="Class"
+            placeholder="All Classes"
           />
 
           <SearchableDropdown
@@ -212,7 +227,7 @@ export default function QuestionsClient({
             ]}
             value={filterDifficulty}
             onChange={setFilterDifficulty}
-            placeholder="Difficulty"
+            placeholder="All Difficulties"
           />
 
           <SearchableDropdown
@@ -225,75 +240,81 @@ export default function QuestionsClient({
             ]}
             value={filterType}
             onChange={setFilterType}
-            placeholder="Type"
+            placeholder="All Types"
           />
         </div>
-
-        <Button
-          onClick={() => {
-            setEditingQuestion(null)
-            setFormOpen(true)
-          }}
-          className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Question
-        </Button>
       </div>
 
       {/* Questions Grid */}
       <div className="grid gap-4">
         {filteredQuestions.length === 0 ? (
-          <div className="text-center py-12 text-neutral-500 border rounded-lg">
-            {searchQuery || filterSubject || filterClass || filterDifficulty || filterType
-              ? 'No questions found matching your filters'
-              : 'No questions yet. Add your first question to get started!'}
+          <div className="text-center py-12 border rounded-lg dark:border-slate-700 bg-card dark:bg-slate-800/30">
+            <Package className="h-16 w-16 mx-auto text-muted-foreground dark:text-slate-500 mb-4" />
+            <h3 className="text-lg font-medium mb-2 dark:text-slate-200">
+              {searchQuery || filterSubject || filterClass || filterDifficulty || filterType
+                ? 'No questions found'
+                : 'No questions yet'}
+            </h3>
+            <p className="text-muted-foreground dark:text-slate-400 mb-4">
+              {searchQuery || filterSubject || filterClass || filterDifficulty || filterType
+                ? 'Try adjusting your filters to find what you\'re looking for'
+                : 'Add your first question to get started!'}
+            </p>
+            {!searchQuery && !filterSubject && !filterClass && !filterDifficulty && !filterType && (
+              <Button
+                onClick={() => router.push('/question-bank/questions/new')}
+                className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Question
+              </Button>
+            )}
           </div>
         ) : (
           filteredQuestions.map((question) => (
             <div
               key={question.id}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-slate-800"
+              className="border dark:border-slate-700 rounded-lg p-4 md:p-5 hover:shadow-md transition-shadow bg-card dark:bg-slate-800/50"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1 space-y-3">
                   {/* Question Text */}
-                  <p className="text-base font-medium text-neutral-900 dark:text-neutral-100">
+                  <p className="text-base font-medium text-foreground dark:text-slate-200 leading-relaxed">
                     {question.questionText}
                   </p>
 
                   {/* Badges */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                      {question.topic.chapter.subject.name}
-                    </span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                      {question.topic.chapter.class.name}
-                    </span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
-                      {question.topic.chapter.name}
-                    </span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                      {question.topic.name}
-                    </span>
+                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
+                      📚 {question.topic.chapter.subject.name}
+                    </Badge>
+                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800">
+                      🎓 {question.topic.chapter.class.name}
+                    </Badge>
+                    <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800">
+                      📖 {question.topic.chapter.name}
+                    </Badge>
+                    <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+                      📝 {question.topic.name}
+                    </Badge>
                     {getTypeBadge(question.questionType)}
                     {getDifficultyBadge(question.difficulty)}
-                    <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                      {question.marks} marks
-                    </span>
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                      ⭐ {question.marks} marks
+                    </Badge>
                   </div>
 
                   {/* MCQ Options Preview */}
                   {question.questionType === 'MCQ' && question.options && (
-                    <div className="space-y-1 pl-4">
+                    <div className="space-y-1.5 pl-4 mt-3">
                       {JSON.parse(question.options).map((opt: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm">
+                        <div key={idx} className="flex items-start gap-2 text-sm">
                           {opt.isCorrect ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                           ) : (
-                            <X className="h-4 w-4 text-gray-400" />
+                            <X className="h-4 w-4 text-gray-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
                           )}
-                          <span className={opt.isCorrect ? 'font-medium text-green-700 dark:text-green-400' : 'text-neutral-600 dark:text-neutral-400'}>
+                          <span className={opt.isCorrect ? 'font-medium text-green-700 dark:text-green-400' : 'text-muted-foreground dark:text-slate-400'}>
                             {opt.text}
                           </span>
                         </div>
@@ -303,9 +324,14 @@ export default function QuestionsClient({
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(question)}>
-                    <Edit className="h-4 w-4 text-blue-600" />
+                <div className="flex md:flex-col gap-2 md:self-start">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(question)}
+                    className="hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -314,8 +340,9 @@ export default function QuestionsClient({
                       setQuestionToDelete(question)
                       setDeleteDialogOpen(true)
                     }}
+                    className="hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                   </Button>
                 </div>
               </div>

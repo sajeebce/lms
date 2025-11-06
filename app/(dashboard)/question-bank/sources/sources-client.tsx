@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Edit, Trash2, BookOpen, FileText, BookMarked, User, Calendar, TestTube } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Search, Edit, Trash2, BookOpen, FileText, BookMarked, User, Calendar, TestTube, MoreVertical, Database } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -28,6 +30,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import { toast } from 'sonner'
 import { deleteQuestionSource } from '@/lib/actions/question-source.actions'
@@ -156,20 +164,22 @@ export default function SourcesClient({ initialSources }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+    <div className="space-y-4 md:space-y-6">
+      {/* Filters - Responsive Grid */}
+      <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search sources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
             />
           </div>
 
+          {/* Type Filter */}
           <SearchableDropdown
             options={[
               { value: '', label: 'All Types' },
@@ -182,9 +192,10 @@ export default function SourcesClient({ initialSources }: Props) {
             ]}
             value={filterType}
             onChange={setFilterType}
-            placeholder="Filter by type"
+            placeholder="All Types"
           />
 
+          {/* Status Filter */}
           <SearchableDropdown
             options={[
               { value: '', label: 'All Status' },
@@ -193,67 +204,72 @@ export default function SourcesClient({ initialSources }: Props) {
             ]}
             value={filterStatus}
             onChange={setFilterStatus}
-            placeholder="Filter by status"
+            placeholder="All Status"
           />
-        </div>
 
-        <Button
-          onClick={() => {
-            setEditingSource(null)
-            setFormOpen(true)
-          }}
-          className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Source
-        </Button>
+          {/* Add Button */}
+          <Button
+            onClick={() => {
+              setEditingSource(null)
+              setFormOpen(true)
+            }}
+            className="w-full md:w-auto bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Add Source</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block border rounded-lg overflow-hidden dark:border-slate-700">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Source Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Year</TableHead>
-              <TableHead>Questions</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-muted/50 dark:bg-slate-800/50">
+              <TableHead className="dark:text-slate-300">Source Name</TableHead>
+              <TableHead className="dark:text-slate-300">Type</TableHead>
+              <TableHead className="dark:text-slate-300">Year</TableHead>
+              <TableHead className="dark:text-slate-300">Questions</TableHead>
+              <TableHead className="dark:text-slate-300">Status</TableHead>
+              <TableHead className="text-right dark:text-slate-300">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-neutral-500">
-                  {searchQuery || filterType || filterStatus
-                    ? 'No sources found matching your filters'
-                    : 'No question sources yet. Add your first source to get started!'}
+                <TableCell colSpan={6} className="text-center py-12">
+                  <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground dark:text-slate-400">
+                    {searchQuery || filterType || filterStatus
+                      ? 'No sources found matching your filters'
+                      : 'No question sources yet. Add your first source to get started!'}
+                  </p>
                 </TableCell>
               </TableRow>
             ) : (
               filteredSources.map((source) => (
-                <TableRow key={source.id}>
+                <TableRow key={source.id} className="dark:border-slate-700">
                   <TableCell>
                     <div>
-                      <p className="font-medium">{source.name}</p>
+                      <p className="font-medium dark:text-slate-200">{source.name}</p>
                       {source.description && (
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 line-clamp-1">
+                        <p className="text-sm text-muted-foreground dark:text-slate-400 line-clamp-1">
                           {source.description}
                         </p>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>{getTypeBadge(source.type)}</TableCell>
-                  <TableCell>{source.year || '-'}</TableCell>
+                  <TableCell className="dark:text-slate-300">{source.year || '-'}</TableCell>
                   <TableCell>
-                    <span className="text-sm font-medium">{source._count.questions}</span>
+                    <span className="text-sm font-medium dark:text-slate-300">{source._count.questions}</span>
                   </TableCell>
                   <TableCell>{getStatusBadge(source.status)}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(source)}>
-                        <Edit className="h-4 w-4 text-blue-600" />
+                        <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -263,7 +279,7 @@ export default function SourcesClient({ initialSources }: Props) {
                           setDeleteDialogOpen(true)
                         }}
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
                       </Button>
                     </div>
                   </TableCell>
@@ -272,6 +288,72 @@ export default function SourcesClient({ initialSources }: Props) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredSources.length === 0 ? (
+          <Card className="p-8 text-center dark:bg-slate-800/50 dark:border-slate-700">
+            <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground dark:text-slate-400 text-sm">
+              {searchQuery || filterType || filterStatus
+                ? 'No sources found matching your filters'
+                : 'No question sources yet. Add your first source to get started!'}
+            </p>
+          </Card>
+        ) : (
+          filteredSources.map((source) => (
+            <Card key={source.id} className="p-4 dark:bg-slate-800/50 dark:border-slate-700">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0 mr-2">
+                  <h3 className="font-medium text-sm dark:text-slate-200 truncate">{source.name}</h3>
+                  {source.description && (
+                    <p className="text-xs text-muted-foreground dark:text-slate-400 line-clamp-2 mt-1">
+                      {source.description}
+                    </p>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(source)}>
+                      <Edit className="h-4 w-4 mr-2 text-blue-600" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSourceToDelete(source)
+                        setDeleteDialogOpen(true)
+                      }}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {getTypeBadge(source.type)}
+                {source.year && (
+                  <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {source.year}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
+                  {source._count.questions} questions
+                </Badge>
+                {getStatusBadge(source.status)}
+              </div>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Form Dialog */}

@@ -166,13 +166,22 @@ export async function createChapter(data: ChapterInput) {
     include: {
       subject: {
         select: {
+          id: true,
           name: true,
           icon: true,
+          color: true,
         },
       },
       class: {
         select: {
+          id: true,
           name: true,
+          alias: true,
+        },
+      },
+      _count: {
+        select: {
+          topics: true,
         },
       },
     },
@@ -234,13 +243,22 @@ export async function updateChapter(id: string, data: ChapterInput) {
     include: {
       subject: {
         select: {
+          id: true,
           name: true,
           icon: true,
+          color: true,
         },
       },
       class: {
         select: {
+          id: true,
           name: true,
+          alias: true,
+        },
+      },
+      _count: {
+        select: {
+          topics: true,
         },
       },
     },
