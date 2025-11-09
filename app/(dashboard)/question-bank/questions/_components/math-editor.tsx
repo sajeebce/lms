@@ -101,6 +101,13 @@ const ResizableImage = Image.extend({
           return { "data-description": attributes.description };
         },
       },
+      border: {
+        default: "none",
+        renderHTML: (attributes) => {
+          if (!attributes.border || attributes.border === "none") return {};
+          return { "data-border": attributes.border };
+        },
+      },
       "data-file-id": {
         default: null,
         renderHTML: (attributes) => {
@@ -137,6 +144,18 @@ const ResizableImage = Image.extend({
       img.style.cursor = "pointer";
       img.style.display = "inline-block";
       img.style.transition = "all 0.2s ease";
+
+      // Apply border style
+      const borderStyle = node.attrs.border || "none";
+      if (borderStyle === "thin") {
+        img.style.border = "1px solid #d1d5db";
+      } else if (borderStyle === "medium") {
+        img.style.border = "2px solid #9ca3af";
+      } else if (borderStyle === "thick") {
+        img.style.border = "4px solid #6b7280";
+      } else {
+        img.style.border = "none";
+      }
 
       // Selection border (hidden by default)
       const selectionBorder = document.createElement("div");
@@ -254,6 +273,7 @@ const ResizableImage = Image.extend({
           width: node.attrs.width,
           height: node.attrs.height,
           textAlign: node.attrs.textAlign,
+          border: node.attrs.border,
           fileId: node.attrs["data-file-id"],
           pos: typeof getPos === "function" ? getPos() : null,
         };
@@ -774,6 +794,7 @@ export default function MathEditor({
           width: props.width,
           height: props.height,
           textAlign: props.alignment,
+          border: props.border,
           "data-file-id": props.fileId,
         })
         .run();
@@ -793,6 +814,7 @@ export default function MathEditor({
           width: props.width,
           height: props.height,
           textAlign: props.alignment,
+          border: props.border,
           "data-file-id": props.fileId,
         })
         .run();
@@ -1368,6 +1390,7 @@ export default function MathEditor({
         initialWidth={editingImageData?.width}
         initialHeight={editingImageData?.height}
         initialAlignment={editingImageData?.textAlign || "center"}
+        initialBorder={editingImageData?.border || "none"}
       />
     </div>
   );

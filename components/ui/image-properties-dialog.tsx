@@ -30,6 +30,7 @@ export interface ImageProperties {
   width?: number;
   height?: number;
   alignment: "left" | "center" | "right";
+  border?: "none" | "thin" | "medium" | "thick"; // Border style
   isDecorative: boolean;
   fileId?: string; // For server-side deletion
 }
@@ -44,6 +45,7 @@ interface ImagePropertiesDialogProps {
   initialWidth?: number;
   initialHeight?: number;
   initialAlignment?: "left" | "center" | "right";
+  initialBorder?: "none" | "thin" | "medium" | "thick";
   category?: string;
   entityType?: string;
   entityId?: string;
@@ -59,6 +61,7 @@ export function ImagePropertiesDialog({
   initialWidth,
   initialHeight,
   initialAlignment = "center",
+  initialBorder = "none",
   category = "question_image",
   entityType,
   entityId,
@@ -70,6 +73,9 @@ export function ImagePropertiesDialog({
   const [height, setHeight] = useState<number | undefined>();
   const [alignment, setAlignment] = useState<"left" | "center" | "right">(
     "center"
+  );
+  const [border, setBorder] = useState<"none" | "thin" | "medium" | "thick">(
+    "none"
   );
   const [isDecorative, setIsDecorative] = useState(true); // ✅ Default checked
   const [autoSize, setAutoSize] = useState(true);
@@ -84,6 +90,7 @@ export function ImagePropertiesDialog({
       setWidth(initialWidth);
       setHeight(initialHeight);
       setAlignment(initialAlignment || "center");
+      setBorder(initialBorder || "none");
       setIsDecorative(true); // ✅ Default checked
       setAutoSize(!initialWidth && !initialHeight);
     }
@@ -154,6 +161,7 @@ export function ImagePropertiesDialog({
       width: autoSize ? undefined : width,
       height: autoSize ? undefined : height,
       alignment,
+      border,
       isDecorative,
       fileId, // Pass file ID for deletion
     });
@@ -373,6 +381,25 @@ export function ImagePropertiesDialog({
                   <SelectItem value="left">Left</SelectItem>
                   <SelectItem value="center">Center</SelectItem>
                   <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Border */}
+            <div className="space-y-2">
+              <Label htmlFor="border">Border</Label>
+              <Select
+                value={border}
+                onValueChange={(value: any) => setBorder(value)}
+              >
+                <SelectTrigger id="border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="thin">Thin (1px solid)</SelectItem>
+                  <SelectItem value="medium">Medium (2px solid)</SelectItem>
+                  <SelectItem value="thick">Thick (4px solid)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
