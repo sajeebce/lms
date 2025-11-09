@@ -163,7 +163,15 @@ export function ImagePropertiesDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          // Only close if file picker is not open
+          if (!isOpen && !showFilePicker) {
+            onClose();
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Insert Image</DialogTitle>

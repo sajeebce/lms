@@ -545,8 +545,25 @@ const ResizableImage = Image.extend({
       };
       document.addEventListener("click", handleOutsideClick);
 
+      // Description caption (if exists)
+      let descriptionCaption: HTMLDivElement | null = null;
+      if (node.attrs.description) {
+        descriptionCaption = document.createElement("div");
+        descriptionCaption.className = "image-description";
+        descriptionCaption.textContent = node.attrs.description;
+        descriptionCaption.style.fontSize = "14px";
+        descriptionCaption.style.color = "#6b7280";
+        descriptionCaption.style.marginTop = "8px";
+        descriptionCaption.style.fontStyle = "italic";
+        descriptionCaption.style.textAlign = node.attrs.textAlign || "center";
+        descriptionCaption.style.padding = "0 4px";
+      }
+
       container.appendChild(selectionBorder);
       container.appendChild(img);
+      if (descriptionCaption) {
+        container.appendChild(descriptionCaption);
+      }
       container.appendChild(toolbar);
       // Append all 8 handles
       container.appendChild(handleNW);
