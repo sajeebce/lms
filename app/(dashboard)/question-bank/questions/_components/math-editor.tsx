@@ -854,28 +854,54 @@ export default function MathEditor({
     // Check if we're editing an existing image
     if (editingImageData && editingImageData.pos !== null) {
       // Update existing image at specific position
-      const { state, view } = editor;
-      const { tr } = state;
       const pos = editingImageData.pos;
 
-      // Update node attributes
-      tr.setNodeMarkup(pos, undefined, {
-        src: props.url,
-        alt: props.alt,
-        title: props.alt,
+      console.log("Updating image at position:", pos);
+      console.log("New attributes:", {
         description: props.description,
-        width: props.width,
-        height: props.height,
-        textAlign: props.alignment,
         border: props.border,
         borderColor: props.borderColor,
-        "data-file-id": props.fileId,
+        width: props.width,
+        height: props.height,
       });
 
-      view.dispatch(tr);
+      // Use updateAttributes command
+      editor
+        .chain()
+        .focus()
+        .command(({ tr, state }) => {
+          const node = state.doc.nodeAt(pos);
+          if (!node || node.type.name !== "image") {
+            console.error("No image node found at position:", pos);
+            return false;
+          }
 
-      // Clear editing state
-      setEditingImageData(null);
+          tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            src: props.url,
+            alt: props.alt,
+            title: props.alt,
+            description: props.description,
+            width: props.width,
+            height: props.height,
+            textAlign: props.alignment,
+            border: props.border,
+            borderColor: props.borderColor,
+            "data-file-id": props.fileId,
+          });
+
+          console.log("Transaction created, dispatching...");
+          return true;
+        })
+        .run();
+
+      console.log("Update complete");
+
+      // Clear editing state after a small delay to ensure update is applied
+      setTimeout(() => {
+        setEditingImageData(null);
+        setShowImageDialog(false);
+      }, 100);
     } else {
       // Insert new image
       editor

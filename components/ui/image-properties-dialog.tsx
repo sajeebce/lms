@@ -174,7 +174,10 @@ export function ImagePropertiesDialog({
       fileId, // Pass file ID for deletion
     });
 
-    onClose();
+    // Don't close here - let parent handle closing after update
+    if (!isEditMode) {
+      onClose();
+    }
   };
 
   return (
