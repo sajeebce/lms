@@ -40,6 +40,7 @@ interface ImagePropertiesDialogProps {
   open: boolean;
   onClose: () => void;
   onInsert: (props: ImageProperties) => void;
+  isEditMode?: boolean; // To show "Update" instead of "Insert Image"
   initialUrl?: string;
   initialAlt?: string;
   initialDescription?: string;
@@ -57,6 +58,7 @@ export function ImagePropertiesDialog({
   open,
   onClose,
   onInsert,
+  isEditMode = false,
   initialUrl = "",
   initialAlt = "",
   initialDescription = "",
@@ -188,7 +190,9 @@ export function ImagePropertiesDialog({
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Insert Image</DialogTitle>
+            <DialogTitle>
+              {isEditMode ? "Edit Image" : "Insert Image"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -439,7 +443,9 @@ export function ImagePropertiesDialog({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleInsert}>Insert Image</Button>
+            <Button onClick={handleInsert}>
+              {isEditMode ? "Update" : "Insert Image"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

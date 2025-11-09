@@ -612,6 +612,69 @@ const ResizableImage = Image.extend({
 
       return {
         dom: container,
+        update(updatedNode) {
+          // Only update if it's the same image node type
+          if (updatedNode.type.name !== "image") return false;
+
+          // Update image src, alt, dimensions
+          img.src = updatedNode.attrs.src;
+          img.alt = updatedNode.attrs.alt || "";
+          img.title = updatedNode.attrs.title || "";
+
+          if (updatedNode.attrs.width) {
+            img.width = updatedNode.attrs.width;
+            img.style.width = updatedNode.attrs.width + "px";
+          }
+          if (updatedNode.attrs.height) {
+            img.height = updatedNode.attrs.height;
+            img.style.height = updatedNode.attrs.height + "px";
+          }
+
+          // Update border
+          const borderStyle = updatedNode.attrs.border || "none";
+          const borderColor = updatedNode.attrs.borderColor || "#d1d5db";
+          if (borderStyle === "thin") {
+            img.style.border = `1px solid ${borderColor}`;
+          } else if (borderStyle === "medium") {
+            img.style.border = `2px solid ${borderColor}`;
+          } else if (borderStyle === "thick") {
+            img.style.border = `4px solid ${borderColor}`;
+          } else {
+            img.style.border = "none";
+          }
+
+          // Update description caption
+          if (descriptionCaption) {
+            if (updatedNode.attrs.description) {
+              descriptionCaption.textContent = updatedNode.attrs.description;
+              descriptionCaption.style.display = "block";
+            } else {
+              descriptionCaption.style.display = "none";
+            }
+          } else if (updatedNode.attrs.description) {
+            // Create caption if it doesn't exist
+            descriptionCaption = document.createElement("div");
+            descriptionCaption.className = "image-description";
+            descriptionCaption.textContent = updatedNode.attrs.description;
+            descriptionCaption.style.fontSize = "14px";
+            descriptionCaption.style.color = "#6b7280";
+            descriptionCaption.style.marginTop = "8px";
+            descriptionCaption.style.fontStyle = "italic";
+            descriptionCaption.style.textAlign =
+              updatedNode.attrs.textAlign || "center";
+            descriptionCaption.style.padding = "0 4px";
+            container.insertBefore(descriptionCaption, toolbar);
+          }
+
+          // Update alignment
+          container.style.textAlign = updatedNode.attrs.textAlign || "center";
+          if (descriptionCaption) {
+            descriptionCaption.style.textAlign =
+              updatedNode.attrs.textAlign || "center";
+          }
+
+          return true;
+        },
         destroy() {
           document.removeEventListener("click", handleOutsideClick);
         },
@@ -1392,6 +1455,7 @@ export default function MathEditor({
           setEditingImageData(null);
         }}
         onInsert={handleImageInsert}
+        isEditMode={!!editingImageData}
         category="question_image"
         entityType="question"
         entityId="temp"
