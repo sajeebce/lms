@@ -125,6 +125,7 @@ const ResizableImage = Image.extend({
       },
       id: {
         default: null,
+        parseHTML: (element) => element.getAttribute("data-image-id"),
         renderHTML: (attributes) => {
           if (!attributes.id) return {};
           return { "data-image-id": attributes.id };
@@ -134,26 +135,13 @@ const ResizableImage = Image.extend({
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
-      // Generate unique ID if not exists (synchronously)
-      let currentNode = node;
-      if (!currentNode.attrs.id) {
-        const pos = typeof getPos === "function" ? getPos() : 0;
-        const uniqueId = `img-${Date.now()}-${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
-
-        // Update node attributes immediately
-        const tr = editor.view.state.tr.setNodeMarkup(pos, undefined, {
-          ...currentNode.attrs,
-          id: uniqueId,
-        });
-        editor.view.dispatch(tr);
-
-        // Update currentNode reference with new ID
-        currentNode = {
-          ...currentNode,
-          attrs: { ...currentNode.attrs, id: uniqueId },
-        };
+      // Don't generate ID here - it should be set during insert
+      // Just log if ID is missing (for debugging)
+      if (!node.attrs.id) {
+        console.warn(
+          "Image node without ID detected at position:",
+          typeof getPos === "function" ? getPos() : "unknown"
+        );
       }
       const container = document.createElement("div");
       container.className = "image-wrapper";
@@ -323,6 +311,9 @@ const ResizableImage = Image.extend({
           id: latestNode.attrs.id, // Unique image ID (guaranteed to exist)
           pos: currentPos,
         };
+
+        console.log("Edit button clicked - Image data:", imageData);
+        console.log("Image ID:", latestNode.attrs.id);
 
         // Store in a global variable that React can access
         (window as any).__editImageData = imageData;
@@ -904,15 +895,26 @@ export default function MathEditor({
 
       // Find the image node by ID
       let foundPos: number | null = null;
+      const allImages: any[] = [];
       editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === "image" && node.attrs.id === imageId) {
-          foundPos = pos;
-          return false; // Stop searching
+        if (node.type.name === "image") {
+          allImages.push({ pos, id: node.attrs.id, src: node.attrs.src });
+          if (node.attrs.id === imageId) {
+            foundPos = pos;
+            return false; // Stop searching
+          }
         }
       });
 
+      console.log("All images in document:", allImages);
+      console.log("Looking for ID:", imageId);
+
       if (foundPos === null) {
         console.error("Image not found with ID:", imageId);
+        console.error(
+          "Available image IDs:",
+          allImages.map((img) => img.id)
+        );
         toast.error("Failed to update image");
         setEditingImageData(null);
         setShowImageDialog(false);
@@ -981,6 +983,19 @@ export default function MathEditor({
           id: uniqueId,
         })
         .run();
+
+      console.log("Image inserted with ID:", uniqueId);
+
+      // Verify ID was set
+      setTimeout(() => {
+        const allImages: any[] = [];
+        editor.state.doc.descendants((node, pos) => {
+          if (node.type.name === "image") {
+            allImages.push({ pos, id: node.attrs.id, src: node.attrs.src });
+          }
+        });
+        console.log("After insert - All images:", allImages);
+      }, 100);
 
       // Apply alignment if specified
       if (props.alignment && props.alignment !== "left") {
