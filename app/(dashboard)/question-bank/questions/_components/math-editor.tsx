@@ -404,36 +404,62 @@ const ResizableImage = Image.extend({
         }
 
         let startX = 0;
+        let startY = 0;
         let startWidth = 0;
+        let startHeight = 0;
+        let aspectRatio = 1;
 
         handle.addEventListener("mousedown", (e) => {
           e.preventDefault();
           e.stopPropagation();
           startX = e.clientX;
+          startY = e.clientY;
           startWidth = img.width || img.offsetWidth;
+          startHeight = img.height || img.offsetHeight;
+          aspectRatio = startWidth / startHeight;
 
           const onMouseMove = (e: MouseEvent) => {
             const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
             let newWidth = startWidth;
+            let newHeight = startHeight;
 
-            // Calculate new width based on handle position
-            if (position === "ne" || position === "se" || position === "e") {
-              newWidth = startWidth + deltaX;
-            } else if (
-              position === "nw" ||
-              position === "sw" ||
-              position === "w"
-            ) {
-              newWidth = startWidth - deltaX;
-            } else {
-              // n and s handles don't resize (only corners and sides)
-              return;
+            // Diagonal handles: maintain aspect ratio
+            if (["nw", "ne", "sw", "se"].includes(position)) {
+              if (position === "ne" || position === "se") {
+                newWidth = startWidth + deltaX;
+              } else {
+                newWidth = startWidth - deltaX;
+              }
+              newHeight = newWidth / aspectRatio; // Maintain ratio
+            }
+            // Edge handles: free resize (no ratio constraint)
+            else if (position === "e" || position === "w") {
+              if (position === "e") {
+                newWidth = startWidth + deltaX;
+              } else {
+                newWidth = startWidth - deltaX;
+              }
+              // Height stays same (no ratio)
+              newHeight = startHeight;
+            } else if (position === "n" || position === "s") {
+              if (position === "s") {
+                newHeight = startHeight + deltaY;
+              } else {
+                newHeight = startHeight - deltaY;
+              }
+              // Width stays same (no ratio)
+              newWidth = startWidth;
             }
 
-            if (newWidth > 50 && newWidth <= 1200) {
+            if (newWidth > 50 && newWidth <= 1200 && newHeight > 50) {
               img.width = newWidth;
+              img.height = newHeight;
               if (typeof getPos === "function") {
-                editor.commands.updateAttributes("image", { width: newWidth });
+                editor.commands.updateAttributes("image", {
+                  width: newWidth,
+                  height: newHeight,
+                });
               }
             }
           };
