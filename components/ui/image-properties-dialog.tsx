@@ -297,6 +297,18 @@ export function ImagePropertiesDialog({
 
             {/* Dimensions */}
             <div className="space-y-2">
+              <Label>Dimensions</Label>
+
+              {/* Current Size Display */}
+              <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+                Current size: {width || "auto"} × {height || "auto"}
+                {width && height && (
+                  <span className="ml-2 text-xs">
+                    ({width}px × {height}px)
+                  </span>
+                )}
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="auto-size"
