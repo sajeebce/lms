@@ -65,6 +65,7 @@ import {
   ImagePropertiesDialog,
   type ImageProperties,
 } from "@/components/ui/image-properties-dialog";
+import { toast } from "sonner";
 
 const lowlight = createLowlight(common);
 
@@ -133,18 +134,26 @@ const ResizableImage = Image.extend({
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
-      // Generate unique ID if not exists
-      if (!node.attrs.id) {
+      // Generate unique ID if not exists (synchronously)
+      let currentNode = node;
+      if (!currentNode.attrs.id) {
         const pos = typeof getPos === "function" ? getPos() : 0;
         const uniqueId = `img-${Date.now()}-${Math.random()
           .toString(36)
           .substr(2, 9)}`;
-        editor.view.dispatch(
-          editor.view.state.tr.setNodeMarkup(pos, undefined, {
-            ...node.attrs,
-            id: uniqueId,
-          })
-        );
+
+        // Update node attributes immediately
+        const tr = editor.view.state.tr.setNodeMarkup(pos, undefined, {
+          ...currentNode.attrs,
+          id: uniqueId,
+        });
+        editor.view.dispatch(tr);
+
+        // Update currentNode reference with new ID
+        currentNode = {
+          ...currentNode,
+          attrs: { ...currentNode.attrs, id: uniqueId },
+        };
       }
       const container = document.createElement("div");
       container.className = "image-wrapper";
@@ -292,20 +301,27 @@ const ResizableImage = Image.extend({
         const editorView = editor.view;
         if (!editorView) return;
 
+        // Get current position and fetch latest node state
+        const currentPos = typeof getPos === "function" ? getPos() : null;
+        if (currentPos === null) return;
+
+        const latestNode = editorView.state.doc.nodeAt(currentPos);
+        if (!latestNode || latestNode.type.name !== "image") return;
+
         // Find the React component instance and call the edit handler
         // We'll use a data attribute to store the callback
         const imageData = {
-          src: node.attrs.src,
-          alt: node.attrs.alt,
-          description: node.attrs.description,
-          width: node.attrs.width,
-          height: node.attrs.height,
-          textAlign: node.attrs.textAlign,
-          border: node.attrs.border,
-          borderColor: node.attrs.borderColor,
-          fileId: node.attrs["data-file-id"],
-          id: node.attrs.id, // Unique image ID
-          pos: typeof getPos === "function" ? getPos() : null,
+          src: latestNode.attrs.src,
+          alt: latestNode.attrs.alt,
+          description: latestNode.attrs.description,
+          width: latestNode.attrs.width,
+          height: latestNode.attrs.height,
+          textAlign: latestNode.attrs.textAlign,
+          border: latestNode.attrs.border,
+          borderColor: latestNode.attrs.borderColor,
+          fileId: latestNode.attrs["data-file-id"],
+          id: latestNode.attrs.id, // Unique image ID (guaranteed to exist)
+          pos: currentPos,
         };
 
         // Store in a global variable that React can access
