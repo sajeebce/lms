@@ -108,6 +108,13 @@ const ResizableImage = Image.extend({
           return { "data-border": attributes.border };
         },
       },
+      borderColor: {
+        default: "#d1d5db",
+        renderHTML: (attributes) => {
+          if (!attributes.borderColor) return {};
+          return { "data-border-color": attributes.borderColor };
+        },
+      },
       "data-file-id": {
         default: null,
         renderHTML: (attributes) => {
@@ -145,14 +152,15 @@ const ResizableImage = Image.extend({
       img.style.display = "inline-block";
       img.style.transition = "all 0.2s ease";
 
-      // Apply border style
+      // Apply border style with custom color
       const borderStyle = node.attrs.border || "none";
+      const borderColor = node.attrs.borderColor || "#d1d5db";
       if (borderStyle === "thin") {
-        img.style.border = "1px solid #d1d5db";
+        img.style.border = `1px solid ${borderColor}`;
       } else if (borderStyle === "medium") {
-        img.style.border = "2px solid #9ca3af";
+        img.style.border = `2px solid ${borderColor}`;
       } else if (borderStyle === "thick") {
-        img.style.border = "4px solid #6b7280";
+        img.style.border = `4px solid ${borderColor}`;
       } else {
         img.style.border = "none";
       }
@@ -274,6 +282,7 @@ const ResizableImage = Image.extend({
           height: node.attrs.height,
           textAlign: node.attrs.textAlign,
           border: node.attrs.border,
+          borderColor: node.attrs.borderColor,
           fileId: node.attrs["data-file-id"],
           pos: typeof getPos === "function" ? getPos() : null,
         };
@@ -795,6 +804,7 @@ export default function MathEditor({
           height: props.height,
           textAlign: props.alignment,
           border: props.border,
+          borderColor: props.borderColor,
           "data-file-id": props.fileId,
         })
         .run();
@@ -815,6 +825,7 @@ export default function MathEditor({
           height: props.height,
           textAlign: props.alignment,
           border: props.border,
+          borderColor: props.borderColor,
           "data-file-id": props.fileId,
         })
         .run();
@@ -1391,6 +1402,7 @@ export default function MathEditor({
         initialHeight={editingImageData?.height}
         initialAlignment={editingImageData?.textAlign || "center"}
         initialBorder={editingImageData?.border || "none"}
+        initialBorderColor={editingImageData?.borderColor || "#d1d5db"}
       />
     </div>
   );

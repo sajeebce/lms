@@ -31,6 +31,7 @@ export interface ImageProperties {
   height?: number;
   alignment: "left" | "center" | "right";
   border?: "none" | "thin" | "medium" | "thick"; // Border style
+  borderColor?: string; // Border color (hex)
   isDecorative: boolean;
   fileId?: string; // For server-side deletion
 }
@@ -46,6 +47,7 @@ interface ImagePropertiesDialogProps {
   initialHeight?: number;
   initialAlignment?: "left" | "center" | "right";
   initialBorder?: "none" | "thin" | "medium" | "thick";
+  initialBorderColor?: string;
   category?: string;
   entityType?: string;
   entityId?: string;
@@ -62,6 +64,7 @@ export function ImagePropertiesDialog({
   initialHeight,
   initialAlignment = "center",
   initialBorder = "none",
+  initialBorderColor = "#d1d5db",
   category = "question_image",
   entityType,
   entityId,
@@ -77,6 +80,7 @@ export function ImagePropertiesDialog({
   const [border, setBorder] = useState<"none" | "thin" | "medium" | "thick">(
     "none"
   );
+  const [borderColor, setBorderColor] = useState("#d1d5db"); // Default gray
   const [isDecorative, setIsDecorative] = useState(true); // ✅ Default checked
   const [autoSize, setAutoSize] = useState(true);
   const [showFilePicker, setShowFilePicker] = useState(false);
@@ -91,6 +95,7 @@ export function ImagePropertiesDialog({
       setHeight(initialHeight);
       setAlignment(initialAlignment || "center");
       setBorder(initialBorder || "none");
+      setBorderColor(initialBorderColor || "#d1d5db");
       setIsDecorative(true); // ✅ Default checked
       setAutoSize(!initialWidth && !initialHeight);
     }
@@ -162,6 +167,7 @@ export function ImagePropertiesDialog({
       height: autoSize ? undefined : height,
       alignment,
       border,
+      borderColor: border !== "none" ? borderColor : undefined,
       isDecorative,
       fileId, // Pass file ID for deletion
     });
@@ -403,6 +409,30 @@ export function ImagePropertiesDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Border Color (only show if border is not "none") */}
+            {border !== "none" && (
+              <div className="space-y-2">
+                <Label htmlFor="borderColor">Border Color</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="borderColor"
+                    type="color"
+                    value={borderColor}
+                    onChange={(e) => setBorderColor(e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={borderColor}
+                    onChange={(e) => setBorderColor(e.target.value)}
+                    placeholder="#d1d5db"
+                    maxLength={7}
+                    className="flex-1 font-mono text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
