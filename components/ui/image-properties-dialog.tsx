@@ -1,0 +1,331 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { FilePickerModal, SelectedFile } from './file-picker-modal'
+import { toast } from 'sonner'
+
+export interface ImageProperties {
+  url: string
+  alt: string
+  width?: number
+  height?: number
+  alignment: 'left' | 'center' | 'right'
+  isDecorative: boolean
+  fileId?: string // For server-side deletion
+}
+
+interface ImagePropertiesDialogProps {
+  open: boolean
+  onClose: () => void
+  onInsert: (props: ImageProperties) => void
+  initialUrl?: string
+  initialAlt?: string
+  initialWidth?: number
+  initialHeight?: number
+  initialAlignment?: 'left' | 'center' | 'right'
+  category?: string
+  entityType?: string
+  entityId?: string
+}
+
+export function ImagePropertiesDialog({
+  open,
+  onClose,
+  onInsert,
+  initialUrl = '',
+  initialAlt = '',
+  initialWidth,
+  initialHeight,
+  initialAlignment = 'center',
+  category = 'question_image',
+  entityType,
+  entityId,
+}: ImagePropertiesDialogProps) {
+  const [url, setUrl] = useState(initialUrl)
+  const [alt, setAlt] = useState('')
+  const [width, setWidth] = useState<number | undefined>()
+  const [height, setHeight] = useState<number | undefined>()
+  const [alignment, setAlignment] = useState<'left' | 'center' | 'right'>('center')
+  const [isDecorative, setIsDecorative] = useState(true) // ✅ Default checked
+  const [autoSize, setAutoSize] = useState(true)
+  const [showFilePicker, setShowFilePicker] = useState(false)
+  const [fileId, setFileId] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (open) {
+      setUrl(initialUrl || '')
+      setAlt(initialAlt || '')
+      setWidth(initialWidth)
+      setHeight(initialHeight)
+      setAlignment(initialAlignment || 'center')
+      setIsDecorative(true) // ✅ Default checked
+      setAutoSize(!initialWidth && !initialHeight)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const handleFileSelect = (file: SelectedFile) => {
+    setUrl(file.url)
+    setFileId(file.id) // Store file ID for deletion
+
+    // If file has dimensions, pre-fill them
+    if (file.width && file.height) {
+      setWidth(file.width)
+      setHeight(file.height)
+      setAutoSize(false) // Disable auto-size if we have dimensions
+    }
+
+    // If file has alt text, pre-fill it
+    if (file.altText) {
+      setAlt(file.altText)
+    }
+
+    setShowFilePicker(false)
+    // Keep the main dialog open so user can adjust size/alignment
+  }
+
+  // Check if URL is internal (local storage or R2)
+  const isInternalUrl = (url: string) => {
+    if (!url) return false
+    return url.startsWith('/api/storage/') ||
+           url.includes('r2.cloudflarestorage.com') ||
+           url.includes('.r2.dev') ||
+           url.startsWith('/storage/')
+  }
+
+  // Get display URL (hide internal URLs for security)
+  const getDisplayUrl = () => {
+    if (isInternalUrl(url)) {
+      return '[Internal Storage - URL Hidden for Security]'
+    }
+    return url
+  }
+
+  const handleInsert = () => {
+    if (!url.trim()) {
+      toast.error('Please select or enter an image URL')
+      return
+    }
+
+    if (!isDecorative && !alt.trim()) {
+      toast.error('Please provide alt text for accessibility (or mark as decorative)')
+      return
+    }
+
+    if (alt.length > 125) {
+      toast.error('Alt text must be 125 characters or less')
+      return
+    }
+
+    onInsert({
+      url,
+      alt: isDecorative ? '' : alt,
+      width: autoSize ? undefined : width,
+      height: autoSize ? undefined : height,
+      alignment,
+      isDecorative,
+      fileId, // Pass file ID for deletion
+    })
+
+    onClose()
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Insert Image</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* URL Input - Hide internal URLs for security */}
+            <div className="space-y-2">
+              <Label htmlFor="image-url">Image URL *</Label>
+              <div className="flex gap-2">
+                {isInternalUrl(url) ? (
+                  // Show masked input for internal URLs
+                  <div className="flex-1 flex items-center gap-2 px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span className="text-sm">[Internal Storage - URL Hidden for Security]</span>
+                  </div>
+                ) : (
+                  // Show editable input for external URLs
+                  <Input
+                    id="image-url"
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowFilePicker(true)}
+                >
+                  Browse...
+                </Button>
+              </div>
+              {isInternalUrl(url) && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  ✓ Image uploaded to secure storage. URL is hidden to prevent unauthorized access.
+                </p>
+              )}
+            </div>
+
+            {/* Image Preview */}
+            {url && (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <p className="text-sm font-medium mb-2">Preview:</p>
+                <img
+                  src={url}
+                  alt="Preview"
+                  className="max-w-full max-h-48 mx-auto rounded"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder-image.png'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Alt Text */}
+            <div className="space-y-2">
+              <Label htmlFor="alt-text">
+                Alt Text {!isDecorative && '*'}
+              </Label>
+              <Textarea
+                id="alt-text"
+                placeholder="Describe the image for accessibility"
+                value={alt}
+                onChange={(e) => setAlt(e.target.value)}
+                maxLength={125}
+                disabled={isDecorative}
+                rows={3}
+              />
+              <p className="text-xs text-gray-500">
+                {alt.length}/125 characters
+              </p>
+            </div>
+
+            {/* Decorative Checkbox */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="decorative"
+                checked={isDecorative}
+                onCheckedChange={(checked) => setIsDecorative(checked as boolean)}
+              />
+              <Label
+                htmlFor="decorative"
+                className="text-sm font-normal cursor-pointer"
+              >
+                This image is decorative only (no alt text needed)
+              </Label>
+            </div>
+
+            {/* Dimensions */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="auto-size"
+                  checked={autoSize}
+                  onCheckedChange={(checked) => setAutoSize(checked as boolean)}
+                />
+                <Label
+                  htmlFor="auto-size"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Auto size
+                </Label>
+              </div>
+
+              {!autoSize && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="width">Width (px)</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      placeholder="Auto"
+                      value={width || ''}
+                      onChange={(e) => setWidth(e.target.value ? parseInt(e.target.value) : undefined)}
+                      min={1}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="height">Height (px)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      placeholder="Auto"
+                      value={height || ''}
+                      onChange={(e) => setHeight(e.target.value ? parseInt(e.target.value) : undefined)}
+                      min={1}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Alignment */}
+            <div className="space-y-2">
+              <Label htmlFor="alignment">Alignment</Label>
+              <Select value={alignment} onValueChange={(value: any) => setAlignment(value)}>
+                <SelectTrigger id="alignment">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleInsert}
+              className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
+            >
+              Insert Image
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* File Picker Modal - No URL tab (already have URL input above) */}
+      <FilePickerModal
+        open={showFilePicker}
+        onClose={() => setShowFilePicker(false)}
+        onSelect={handleFileSelect}
+        category={category}
+        entityType={entityType}
+        entityId={entityId}
+        accept="image/*"
+        maxSize={5 * 1024 * 1024}
+        allowUrl={false}
+      />
+    </>
+  )
+}
+

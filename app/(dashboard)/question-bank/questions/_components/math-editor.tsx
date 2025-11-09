@@ -17,6 +17,7 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TableCell } from '@tiptap/extension-table-cell'
+import { mergeAttributes } from '@tiptap/core'
 import { common, createLowlight } from 'lowlight'
 import { Button } from '@/components/ui/button'
 import 'katex/dist/katex.min.css' // ✅ KaTeX CSS for math rendering
@@ -47,8 +48,384 @@ import { useEffect, useRef, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
 import MathLiveModal from './mathlive-modal'
+import { ImagePropertiesDialog, type ImageProperties } from '@/components/ui/image-properties-dialog'
 
 const lowlight = createLowlight(common)
+
+// Custom Resizable Image Extension with Delete & Alignment
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        renderHTML: attributes => {
+          if (!attributes.width) return {}
+          return { width: attributes.width }
+        },
+      },
+      height: {
+        default: null,
+        renderHTML: attributes => {
+          if (!attributes.height) return {}
+          return { height: attributes.height }
+        },
+      },
+      textAlign: {
+        default: 'center',
+        renderHTML: attributes => {
+          if (!attributes.textAlign) return {}
+          return { style: `text-align: ${attributes.textAlign}` }
+        },
+      },
+      'data-file-id': {
+        default: null,
+        renderHTML: attributes => {
+          if (!attributes['data-file-id']) return {}
+          return { 'data-file-id': attributes['data-file-id'] }
+        },
+      },
+    }
+  },
+  addNodeView() {
+    return ({ node, getPos, editor }) => {
+      const container = document.createElement('div')
+      container.className = 'image-wrapper'
+      container.style.position = 'relative'
+      container.style.display = 'block'
+      container.style.maxWidth = '100%'
+      container.style.margin = '10px 0'
+      container.style.textAlign = node.attrs.textAlign || 'center'
+
+      const img = document.createElement('img')
+      img.src = node.attrs.src
+      img.alt = node.attrs.alt || ''
+      img.title = node.attrs.title || ''
+      if (node.attrs.width) img.width = node.attrs.width
+      if (node.attrs.height) img.height = node.attrs.height
+      img.style.maxWidth = '100%'
+      img.style.height = 'auto'
+      img.style.cursor = 'pointer'
+      img.style.display = 'inline-block'
+      img.style.transition = 'all 0.2s ease'
+
+      // Selection border (hidden by default)
+      const selectionBorder = document.createElement('div')
+      selectionBorder.style.position = 'absolute'
+      selectionBorder.style.top = '-4px'
+      selectionBorder.style.left = '-4px'
+      selectionBorder.style.right = '-4px'
+      selectionBorder.style.bottom = '-4px'
+      selectionBorder.style.border = '3px solid #4F46E5'
+      selectionBorder.style.borderRadius = '4px'
+      selectionBorder.style.pointerEvents = 'none'
+      selectionBorder.style.display = 'none'
+      selectionBorder.style.zIndex = '1'
+
+      // Toolbar (delete + alignment buttons)
+      const toolbar = document.createElement('div')
+      toolbar.style.position = 'absolute'
+      toolbar.style.top = '-45px'
+      toolbar.style.left = '50%'
+      toolbar.style.transform = 'translateX(-50%)'
+      toolbar.style.display = 'none'
+      toolbar.style.gap = '4px'
+      toolbar.style.background = 'white'
+      toolbar.style.border = '1px solid #e5e7eb'
+      toolbar.style.borderRadius = '8px'
+      toolbar.style.padding = '4px'
+      toolbar.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      toolbar.style.zIndex = '20'
+      toolbar.style.alignItems = 'center'
+      toolbar.className = 'flex'
+
+      // Delete button
+      const deleteBtn = document.createElement('button')
+      deleteBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      `
+      deleteBtn.style.padding = '6px'
+      deleteBtn.style.borderRadius = '4px'
+      deleteBtn.style.border = 'none'
+      deleteBtn.style.background = '#ef4444'
+      deleteBtn.style.color = 'white'
+      deleteBtn.style.cursor = 'pointer'
+      deleteBtn.style.display = 'flex'
+      deleteBtn.style.alignItems = 'center'
+      deleteBtn.style.justifyContent = 'center'
+      deleteBtn.title = 'Delete Image'
+      deleteBtn.addEventListener('mouseenter', () => {
+        deleteBtn.style.background = '#dc2626'
+      })
+      deleteBtn.addEventListener('mouseleave', () => {
+        deleteBtn.style.background = '#ef4444'
+      })
+      deleteBtn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Delete from server if file ID exists
+        const fileId = node.attrs['data-file-id']
+        if (fileId) {
+          try {
+            await fetch(`/api/files/${fileId}`, { method: 'DELETE' })
+          } catch (error) {
+            console.error('Failed to delete file from server:', error)
+          }
+        }
+
+        // Delete from editor
+        if (typeof getPos === 'function') {
+          editor.commands.deleteRange({ from: getPos(), to: getPos() + node.nodeSize })
+        }
+      })
+
+      // Edit button
+      const editBtn = document.createElement('button')
+      editBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      `
+      editBtn.style.padding = '6px'
+      editBtn.style.borderRadius = '4px'
+      editBtn.style.border = 'none'
+      editBtn.style.background = '#3b82f6'
+      editBtn.style.color = 'white'
+      editBtn.style.cursor = 'pointer'
+      editBtn.style.display = 'flex'
+      editBtn.style.alignItems = 'center'
+      editBtn.style.justifyContent = 'center'
+      editBtn.title = 'Edit Image Properties'
+      editBtn.addEventListener('mouseenter', () => {
+        editBtn.style.background = '#2563eb'
+      })
+      editBtn.addEventListener('mouseleave', () => {
+        editBtn.style.background = '#3b82f6'
+      })
+      editBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Dispatch custom event with image data
+        const event = new CustomEvent('edit-image', {
+          detail: {
+            src: node.attrs.src,
+            alt: node.attrs.alt,
+            width: node.attrs.width,
+            height: node.attrs.height,
+            textAlign: node.attrs.textAlign,
+            fileId: node.attrs['data-file-id'],
+            pos: typeof getPos === 'function' ? getPos() : null,
+          }
+        })
+        document.dispatchEvent(event)
+      })
+
+      // Divider 1
+      const divider1 = document.createElement('div')
+      divider1.style.width = '1px'
+      divider1.style.height = '24px'
+      divider1.style.background = '#e5e7eb'
+
+      // Divider 2
+      const divider2 = document.createElement('div')
+      divider2.style.width = '1px'
+      divider2.style.height = '24px'
+      divider2.style.background = '#e5e7eb'
+
+      // Alignment buttons
+      const createAlignBtn = (align: 'left' | 'center' | 'right', icon: string) => {
+        const btn = document.createElement('button')
+        btn.innerHTML = icon
+        btn.style.padding = '6px'
+        btn.style.borderRadius = '4px'
+        btn.style.border = 'none'
+        btn.style.background = '#f3f4f6'
+        btn.style.color = '#374151'
+        btn.style.cursor = 'pointer'
+        btn.style.display = 'flex'
+        btn.style.alignItems = 'center'
+        btn.style.justifyContent = 'center'
+        btn.title = `Align ${align}`
+        btn.addEventListener('mouseenter', () => {
+          btn.style.background = '#e5e7eb'
+        })
+        btn.addEventListener('mouseleave', () => {
+          btn.style.background = '#f3f4f6'
+        })
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (typeof getPos === 'function') {
+            const pos = getPos()
+            // Update the image's text-align attribute
+            editor.chain()
+              .focus()
+              .setNodeSelection(pos)
+              .updateAttributes('image', { textAlign: align })
+              .run()
+
+            // Also update the parent paragraph alignment
+            editor.chain()
+              .focus()
+              .setTextAlign(align)
+              .run()
+
+            // Update container style immediately for visual feedback
+            container.style.textAlign = align
+          }
+        })
+        return btn
+      }
+
+      const alignLeftBtn = createAlignBtn('left', `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16" />
+        </svg>
+      `)
+
+      const alignCenterBtn = createAlignBtn('center', `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M4 18h16" />
+        </svg>
+      `)
+
+      const alignRightBtn = createAlignBtn('right', `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M4 18h16" />
+        </svg>
+      `)
+
+      toolbar.appendChild(deleteBtn)
+      toolbar.appendChild(divider1)
+      toolbar.appendChild(editBtn)
+      toolbar.appendChild(divider2)
+      toolbar.appendChild(alignLeftBtn)
+      toolbar.appendChild(alignCenterBtn)
+      toolbar.appendChild(alignRightBtn)
+
+      // Resize handles (4 corners)
+      const createHandle = (position: 'nw' | 'ne' | 'sw' | 'se') => {
+        const handle = document.createElement('div')
+        handle.className = `resize-handle-${position}`
+        handle.style.position = 'absolute'
+        handle.style.width = '10px'
+        handle.style.height = '10px'
+        handle.style.background = '#4F46E5'
+        handle.style.border = '2px solid white'
+        handle.style.borderRadius = '50%'
+        handle.style.display = 'none'
+        handle.style.zIndex = '10'
+        handle.style.cursor = position === 'nw' || position === 'se' ? 'nwse-resize' : 'nesw-resize'
+
+        if (position === 'nw') {
+          handle.style.top = '-5px'
+          handle.style.left = '-5px'
+        } else if (position === 'ne') {
+          handle.style.top = '-5px'
+          handle.style.right = '-5px'
+        } else if (position === 'sw') {
+          handle.style.bottom = '-5px'
+          handle.style.left = '-5px'
+        } else if (position === 'se') {
+          handle.style.bottom = '-5px'
+          handle.style.right = '-5px'
+        }
+
+        let startX = 0
+        let startWidth = 0
+
+        handle.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          startX = e.clientX
+          startWidth = img.width || img.offsetWidth
+
+          const onMouseMove = (e: MouseEvent) => {
+            const deltaX = e.clientX - startX
+            let newWidth = startWidth
+
+            if (position === 'ne' || position === 'se') {
+              newWidth = startWidth + deltaX
+            } else {
+              newWidth = startWidth - deltaX
+            }
+
+            if (newWidth > 50 && newWidth <= 1200) {
+              img.width = newWidth
+              if (typeof getPos === 'function') {
+                editor.commands.updateAttributes('image', { width: newWidth })
+              }
+            }
+          }
+
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove)
+            document.removeEventListener('mouseup', onMouseUp)
+          }
+
+          document.addEventListener('mousemove', onMouseMove)
+          document.addEventListener('mouseup', onMouseUp)
+        })
+
+        return handle
+      }
+
+      const handleNW = createHandle('nw')
+      const handleNE = createHandle('ne')
+      const handleSW = createHandle('sw')
+      const handleSE = createHandle('se')
+
+      // Click to select
+      let isSelected = false
+      img.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (typeof getPos === 'function') {
+          editor.commands.setNodeSelection(getPos())
+          isSelected = true
+          selectionBorder.style.display = 'block'
+          toolbar.style.display = 'flex'
+          handleNW.style.display = 'block'
+          handleNE.style.display = 'block'
+          handleSW.style.display = 'block'
+          handleSE.style.display = 'block'
+        }
+      })
+
+      // Deselect on outside click
+      const handleOutsideClick = (e: MouseEvent) => {
+        if (!container.contains(e.target as Node)) {
+          isSelected = false
+          selectionBorder.style.display = 'none'
+          toolbar.style.display = 'none'
+          handleNW.style.display = 'none'
+          handleNE.style.display = 'none'
+          handleSW.style.display = 'none'
+          handleSE.style.display = 'none'
+        }
+      }
+      document.addEventListener('click', handleOutsideClick)
+
+      container.appendChild(selectionBorder)
+      container.appendChild(img)
+      container.appendChild(toolbar)
+      container.appendChild(handleNW)
+      container.appendChild(handleNE)
+      container.appendChild(handleSW)
+      container.appendChild(handleSE)
+
+      return {
+        dom: container,
+        destroy() {
+          document.removeEventListener('click', handleOutsideClick)
+        },
+      }
+    }
+  },
+})
 
 type MathEditorProps = {
   value: string
@@ -64,6 +441,8 @@ export default function MathEditor({
   minHeight = '200px'
 }: MathEditorProps) {
   const [showMathLive, setShowMathLive] = useState(false)
+  const [showImageDialog, setShowImageDialog] = useState(false)
+  const [editingImageData, setEditingImageData] = useState<any>(null)
   const wasMathLiveOpen = useRef(false)
 
   const editor = useEditor({
@@ -89,10 +468,10 @@ export default function MathEditor({
           throwOnError: false, // Don't throw on LaTeX errors
         },
       }),
-      Image,
+      ResizableImage, // ✅ Custom resizable image with delete support
       Underline,
       TextAlign.configure({
-        types: ['heading', 'paragraph'],
+        types: ['heading', 'paragraph', 'image'],
       }),
       Placeholder.configure({
         placeholder,
@@ -152,6 +531,20 @@ export default function MathEditor({
     wasMathLiveOpen.current = showMathLive
   }, [showMathLive, editor])
 
+  // Listen for edit-image events
+  useEffect(() => {
+    const handleEditImage = (e: any) => {
+      const imageData = e.detail
+      setEditingImageData(imageData)
+      setShowImageDialog(true)
+    }
+
+    document.addEventListener('edit-image', handleEditImage)
+    return () => {
+      document.removeEventListener('edit-image', handleEditImage)
+    }
+  }, [])
+
   if (!editor) {
     return null
   }
@@ -181,10 +574,44 @@ export default function MathEditor({
     }
   }
 
-  const addImage = () => {
-    const url = prompt('Enter image URL:')
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
+  const handleImageInsert = (props: ImageProperties) => {
+    if (!editor) return
+
+    // Check if we're editing an existing image
+    if (editingImageData && editingImageData.pos !== null) {
+      // Update existing image
+      editor.chain()
+        .focus()
+        .setNodeSelection(editingImageData.pos)
+        .updateAttributes('image', {
+          src: props.url,
+          alt: props.alt,
+          title: props.alt,
+          width: props.width,
+          height: props.height,
+          textAlign: props.alignment,
+          'data-file-id': props.fileId,
+        })
+        .run()
+
+      // Clear editing state
+      setEditingImageData(null)
+    } else {
+      // Insert new image
+      editor.chain().focus().setImage({
+        src: props.url,
+        alt: props.alt,
+        title: props.alt,
+        width: props.width,
+        height: props.height,
+        textAlign: props.alignment,
+        'data-file-id': props.fileId,
+      }).run()
+
+      // Apply alignment if specified
+      if (props.alignment && props.alignment !== 'left') {
+        editor.chain().focus().setTextAlign(props.alignment).run()
+      }
     }
   }
 
@@ -488,12 +915,14 @@ export default function MathEditor({
           Math
         </Button>
 
-        {/* Image */}
+        {/* Image - Enhanced with File Upload */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={addImage}
+          onClick={() => setShowImageDialog(true)}
+          className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          title="Insert Image"
         >
           <ImageIcon className="h-4 w-4 mr-1" />
           Image
@@ -534,6 +963,24 @@ export default function MathEditor({
         open={showMathLive}
         onClose={() => setShowMathLive(false)}
         onInsert={handleMathLiveInsert}
+      />
+
+      {/* Image Properties Dialog - Enhanced File Upload */}
+      <ImagePropertiesDialog
+        open={showImageDialog}
+        onClose={() => {
+          setShowImageDialog(false)
+          setEditingImageData(null)
+        }}
+        onInsert={handleImageInsert}
+        category="question_image"
+        entityType="question"
+        entityId="temp"
+        initialUrl={editingImageData?.src || ''}
+        initialAlt={editingImageData?.alt || ''}
+        initialWidth={editingImageData?.width}
+        initialHeight={editingImageData?.height}
+        initialAlignment={editingImageData?.textAlign || 'center'}
       />
     </div>
   )

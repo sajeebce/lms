@@ -2,6 +2,7 @@
 
 import { getStorage } from './storage-factory'
 import { getTenantId } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export class StorageService {
   private async getStorageAdapter() {
@@ -20,12 +21,19 @@ export class StorageService {
   }
 
   /**
-   * Upload student photo
+   * Upload student photo (auto-replaces old photo)
    */
   async uploadStudentPhoto(studentId: string, file: File): Promise<string> {
     const storage = await this.getStorageAdapter()
+    const tenantId = await getTenantId()
     const key = await this.generateKey('students', `photos/${studentId}/profile.jpg`)
-    
+
+    // ✅ Delete old file if exists
+    if (await storage.exists(key)) {
+      await storage.delete(key)
+    }
+
+    // ✅ Upload new file
     const result = await storage.upload({
       key,
       file,
@@ -35,6 +43,35 @@ export class StorageService {
         uploadedAt: new Date().toISOString(),
       },
       isPublic: true, // Photos can be public
+    })
+
+    // ✅ Track in database (upsert for fixed-name files)
+    await prisma.uploadedFile.upsert({
+      where: {
+        tenantId_key: {
+          tenantId,
+          key,
+        },
+      },
+      create: {
+        tenantId,
+        key,
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        category: 'student_photo',
+        entityType: 'student',
+        entityId: studentId,
+        isPublic: true,
+      },
+      update: {
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        uploadedAt: new Date(),
+      },
     })
 
     return result.url
@@ -232,20 +269,28 @@ export class StorageService {
     const storage = await this.getStorageAdapter()
     return await storage.list(prefix)
   }
-}
-
-// Singleton instance
-let serviceInstance: StorageService | null = null
 
   /**
-   * Upload question image
+   * Upload question image (with database tracking)
    */
-  async uploadQuestionImage(questionId: string, file: File): Promise<string> {
+  async uploadQuestionImage(
+    questionId: string,
+    file: File,
+    options?: {
+      author?: string
+      description?: string
+      altText?: string
+      width?: number
+      height?: number
+    }
+  ): Promise<{ url: string; id: string }> {
     const storage = await this.getStorageAdapter()
+    const tenantId = await getTenantId()
     const extension = file.name.split('.').pop()
     const timestamp = Date.now()
     const key = await this.generateKey('questions', `images/${questionId}/${timestamp}.${extension}`)
 
+    // ✅ Upload file
     const result = await storage.upload({
       key,
       file,
@@ -257,16 +302,128 @@ let serviceInstance: StorageService | null = null
       isPublic: false, // Question images are private
     })
 
-    return result.url
+    // ✅ Save to database with metadata
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        tenantId,
+        key,
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        category: 'question_image',
+        entityType: 'question',
+        entityId: questionId,
+        isPublic: false,
+        author: options?.author,
+        description: options?.description,
+        altText: options?.altText,
+        width: options?.width,
+        height: options?.height,
+      },
+    })
+
+    return { url: result.url, id: uploadedFile.id }
   }
 
   /**
-   * Delete question files
+   * Delete question files (with database cleanup)
    */
   async deleteQuestionFiles(questionId: string): Promise<void> {
     const storage = await this.getStorageAdapter()
-    const prefix = await this.generateKey('questions', `images/${questionId}/`)
-    await storage.deleteByPrefix(prefix)
+    const tenantId = await getTenantId()
+
+    // ✅ Get all files for this question from database
+    const files = await prisma.uploadedFile.findMany({
+      where: {
+        tenantId,
+        entityType: 'question',
+        entityId: questionId,
+      },
+    })
+
+    // ✅ Delete from storage
+    await Promise.all(files.map(f => storage.delete(f.key)))
+
+    // ✅ Delete from database
+    await prisma.uploadedFile.deleteMany({
+      where: {
+        tenantId,
+        entityType: 'question',
+        entityId: questionId,
+      },
+    })
+  }
+
+  /**
+   * List uploaded files by category and entity
+   */
+  async listUploadedFiles(
+    category?: string,
+    entityType?: string,
+    entityId?: string
+  ): Promise<Array<{
+    id: string
+    key: string
+    url: string
+    fileName: string
+    fileSize: number
+    mimeType: string
+    category: string
+    entityType: string
+    entityId: string
+    isPublic: boolean
+    uploadedAt: Date
+    // Metadata fields
+    author?: string | null
+    description?: string | null
+    altText?: string | null
+    width?: number | null
+    height?: number | null
+  }>> {
+    const tenantId = await getTenantId()
+
+    return await prisma.uploadedFile.findMany({
+      where: {
+        tenantId,
+        ...(category && { category }),
+        ...(entityType && { entityType }),
+        ...(entityId && { entityId }),
+      },
+      orderBy: {
+        uploadedAt: 'desc',
+      },
+    })
+  }
+
+  /**
+   * Delete uploaded file by ID
+   */
+  async deleteUploadedFile(fileId: string): Promise<void> {
+    const tenantId = await getTenantId()
+
+    // Get file record
+    const file = await prisma.uploadedFile.findFirst({
+      where: {
+        id: fileId,
+        tenantId,
+      },
+    })
+
+    if (!file) {
+      throw new Error('File not found')
+    }
+
+    // Delete from storage
+    const storage = await this.getStorageAdapter()
+    await storage.delete(file.key)
+
+    // Delete from database
+    await prisma.uploadedFile.delete({
+      where: {
+        id: fileId,
+      },
+    })
   }
 }
 

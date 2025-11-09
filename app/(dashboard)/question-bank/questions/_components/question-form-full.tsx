@@ -167,7 +167,7 @@ export default function QuestionFormFull({
           <Button
             onClick={handleSubmit}
             disabled={saving}
-            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
+            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
           >
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving...' : 'Save Question'}
@@ -182,7 +182,7 @@ export default function QuestionFormFull({
           <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
             <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">📍 Question Location</h2>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Subject *</Label>
                 <SearchableDropdown
                   options={subjects.map((s) => ({ value: s.id, label: s.name }))}
@@ -191,7 +191,7 @@ export default function QuestionFormFull({
                   placeholder="Select subject"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Class *</Label>
                 <SearchableDropdown
                   options={classes.map((c) => ({ value: c.id, label: c.name }))}
@@ -200,7 +200,7 @@ export default function QuestionFormFull({
                   placeholder="Select class"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Chapter *</Label>
                 <SearchableDropdown
                   options={filteredChapters.map((ch) => ({ value: ch.id, label: ch.name }))}
@@ -210,7 +210,7 @@ export default function QuestionFormFull({
                   disabled={!selectedSubject || !selectedClass}
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Topic *</Label>
                 <SearchableDropdown
                   options={filteredTopics.map((t) => ({ value: t.id, label: t.name }))}
@@ -228,7 +228,7 @@ export default function QuestionFormFull({
             <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">❓ Question Details</h2>
             
             <div className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Question Type *</Label>
                 <SearchableDropdown
                   options={[
@@ -243,7 +243,7 @@ export default function QuestionFormFull({
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Question Text * (Supports Math Equations)</Label>
                 <MathEditor
                   value={questionText}
@@ -333,7 +333,7 @@ export default function QuestionFormFull({
               </div>
             )}
 
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
               <Label>Explanation (Optional)</Label>
               <MathEditor
                 value={explanation}
@@ -352,7 +352,7 @@ export default function QuestionFormFull({
             <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">⚙️ Settings</h2>
 
             <div className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Difficulty *</Label>
                 <SearchableDropdown
                   options={[
@@ -367,7 +367,7 @@ export default function QuestionFormFull({
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Marks *</Label>
                 <Input
                   type="number"
@@ -379,7 +379,7 @@ export default function QuestionFormFull({
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Negative Marks</Label>
                 <Input
                   type="number"
@@ -391,7 +391,7 @@ export default function QuestionFormFull({
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Source (Optional)</Label>
                 <SearchableDropdown
                   options={[

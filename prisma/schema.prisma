@@ -48,6 +48,9 @@ model Tenant {
   courseFAQs          CourseFAQ[]
   lessonCompletions   LessonCompletion[]
 
+  // File Storage Relations
+  uploadedFiles       UploadedFile[]
+
   studentEnrollments  StudentEnrollment[]
   courseEnrollments   CourseEnrollment[]
 
@@ -1004,4 +1007,53 @@ enum QuestionStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+// ============================================
+// FILE STORAGE MODELS
+// ============================================
+
+model UploadedFile {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  // File metadata
+  key         String   // Storage key: tenants/{tenantId}/questions/images/{questionId}/123.jpg
+  url         String   // Public URL
+  fileName    String   // Original filename
+  fileSize    Int      // Size in bytes
+  mimeType    String   // image/jpeg, application/pdf, etc.
+
+  // Categorization
+  category    String   // 'question_image', 'student_photo', 'course_material', etc.
+  entityType  String   // 'question', 'student', 'course', etc.
+  entityId    String   // ID of the related entity
+
+  // Enhanced Metadata (Moodle-style)
+  description String?  // File description
+  author      String?  // Author name
+  license     String?  // License type (e.g., 'allrightsreserved', 'cc', 'public')
+  tags        String?  // Comma-separated tags for search
+  folder      String?  // Virtual folder path (e.g., 'Course Materials/Week 1')
+
+  // Image-specific metadata
+  altText     String?  // Alt text for images (accessibility)
+  width       Int?     // Image width in pixels
+  height      Int?     // Image height in pixels
+
+  // Access control
+  isPublic    Boolean  @default(false)
+  uploadedBy  String?  // User ID who uploaded
+  uploadedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, category])
+  @@index([tenantId, uploadedBy])
+  @@index([tenantId, folder])
+  @@map("uploaded_files")
 }

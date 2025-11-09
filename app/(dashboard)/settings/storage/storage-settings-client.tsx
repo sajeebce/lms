@@ -11,7 +11,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { updateStorageSettings, testStorageConnection } from './actions'
-import { HardDrive, Cloud, Send, CheckCircle2 } from 'lucide-react'
+import { HardDrive, Cloud, Send, CheckCircle2, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -52,6 +55,14 @@ export function StorageSettingsClient({ settings }: StorageSettingsClientProps) 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null)
+
+  // Migration state
+  const [migrationDirection, setMigrationDirection] = useState<'local-to-r2' | 'r2-to-local'>('local-to-r2')
+  const [deleteSource, setDeleteSource] = useState(false)
+  const [migrationEstimate, setMigrationEstimate] = useState<any>(null)
+  const [loadingEstimate, setLoadingEstimate] = useState(false)
+  const [migrating, setMigrating] = useState(false)
+  const [migrationProgress, setMigrationProgress] = useState<any>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -104,7 +115,74 @@ export function StorageSettingsClient({ settings }: StorageSettingsClientProps) 
 
   const storageType = form.watch('storageType')
 
+  // Load migration estimate
+  const loadMigrationEstimate = async () => {
+    setLoadingEstimate(true)
+    try {
+      const response = await fetch(`/api/storage/migrate?direction=${migrationDirection}`)
+      const data = await response.json()
+      if (data.success) {
+        setMigrationEstimate(data.estimate)
+      } else {
+        toast.error(data.error || 'Failed to load estimate')
+      }
+    } catch (error) {
+      toast.error('Failed to load estimate')
+    } finally {
+      setLoadingEstimate(false)
+    }
+  }
+
+  // Start migration
+  const startMigration = async () => {
+    if (!confirm(`Are you sure you want to migrate ${migrationEstimate?.totalFiles} files? This may take ${migrationEstimate?.estimatedTime}.`)) {
+      return
+    }
+
+    setMigrating(true)
+    setMigrationProgress({
+      total: migrationEstimate?.totalFiles || 0,
+      completed: 0,
+      failed: 0,
+      current: '',
+      status: 'running',
+      errors: [],
+    })
+
+    try {
+      const response = await fetch('/api/storage/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction: migrationDirection, deleteSource }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setMigrationProgress(data.result)
+        toast.success(`Migration completed! ${data.result.completed} files migrated successfully.`)
+      } else {
+        toast.error(data.error || 'Migration failed')
+        setMigrationProgress((prev: any) => prev ? { ...prev, status: 'failed' } : null)
+      }
+    } catch (error) {
+      toast.error('Migration failed')
+      setMigrationProgress((prev: any) => prev ? { ...prev, status: 'failed' } : null)
+    } finally {
+      setMigrating(false)
+    }
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle>Storage Provider</CardTitle>
@@ -416,6 +494,163 @@ export function StorageSettingsClient({ settings }: StorageSettingsClientProps) 
         </Form>
       </CardContent>
     </Card>
+
+    {/* Storage Migration Card */}
+    <Card>
+      <CardHeader>
+        <CardTitle>Storage Migration</CardTitle>
+        <CardDescription>
+          Migrate files between Local storage and Cloudflare R2
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Direction Selection */}
+        <div className="space-y-3">
+          <Label>Migration Direction</Label>
+          <RadioGroup value={migrationDirection} onValueChange={(v) => setMigrationDirection(v as any)}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="local-to-r2" id="local-to-r2" />
+              <Label htmlFor="local-to-r2" className="font-normal cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="w-4 h-4" />
+                  <span>Local</span>
+                  <ArrowRight className="w-4 h-4" />
+                  <Cloud className="w-4 h-4" />
+                  <span>Cloudflare R2</span>
+                </div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="r2-to-local" id="r2-to-local" />
+              <Label htmlFor="r2-to-local" className="font-normal cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Cloud className="w-4 h-4" />
+                  <span>Cloudflare R2</span>
+                  <ArrowRight className="w-4 h-4" />
+                  <HardDrive className="w-4 h-4" />
+                  <span>Local</span>
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Delete Source Option */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="delete-source"
+            checked={deleteSource}
+            onCheckedChange={(checked) => setDeleteSource(checked as boolean)}
+          />
+          <Label htmlFor="delete-source" className="font-normal cursor-pointer">
+            Delete files from source after successful migration
+          </Label>
+        </div>
+
+        {/* Load Estimate Button */}
+        <Button
+          onClick={loadMigrationEstimate}
+          disabled={loadingEstimate}
+          variant="outline"
+          className="w-full"
+        >
+          {loadingEstimate ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Loading estimate...
+            </>
+          ) : (
+            'Load Migration Estimate'
+          )}
+        </Button>
+
+        {/* Estimate Display */}
+        {migrationEstimate && (
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Files:</span>
+              <span className="font-medium">{migrationEstimate.totalFiles}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Size:</span>
+              <span className="font-medium">{formatBytes(migrationEstimate.totalSize)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Estimated Time:</span>
+              <span className="font-medium">{migrationEstimate.estimatedTime}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Migration Progress */}
+        {migrationProgress && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {migrationProgress.status === 'running' && 'Migrating...'}
+                {migrationProgress.status === 'completed' && 'Migration Completed!'}
+                {migrationProgress.status === 'failed' && 'Migration Failed'}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {migrationProgress.completed} / {migrationProgress.total}
+              </span>
+            </div>
+
+            <Progress value={(migrationProgress.completed / migrationProgress.total) * 100} />
+
+            {migrationProgress.current && (
+              <p className="text-sm text-muted-foreground">
+                Current: {migrationProgress.current}
+              </p>
+            )}
+
+            {migrationProgress.status === 'completed' && (
+              <Alert>
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  Successfully migrated {migrationProgress.completed} files!
+                  {migrationProgress.failed > 0 && ` (${migrationProgress.failed} failed)`}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {migrationProgress.errors.length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <p className="font-medium mb-2">Errors:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {migrationProgress.errors.slice(0, 5).map((error: string, i: number) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                    {migrationProgress.errors.length > 5 && (
+                      <li>... and {migrationProgress.errors.length - 5} more</li>
+                    )}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
+        {/* Start Migration Button */}
+        <Button
+          onClick={startMigration}
+          disabled={migrating || !migrationEstimate || migrationEstimate.totalFiles === 0}
+          className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
+        >
+          {migrating ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Migrating...
+            </>
+          ) : (
+            'Start Migration'
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+    </div>
   )
 }
 
