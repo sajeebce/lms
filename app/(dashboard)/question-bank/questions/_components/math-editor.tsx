@@ -853,24 +853,26 @@ export default function MathEditor({
 
     // Check if we're editing an existing image
     if (editingImageData && editingImageData.pos !== null) {
-      // Update existing image
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(editingImageData.pos)
-        .updateAttributes("image", {
-          src: props.url,
-          alt: props.alt,
-          title: props.alt,
-          description: props.description,
-          width: props.width,
-          height: props.height,
-          textAlign: props.alignment,
-          border: props.border,
-          borderColor: props.borderColor,
-          "data-file-id": props.fileId,
-        })
-        .run();
+      // Update existing image at specific position
+      const { state, view } = editor;
+      const { tr } = state;
+      const pos = editingImageData.pos;
+
+      // Update node attributes
+      tr.setNodeMarkup(pos, undefined, {
+        src: props.url,
+        alt: props.alt,
+        title: props.alt,
+        description: props.description,
+        width: props.width,
+        height: props.height,
+        textAlign: props.alignment,
+        border: props.border,
+        borderColor: props.borderColor,
+        "data-file-id": props.fileId,
+      });
+
+      view.dispatch(tr);
 
       // Clear editing state
       setEditingImageData(null);
