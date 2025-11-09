@@ -122,10 +122,30 @@ const ResizableImage = Image.extend({
           return { "data-file-id": attributes["data-file-id"] };
         },
       },
+      id: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.id) return {};
+          return { "data-image-id": attributes.id };
+        },
+      },
     };
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
+      // Generate unique ID if not exists
+      if (!node.attrs.id) {
+        const pos = typeof getPos === "function" ? getPos() : 0;
+        const uniqueId = `img-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        editor.view.dispatch(
+          editor.view.state.tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            id: uniqueId,
+          })
+        );
+      }
       const container = document.createElement("div");
       container.className = "image-wrapper";
       container.style.position = "relative";
@@ -284,6 +304,7 @@ const ResizableImage = Image.extend({
           border: node.attrs.border,
           borderColor: node.attrs.borderColor,
           fileId: node.attrs["data-file-id"],
+          id: node.attrs.id, // Unique image ID
           pos: typeof getPos === "function" ? getPos() : null,
         };
 
@@ -852,11 +873,11 @@ export default function MathEditor({
     if (!editor) return;
 
     // Check if we're editing an existing image
-    if (editingImageData && editingImageData.pos !== null) {
-      // Update existing image at specific position
-      const pos = editingImageData.pos;
+    if (editingImageData && editingImageData.id) {
+      // Find image by unique ID
+      const imageId = editingImageData.id;
 
-      console.log("Updating image at position:", pos);
+      console.log("Updating image with ID:", imageId);
       console.log("New attributes:", {
         description: props.description,
         border: props.border,
@@ -865,18 +886,37 @@ export default function MathEditor({
         height: props.height,
       });
 
-      // Use updateAttributes command
+      // Find the image node by ID
+      let foundPos: number | null = null;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.id === imageId) {
+          foundPos = pos;
+          return false; // Stop searching
+        }
+      });
+
+      if (foundPos === null) {
+        console.error("Image not found with ID:", imageId);
+        toast.error("Failed to update image");
+        setEditingImageData(null);
+        setShowImageDialog(false);
+        return;
+      }
+
+      console.log("Found image at position:", foundPos);
+
+      // Update the image
       editor
         .chain()
         .focus()
         .command(({ tr, state }) => {
-          const node = state.doc.nodeAt(pos);
+          const node = state.doc.nodeAt(foundPos!);
           if (!node || node.type.name !== "image") {
-            console.error("No image node found at position:", pos);
+            console.error("No image node found at position:", foundPos);
             return false;
           }
 
-          tr.setNodeMarkup(pos, undefined, {
+          tr.setNodeMarkup(foundPos!, undefined, {
             ...node.attrs,
             src: props.url,
             alt: props.alt,
@@ -903,7 +943,11 @@ export default function MathEditor({
         setShowImageDialog(false);
       }, 100);
     } else {
-      // Insert new image
+      // Insert new image with unique ID
+      const uniqueId = `img-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
       editor
         .chain()
         .focus()
@@ -918,6 +962,7 @@ export default function MathEditor({
           border: props.border,
           borderColor: props.borderColor,
           "data-file-id": props.fileId,
+          id: uniqueId,
         })
         .run();
 
