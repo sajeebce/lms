@@ -26,6 +26,7 @@ import { toast } from "sonner";
 export interface ImageProperties {
   url: string;
   alt: string;
+  description?: string; // Image description (like Sun Editor)
   width?: number;
   height?: number;
   alignment: "left" | "center" | "right";
@@ -39,6 +40,7 @@ interface ImagePropertiesDialogProps {
   onInsert: (props: ImageProperties) => void;
   initialUrl?: string;
   initialAlt?: string;
+  initialDescription?: string;
   initialWidth?: number;
   initialHeight?: number;
   initialAlignment?: "left" | "center" | "right";
@@ -53,6 +55,7 @@ export function ImagePropertiesDialog({
   onInsert,
   initialUrl = "",
   initialAlt = "",
+  initialDescription = "",
   initialWidth,
   initialHeight,
   initialAlignment = "center",
@@ -62,6 +65,7 @@ export function ImagePropertiesDialog({
 }: ImagePropertiesDialogProps) {
   const [url, setUrl] = useState(initialUrl);
   const [alt, setAlt] = useState("");
+  const [description, setDescription] = useState("");
   const [width, setWidth] = useState<number | undefined>();
   const [height, setHeight] = useState<number | undefined>();
   const [alignment, setAlignment] = useState<"left" | "center" | "right">(
@@ -76,6 +80,7 @@ export function ImagePropertiesDialog({
     if (open) {
       setUrl(initialUrl || "");
       setAlt(initialAlt || "");
+      setDescription(initialDescription || "");
       setWidth(initialWidth);
       setHeight(initialHeight);
       setAlignment(initialAlignment || "center");
@@ -145,6 +150,7 @@ export function ImagePropertiesDialog({
     onInsert({
       url,
       alt: isDecorative ? "" : alt,
+      description: description.trim() || undefined,
       width: autoSize ? undefined : width,
       height: autoSize ? undefined : height,
       alignment,
@@ -262,6 +268,23 @@ export function ImagePropertiesDialog({
               >
                 This image is decorative only (no alt text needed)
               </Label>
+            </div>
+
+            {/* Description Field (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Add a description for this image (for metadata/gallery)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={500}
+                rows={3}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                {description.length}/500 characters
+              </p>
             </div>
 
             {/* Dimensions */}

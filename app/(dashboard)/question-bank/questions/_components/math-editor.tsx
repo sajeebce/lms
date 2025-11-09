@@ -94,6 +94,13 @@ const ResizableImage = Image.extend({
           return { style: `text-align: ${attributes.textAlign}` };
         },
       },
+      description: {
+        default: null,
+        renderHTML: (attributes) => {
+          if (!attributes.description) return {};
+          return { "data-description": attributes.description };
+        },
+      },
       "data-file-id": {
         default: null,
         renderHTML: (attributes) => {
@@ -239,6 +246,7 @@ const ResizableImage = Image.extend({
           detail: {
             src: node.attrs.src,
             alt: node.attrs.alt,
+            description: node.attrs.description,
             width: node.attrs.width,
             height: node.attrs.height,
             textAlign: node.attrs.textAlign,
@@ -735,6 +743,7 @@ export default function MathEditor({
           src: props.url,
           alt: props.alt,
           title: props.alt,
+          description: props.description,
           width: props.width,
           height: props.height,
           textAlign: props.alignment,
@@ -753,6 +762,7 @@ export default function MathEditor({
           src: props.url,
           alt: props.alt,
           title: props.alt,
+          description: props.description,
           width: props.width,
           height: props.height,
           textAlign: props.alignment,
@@ -1327,6 +1337,7 @@ export default function MathEditor({
         entityId="temp"
         initialUrl={editingImageData?.src || ""}
         initialAlt={editingImageData?.alt || ""}
+        initialDescription={editingImageData?.description || ""}
         initialWidth={editingImageData?.width}
         initialHeight={editingImageData?.height}
         initialAlignment={editingImageData?.textAlign || "center"}
