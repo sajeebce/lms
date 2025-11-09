@@ -120,7 +120,7 @@ const ResizableImage = Image.extend({
       if (node.attrs.width) img.width = node.attrs.width;
       if (node.attrs.height) img.height = node.attrs.height;
       img.style.maxWidth = "100%";
-      img.style.height = "auto";
+      // Remove height: auto to allow manual height control
       img.style.cursor = "pointer";
       img.style.display = "inline-block";
       img.style.transition = "all 0.2s ease";
