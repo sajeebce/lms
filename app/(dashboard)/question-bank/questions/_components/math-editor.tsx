@@ -424,7 +424,7 @@ const ResizableImage = Image.extend({
             let newWidth = startWidth;
             let newHeight = startHeight;
 
-            // Diagonal handles: maintain aspect ratio
+            // Diagonal handles (corners): maintain aspect ratio
             if (["nw", "ne", "sw", "se"].includes(position)) {
               if (position === "ne" || position === "se") {
                 newWidth = startWidth + deltaX;
@@ -433,22 +433,24 @@ const ResizableImage = Image.extend({
               }
               newHeight = newWidth / aspectRatio; // Maintain ratio
             }
-            // Edge handles: free resize (no ratio constraint)
+            // Left/Right edge handles: FREE resize (width only, height stays same)
             else if (position === "e" || position === "w") {
               if (position === "e") {
                 newWidth = startWidth + deltaX;
               } else {
                 newWidth = startWidth - deltaX;
               }
-              // Height stays same (no ratio)
+              // Height stays same - NO ratio maintenance
               newHeight = startHeight;
-            } else if (position === "n" || position === "s") {
+            }
+            // Top/Bottom edge handles: FREE resize (height only, width stays same)
+            else if (position === "n" || position === "s") {
               if (position === "s") {
                 newHeight = startHeight + deltaY;
               } else {
                 newHeight = startHeight - deltaY;
               }
-              // Width stays same (no ratio)
+              // Width stays same - NO ratio maintenance
               newWidth = startWidth;
             }
 
