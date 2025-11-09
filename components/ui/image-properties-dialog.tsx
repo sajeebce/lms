@@ -325,7 +325,7 @@ export function ImagePropertiesDialog({
 
               {!autoSize && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="width">Width (px)</Label>
                     <Input
                       id="width"
@@ -340,7 +340,7 @@ export function ImagePropertiesDialog({
                       min={1}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="height">Height (px)</Label>
                     <Input
                       id="height"
