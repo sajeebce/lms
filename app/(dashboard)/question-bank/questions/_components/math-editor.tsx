@@ -241,20 +241,26 @@ const ResizableImage = Image.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        // Dispatch custom event with image data
-        const event = new CustomEvent("edit-image", {
-          detail: {
-            src: node.attrs.src,
-            alt: node.attrs.alt,
-            description: node.attrs.description,
-            width: node.attrs.width,
-            height: node.attrs.height,
-            textAlign: node.attrs.textAlign,
-            fileId: node.attrs["data-file-id"],
-            pos: typeof getPos === "function" ? getPos() : null,
-          },
-        });
-        document.dispatchEvent(event);
+        // Get editor instance from the node
+        const editorView = editor.view;
+        if (!editorView) return;
+
+        // Find the React component instance and call the edit handler
+        // We'll use a data attribute to store the callback
+        const imageData = {
+          src: node.attrs.src,
+          alt: node.attrs.alt,
+          description: node.attrs.description,
+          width: node.attrs.width,
+          height: node.attrs.height,
+          textAlign: node.attrs.textAlign,
+          fileId: node.attrs["data-file-id"],
+          pos: typeof getPos === "function" ? getPos() : null,
+        };
+
+        // Store in a global variable that React can access
+        (window as any).__editImageData = imageData;
+        (window as any).__triggerImageEdit?.();
       });
 
       // Divider 1
@@ -701,17 +707,21 @@ export default function MathEditor({
     wasMathLiveOpen.current = showMathLive;
   }, [showMathLive, editor]);
 
-  // Listen for edit-image events
+  // Set up global callback for image editing (called from ResizableImage extension)
   useEffect(() => {
-    const handleEditImage = (e: any) => {
-      const imageData = e.detail;
-      setEditingImageData(imageData);
-      setShowImageDialog(true);
+    (window as any).__triggerImageEdit = () => {
+      const imageData = (window as any).__editImageData;
+      if (imageData) {
+        setEditingImageData(imageData);
+        setShowImageDialog(true);
+        // Clear the data
+        (window as any).__editImageData = null;
+      }
     };
 
-    document.addEventListener("edit-image", handleEditImage);
     return () => {
-      document.removeEventListener("edit-image", handleEditImage);
+      (window as any).__triggerImageEdit = null;
+      (window as any).__editImageData = null;
     };
   }, []);
 
