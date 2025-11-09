@@ -48,6 +48,8 @@ import {
   Minus,
   Link as LinkIcon,
   Heading,
+  IndentIncrease,
+  IndentDecrease,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import "./editor-styles.css";
@@ -1003,6 +1005,26 @@ export default function MathEditor({
           }
         >
           <ListOrdered className="h-4 w-4" />
+        </Button>
+
+        {/* Phase 3.3: Indent/Outdent (for lists) */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().sinkListItem("listItem").run()}
+          title="Indent (Tab)"
+        >
+          <IndentIncrease className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().liftListItem("listItem").run()}
+          title="Outdent (Shift+Tab)"
+        >
+          <IndentDecrease className="h-4 w-4" />
         </Button>
 
         <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
