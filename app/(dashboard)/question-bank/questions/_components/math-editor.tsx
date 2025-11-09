@@ -336,23 +336,43 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(alignCenterBtn);
       toolbar.appendChild(alignRightBtn);
 
-      // Resize handles (4 corners)
-      const createHandle = (position: "nw" | "ne" | "sw" | "se") => {
+      // Phase 1.1: Resize handles (8 handles: 4 corners + 4 edges)
+      const createHandle = (
+        position: "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w"
+      ) => {
         const handle = document.createElement("div");
         handle.className = `resize-handle-${position}`;
         handle.style.position = "absolute";
-        handle.style.width = "10px";
-        handle.style.height = "10px";
         handle.style.background = "#4F46E5";
         handle.style.border = "2px solid white";
-        handle.style.borderRadius = "50%";
         handle.style.display = "none";
         handle.style.zIndex = "10";
-        handle.style.cursor =
-          position === "nw" || position === "se"
-            ? "nwse-resize"
-            : "nesw-resize";
 
+        // Corner handles (circles)
+        if (["nw", "ne", "sw", "se"].includes(position)) {
+          handle.style.width = "10px";
+          handle.style.height = "10px";
+          handle.style.borderRadius = "50%";
+          handle.style.cursor =
+            position === "nw" || position === "se"
+              ? "nwse-resize"
+              : "nesw-resize";
+        }
+        // Edge handles (rectangles)
+        else {
+          if (position === "n" || position === "s") {
+            handle.style.width = "40px";
+            handle.style.height = "6px";
+            handle.style.cursor = "ns-resize";
+          } else {
+            handle.style.width = "6px";
+            handle.style.height = "40px";
+            handle.style.cursor = "ew-resize";
+          }
+          handle.style.borderRadius = "3px";
+        }
+
+        // Position handles
         if (position === "nw") {
           handle.style.top = "-5px";
           handle.style.left = "-5px";
@@ -365,6 +385,22 @@ const ResizableImage = Image.extend({
         } else if (position === "se") {
           handle.style.bottom = "-5px";
           handle.style.right = "-5px";
+        } else if (position === "n") {
+          handle.style.top = "-3px";
+          handle.style.left = "50%";
+          handle.style.transform = "translateX(-50%)";
+        } else if (position === "s") {
+          handle.style.bottom = "-3px";
+          handle.style.left = "50%";
+          handle.style.transform = "translateX(-50%)";
+        } else if (position === "e") {
+          handle.style.right = "-3px";
+          handle.style.top = "50%";
+          handle.style.transform = "translateY(-50%)";
+        } else if (position === "w") {
+          handle.style.left = "-3px";
+          handle.style.top = "50%";
+          handle.style.transform = "translateY(-50%)";
         }
 
         let startX = 0;
@@ -380,10 +416,18 @@ const ResizableImage = Image.extend({
             const deltaX = e.clientX - startX;
             let newWidth = startWidth;
 
-            if (position === "ne" || position === "se") {
+            // Calculate new width based on handle position
+            if (position === "ne" || position === "se" || position === "e") {
               newWidth = startWidth + deltaX;
-            } else {
+            } else if (
+              position === "nw" ||
+              position === "sw" ||
+              position === "w"
+            ) {
               newWidth = startWidth - deltaX;
+            } else {
+              // n and s handles don't resize (only corners and sides)
+              return;
             }
 
             if (newWidth > 50 && newWidth <= 1200) {
@@ -406,10 +450,15 @@ const ResizableImage = Image.extend({
         return handle;
       };
 
+      // Create all 8 handles
       const handleNW = createHandle("nw");
       const handleNE = createHandle("ne");
       const handleSW = createHandle("sw");
       const handleSE = createHandle("se");
+      const handleN = createHandle("n");
+      const handleS = createHandle("s");
+      const handleE = createHandle("e");
+      const handleW = createHandle("w");
 
       // Click to select
       let isSelected = false;
@@ -420,10 +469,15 @@ const ResizableImage = Image.extend({
           isSelected = true;
           selectionBorder.style.display = "block";
           toolbar.style.display = "flex";
+          // Show all 8 handles
           handleNW.style.display = "block";
           handleNE.style.display = "block";
           handleSW.style.display = "block";
           handleSE.style.display = "block";
+          handleN.style.display = "block";
+          handleS.style.display = "block";
+          handleE.style.display = "block";
+          handleW.style.display = "block";
         }
       });
 
@@ -433,10 +487,15 @@ const ResizableImage = Image.extend({
           isSelected = false;
           selectionBorder.style.display = "none";
           toolbar.style.display = "none";
+          // Hide all 8 handles
           handleNW.style.display = "none";
           handleNE.style.display = "none";
           handleSW.style.display = "none";
           handleSE.style.display = "none";
+          handleN.style.display = "none";
+          handleS.style.display = "none";
+          handleE.style.display = "none";
+          handleW.style.display = "none";
         }
       };
       document.addEventListener("click", handleOutsideClick);
@@ -444,10 +503,15 @@ const ResizableImage = Image.extend({
       container.appendChild(selectionBorder);
       container.appendChild(img);
       container.appendChild(toolbar);
+      // Append all 8 handles
       container.appendChild(handleNW);
       container.appendChild(handleNE);
       container.appendChild(handleSW);
       container.appendChild(handleSE);
+      container.appendChild(handleN);
+      container.appendChild(handleS);
+      container.appendChild(handleE);
+      container.appendChild(handleW);
 
       return {
         dom: container,
