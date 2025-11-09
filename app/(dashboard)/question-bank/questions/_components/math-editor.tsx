@@ -117,8 +117,14 @@ const ResizableImage = Image.extend({
       img.src = node.attrs.src;
       img.alt = node.attrs.alt || "";
       img.title = node.attrs.title || "";
-      if (node.attrs.width) img.width = node.attrs.width;
-      if (node.attrs.height) img.height = node.attrs.height;
+      if (node.attrs.width) {
+        img.width = node.attrs.width;
+        img.style.width = node.attrs.width + "px";
+      }
+      if (node.attrs.height) {
+        img.height = node.attrs.height;
+        img.style.height = node.attrs.height + "px";
+      }
       img.style.maxWidth = "100%";
       // Remove height: auto to allow manual height control
       img.style.cursor = "pointer";
@@ -455,6 +461,9 @@ const ResizableImage = Image.extend({
             }
 
             if (newWidth > 50 && newWidth <= 1200 && newHeight > 50) {
+              // Use style.width and style.height for full control (no auto ratio)
+              img.style.width = newWidth + "px";
+              img.style.height = newHeight + "px";
               img.width = newWidth;
               img.height = newHeight;
               if (typeof getPos === "function") {
