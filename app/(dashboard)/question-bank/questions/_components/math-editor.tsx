@@ -413,6 +413,35 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(alignCenterBtn);
       toolbar.appendChild(alignRightBtn);
 
+      const updateImageNodeAttributes = (attrs: Record<string, any>) => {
+        if (typeof getPos !== "function") {
+          return;
+        }
+
+        const pos = getPos();
+        if (typeof pos !== "number") {
+          return;
+        }
+
+        editor
+          .chain()
+          .focus()
+          .command(({ tr, state }) => {
+            const imageNode = state.doc.nodeAt(pos);
+            if (!imageNode) {
+              return false;
+            }
+
+            tr.setNodeMarkup(pos, undefined, {
+              ...imageNode.attrs,
+              ...attrs,
+            });
+
+            return true;
+          })
+          .run();
+      };
+
       // Phase 1.1: Resize handles (8 handles: 4 corners + 4 edges)
       const createHandle = (
         position: "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w"
@@ -537,12 +566,10 @@ const ResizableImage = Image.extend({
               img.style.height = newHeight + "px";
               img.width = newWidth;
               img.height = newHeight;
-              if (typeof getPos === "function") {
-                editor.commands.updateAttributes("image", {
-                  width: newWidth,
-                  height: newHeight,
-                });
-              }
+              updateImageNodeAttributes({
+                width: newWidth,
+                height: newHeight,
+              });
             }
           };
 
