@@ -12,26 +12,41 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async upload(params: UploadParams): Promise<UploadResult> {
-    const fullPath = path.join(this.basePath, params.key)
-    const dir = path.dirname(fullPath)
+    try {
+      const fullPath = path.join(this.basePath, params.key)
+      const dir = path.dirname(fullPath)
 
-    // Create directory if not exists
-    await fs.mkdir(dir, { recursive: true })
+      console.log('[LocalStorage] Uploading file:', {
+        key: params.key,
+        fullPath,
+        dir,
+        fileType: params.file instanceof Buffer ? 'Buffer' : 'File',
+      })
 
-    // Write file
-    const buffer = params.file instanceof Buffer
-      ? params.file
-      : Buffer.from(await (params.file as File).arrayBuffer())
-    
-    await fs.writeFile(fullPath, buffer)
+      // Create directory if not exists
+      await fs.mkdir(dir, { recursive: true })
+      console.log('[LocalStorage] Directory created:', dir)
 
-    // Get file stats
-    const stats = await fs.stat(fullPath)
+      // Write file
+      const buffer = params.file instanceof Buffer
+        ? params.file
+        : Buffer.from(await (params.file as File).arrayBuffer())
 
-    return {
-      key: params.key,
-      url: `/api/storage/${params.key}`, // Serve via API route
-      size: stats.size,
+      console.log('[LocalStorage] Writing file, size:', buffer.length, 'bytes')
+      await fs.writeFile(fullPath, buffer)
+
+      // Get file stats
+      const stats = await fs.stat(fullPath)
+      console.log('[LocalStorage] File written successfully, size:', stats.size)
+
+      return {
+        key: params.key,
+        url: `/api/storage/${params.key}`, // Serve via API route
+        size: stats.size,
+      }
+    } catch (error) {
+      console.error('[LocalStorage] Upload failed:', error)
+      throw error
     }
   }
 

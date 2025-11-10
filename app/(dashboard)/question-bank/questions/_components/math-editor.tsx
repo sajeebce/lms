@@ -1056,7 +1056,14 @@ export default function MathEditor({
   return (
     <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
       {/* Toolbar */}
-      <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
+      <div
+        className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 overflow-x-auto"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgb(203 213 225) transparent',
+        }}
+      >
+        <div className="flex gap-1 min-w-max">
         {/* Text Formatting */}
         <Button
           type="button"
@@ -1535,6 +1542,7 @@ export default function MathEditor({
         >
           <Redo className="h-4 w-4" />
         </Button>
+        </div>
       </div>
 
       {/* Editor Content */}

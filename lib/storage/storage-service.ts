@@ -284,46 +284,66 @@ export class StorageService {
       height?: number
     }
   ): Promise<{ url: string; id: string }> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
-    const extension = file.name.split('.').pop()
-    const timestamp = Date.now()
-    const key = await this.generateKey('questions', `images/${questionId}/${timestamp}.${extension}`)
-
-    // ✅ Upload file
-    const result = await storage.upload({
-      key,
-      file,
-      contentType: file.type,
-      metadata: {
+    try {
+      console.log('[StorageService] uploadQuestionImage called:', {
         questionId,
-        uploadedAt: new Date().toISOString(),
-      },
-      isPublic: false, // Question images are private
-    })
-
-    // ✅ Save to database with metadata
-    const uploadedFile = await prisma.uploadedFile.create({
-      data: {
-        tenantId,
-        key,
-        url: result.url,
         fileName: file.name,
-        fileSize: result.size,
-        mimeType: file.type,
-        category: 'question_image',
-        entityType: 'question',
-        entityId: questionId,
-        isPublic: false,
-        author: options?.author,
-        description: options?.description,
-        altText: options?.altText,
-        width: options?.width,
-        height: options?.height,
-      },
-    })
+        fileSize: file.size,
+        fileType: file.type,
+        options,
+      })
 
-    return { url: result.url, id: uploadedFile.id }
+      const storage = await this.getStorageAdapter()
+      const tenantId = await getTenantId()
+      console.log('[StorageService] TenantId:', tenantId)
+
+      const extension = file.name.split('.').pop()
+      const timestamp = Date.now()
+      const key = await this.generateKey('questions', `images/${questionId}/${timestamp}.${extension}`)
+      console.log('[StorageService] Generated key:', key)
+
+      // ✅ Upload file
+      console.log('[StorageService] Starting file upload...')
+      const result = await storage.upload({
+        key,
+        file,
+        contentType: file.type,
+        metadata: {
+          questionId,
+          uploadedAt: new Date().toISOString(),
+        },
+        isPublic: false, // Question images are private
+      })
+      console.log('[StorageService] File uploaded successfully:', result)
+
+      // ✅ Save to database with metadata
+      console.log('[StorageService] Saving to database...')
+      const uploadedFile = await prisma.uploadedFile.create({
+        data: {
+          tenantId,
+          key,
+          url: result.url,
+          fileName: file.name,
+          fileSize: result.size,
+          mimeType: file.type,
+          category: 'question_image',
+          entityType: 'question',
+          entityId: questionId,
+          isPublic: false,
+          author: options?.author,
+          description: options?.description,
+          altText: options?.altText,
+          width: options?.width,
+          height: options?.height,
+        },
+      })
+      console.log('[StorageService] Database record created:', uploadedFile.id)
+
+      return { url: result.url, id: uploadedFile.id }
+    } catch (error) {
+      console.error('[StorageService] uploadQuestionImage failed:', error)
+      throw error
+    }
   }
 
   /**
