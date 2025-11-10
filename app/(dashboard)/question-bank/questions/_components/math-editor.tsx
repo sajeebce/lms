@@ -135,6 +135,8 @@ const ResizableImage = Image.extend({
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
+      let currentAttrs = { ...node.attrs };
+
       // Don't generate ID here - it should be set during insert
       // Just log if ID is missing (for debugging)
       if (!node.attrs.id) {
@@ -414,6 +416,11 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(alignRightBtn);
 
       const updateImageNodeAttributes = (attrs: Record<string, any>) => {
+        currentAttrs = {
+          ...currentAttrs,
+          ...attrs,
+        };
+
         if (typeof getPos !== "function") {
           return;
         }
@@ -426,17 +433,8 @@ const ResizableImage = Image.extend({
         editor
           .chain()
           .focus()
-          .command(({ tr, state }) => {
-            const imageNode = state.doc.nodeAt(pos);
-            if (!imageNode) {
-              return false;
-            }
-
-            tr.setNodeMarkup(pos, undefined, {
-              ...imageNode.attrs,
-              ...attrs,
-            });
-
+          .command(({ tr }) => {
+            tr.setNodeMarkup(pos, undefined, currentAttrs);
             return true;
           })
           .run();
@@ -670,6 +668,7 @@ const ResizableImage = Image.extend({
         update(updatedNode) {
           // Only update if it's the same image node type
           if (updatedNode.type.name !== "image") return false;
+          currentAttrs = { ...updatedNode.attrs };
 
           // Update image src, alt, dimensions
           img.src = updatedNode.attrs.src;
