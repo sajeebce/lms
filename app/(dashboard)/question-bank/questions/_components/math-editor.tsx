@@ -65,7 +65,6 @@ import {
   ImagePropertiesDialog,
   type ImageProperties,
 } from "@/components/ui/image-properties-dialog";
-import { toast } from "sonner";
 
 const lowlight = createLowlight(common);
 
@@ -123,28 +122,10 @@ const ResizableImage = Image.extend({
           return { "data-file-id": attributes["data-file-id"] };
         },
       },
-      id: {
-        default: null,
-        parseHTML: (element) => element.getAttribute("data-image-id"),
-        renderHTML: (attributes) => {
-          if (!attributes.id) return {};
-          return { "data-image-id": attributes.id };
-        },
-      },
     };
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
-      let currentAttrs = { ...node.attrs };
-
-      // Don't generate ID here - it should be set during insert
-      // Just log if ID is missing (for debugging)
-      if (!node.attrs.id) {
-        console.warn(
-          "Image node without ID detected at position:",
-          typeof getPos === "function" ? getPos() : "unknown"
-        );
-      }
       const container = document.createElement("div");
       container.className = "image-wrapper";
       container.style.position = "relative";
@@ -196,6 +177,58 @@ const ResizableImage = Image.extend({
       selectionBorder.style.pointerEvents = "none";
       selectionBorder.style.display = "none";
       selectionBorder.style.zIndex = "1";
+
+      const sizeBadge = document.createElement("div");
+      sizeBadge.style.position = "absolute";
+      sizeBadge.style.top = "-36px";
+      sizeBadge.style.left = "50%";
+      sizeBadge.style.transform = "translateX(-50%)";
+      sizeBadge.style.padding = "4px 10px";
+      sizeBadge.style.borderRadius = "999px";
+      sizeBadge.style.background = "rgba(15, 23, 42, 0.85)";
+      sizeBadge.style.color = "white";
+      sizeBadge.style.fontSize = "12px";
+      sizeBadge.style.fontWeight = "600";
+      sizeBadge.style.display = "none";
+      sizeBadge.style.pointerEvents = "none";
+      sizeBadge.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.25)";
+
+      const getCurrentDimensions = () => {
+        const rect = img.getBoundingClientRect();
+        let width =
+          rect.width ||
+          img.offsetWidth ||
+          img.naturalWidth ||
+          node.attrs.width ||
+          0;
+        let height =
+          rect.height ||
+          img.offsetHeight ||
+          img.naturalHeight ||
+          node.attrs.height ||
+          0;
+
+        if (!height && width && img.naturalWidth) {
+          const ratio = img.naturalHeight / img.naturalWidth || 1;
+          height = width * ratio;
+        }
+
+        if (!width && height && img.naturalHeight) {
+          const ratio = img.naturalWidth / img.naturalHeight || 1;
+          width = height * ratio;
+        }
+
+        if (!width) width = 100;
+        if (!height) height = width;
+
+        return { width, height };
+      };
+
+      const updateSizeBadge = (width: number, height: number) => {
+        sizeBadge.textContent = `${Math.round(width)}px x ${Math.round(
+          height
+        )}px`;
+      };
 
       // Toolbar (delete + alignment buttons)
       const toolbar = document.createElement("div");
@@ -291,31 +324,20 @@ const ResizableImage = Image.extend({
         const editorView = editor.view;
         if (!editorView) return;
 
-        // Get current position and fetch latest node state
-        const currentPos = typeof getPos === "function" ? getPos() : null;
-        if (currentPos === null) return;
-
-        const latestNode = editorView.state.doc.nodeAt(currentPos);
-        if (!latestNode || latestNode.type.name !== "image") return;
-
         // Find the React component instance and call the edit handler
         // We'll use a data attribute to store the callback
         const imageData = {
-          src: latestNode.attrs.src,
-          alt: latestNode.attrs.alt,
-          description: latestNode.attrs.description,
-          width: latestNode.attrs.width,
-          height: latestNode.attrs.height,
-          textAlign: latestNode.attrs.textAlign,
-          border: latestNode.attrs.border,
-          borderColor: latestNode.attrs.borderColor,
-          fileId: latestNode.attrs["data-file-id"],
-          id: latestNode.attrs.id, // Unique image ID (guaranteed to exist)
-          pos: currentPos,
+          src: node.attrs.src,
+          alt: node.attrs.alt,
+          description: node.attrs.description,
+          width: node.attrs.width,
+          height: node.attrs.height,
+          textAlign: node.attrs.textAlign,
+          border: node.attrs.border,
+          borderColor: node.attrs.borderColor,
+          fileId: node.attrs["data-file-id"],
+          pos: typeof getPos === "function" ? getPos() : null,
         };
-
-        console.log("Edit button clicked - Image data:", imageData);
-        console.log("Image ID:", latestNode.attrs.id);
 
         // Store in a global variable that React can access
         (window as any).__editImageData = imageData;
@@ -415,159 +437,171 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(alignCenterBtn);
       toolbar.appendChild(alignRightBtn);
 
-      const updateImageNodeAttributes = (attrs: Record<string, any>) => {
-        currentAttrs = {
-          ...currentAttrs,
-          ...attrs,
-        };
-
-        if (typeof getPos !== "function") {
-          return;
-        }
-
-        const pos = getPos();
-        if (typeof pos !== "number") {
-          return;
-        }
-
-        editor
-          .chain()
-          .focus()
-          .command(({ tr }) => {
-            tr.setNodeMarkup(pos, undefined, currentAttrs);
-            return true;
-          })
-          .run();
-      };
-
       // Phase 1.1: Resize handles (8 handles: 4 corners + 4 edges)
-      const createHandle = (
-        position: "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w"
-      ) => {
+      type HandlePosition = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
+      const cornerHandles: HandlePosition[] = ["nw", "ne", "sw", "se"];
+
+      const createHandle = (position: HandlePosition) => {
         const handle = document.createElement("div");
         handle.className = `resize-handle-${position}`;
         handle.style.position = "absolute";
-        handle.style.background = "#4F46E5";
-        handle.style.border = "2px solid white";
         handle.style.display = "none";
         handle.style.zIndex = "10";
+        handle.style.border = "2px solid white";
+        handle.style.boxShadow = "0 1px 3px rgba(15, 23, 42, 0.35)";
 
-        // Corner handles (circles)
-        if (["nw", "ne", "sw", "se"].includes(position)) {
-          handle.style.width = "10px";
-          handle.style.height = "10px";
+        const isCorner = cornerHandles.includes(position);
+
+        if (isCorner) {
+          handle.style.width = "12px";
+          handle.style.height = "12px";
           handle.style.borderRadius = "50%";
+          handle.style.background = "#4F46E5";
           handle.style.cursor =
-            position === "nw" || position === "se"
-              ? "nwse-resize"
-              : "nesw-resize";
-        }
-        // Edge handles (rectangles)
-        else {
+            position === "nw" || position === "se" ? "nwse-resize" : "nesw-resize";
+        } else {
+          handle.style.borderRadius = "6px";
+          handle.style.background = "#F97316";
           if (position === "n" || position === "s") {
-            handle.style.width = "40px";
+            handle.style.width = "38px";
             handle.style.height = "6px";
             handle.style.cursor = "ns-resize";
           } else {
             handle.style.width = "6px";
-            handle.style.height = "40px";
+            handle.style.height = "38px";
             handle.style.cursor = "ew-resize";
           }
-          handle.style.borderRadius = "3px";
         }
 
-        // Position handles
-        if (position === "nw") {
-          handle.style.top = "-5px";
-          handle.style.left = "-5px";
-        } else if (position === "ne") {
-          handle.style.top = "-5px";
-          handle.style.right = "-5px";
-        } else if (position === "sw") {
-          handle.style.bottom = "-5px";
-          handle.style.left = "-5px";
-        } else if (position === "se") {
-          handle.style.bottom = "-5px";
-          handle.style.right = "-5px";
-        } else if (position === "n") {
-          handle.style.top = "-3px";
-          handle.style.left = "50%";
-          handle.style.transform = "translateX(-50%)";
-        } else if (position === "s") {
-          handle.style.bottom = "-3px";
-          handle.style.left = "50%";
-          handle.style.transform = "translateX(-50%)";
-        } else if (position === "e") {
-          handle.style.right = "-3px";
-          handle.style.top = "50%";
-          handle.style.transform = "translateY(-50%)";
-        } else if (position === "w") {
-          handle.style.left = "-3px";
-          handle.style.top = "50%";
-          handle.style.transform = "translateY(-50%)";
+        const cornerOffset = "-6px";
+        const edgeOffset = "-3px";
+
+        switch (position) {
+          case "nw":
+            handle.style.top = cornerOffset;
+            handle.style.left = cornerOffset;
+            break;
+          case "ne":
+            handle.style.top = cornerOffset;
+            handle.style.right = cornerOffset;
+            break;
+          case "sw":
+            handle.style.bottom = cornerOffset;
+            handle.style.left = cornerOffset;
+            break;
+          case "se":
+            handle.style.bottom = cornerOffset;
+            handle.style.right = cornerOffset;
+            break;
+          case "n":
+            handle.style.top = edgeOffset;
+            handle.style.left = "50%";
+            handle.style.transform = "translateX(-50%)";
+            break;
+          case "s":
+            handle.style.bottom = edgeOffset;
+            handle.style.left = "50%";
+            handle.style.transform = "translateX(-50%)";
+            break;
+          case "e":
+            handle.style.right = edgeOffset;
+            handle.style.top = "50%";
+            handle.style.transform = "translateY(-50%)";
+            break;
+          case "w":
+            handle.style.left = edgeOffset;
+            handle.style.top = "50%";
+            handle.style.transform = "translateY(-50%)";
+            break;
         }
 
-        let startX = 0;
-        let startY = 0;
-        let startWidth = 0;
-        let startHeight = 0;
-        let aspectRatio = 1;
+        handle.addEventListener("mousedown", (startEvent) => {
+          startEvent.preventDefault();
+          startEvent.stopPropagation();
 
-        handle.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          startX = e.clientX;
-          startY = e.clientY;
-          startWidth = img.width || img.offsetWidth;
-          startHeight = img.height || img.offsetHeight;
-          aspectRatio = startWidth / startHeight;
+          const rect = img.getBoundingClientRect();
+          const startX = startEvent.clientX;
+          const startY = startEvent.clientY;
+          const startWidth =
+            rect.width || img.offsetWidth || img.naturalWidth || 100;
+          const startHeight =
+            rect.height || img.offsetHeight || img.naturalHeight || startWidth;
+          const aspectRatio = startWidth / (startHeight || 1);
+          const minSize = 40;
+          const maxSize = 2400;
 
-          const onMouseMove = (e: MouseEvent) => {
-            const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
-            let newWidth = startWidth;
-            let newHeight = startHeight;
+          img.style.width = `${startWidth}px`;
+          img.style.height = `${startHeight}px`;
+          img.width = startWidth;
+          img.height = startHeight;
 
-            // Diagonal handles (corners): maintain aspect ratio
-            if (["nw", "ne", "sw", "se"].includes(position)) {
-              if (position === "ne" || position === "se") {
-                newWidth = startWidth + deltaX;
+          const onMouseMove = (moveEvent: MouseEvent) => {
+            const deltaX = moveEvent.clientX - startX;
+            const deltaY = moveEvent.clientY - startY;
+
+            let nextWidth = startWidth;
+            let nextHeight = startHeight;
+            let shouldUpdateWidth = false;
+            let shouldUpdateHeight = false;
+
+            if (isCorner) {
+              const widthCandidate =
+                position.includes("e") ? startWidth + deltaX : startWidth - deltaX;
+              const heightCandidate =
+                position.includes("s") ? startHeight + deltaY : startHeight - deltaY;
+
+              if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+                nextWidth = widthCandidate;
+                nextHeight = nextWidth / (aspectRatio || 1);
               } else {
-                newWidth = startWidth - deltaX;
+                nextHeight = heightCandidate;
+                nextWidth = nextHeight * (aspectRatio || 1);
               }
-              newHeight = newWidth / aspectRatio; // Maintain ratio
-            }
-            // Left/Right edge handles: FREE resize (width only, height stays same)
-            else if (position === "e" || position === "w") {
-              if (position === "e") {
-                newWidth = startWidth + deltaX;
-              } else {
-                newWidth = startWidth - deltaX;
-              }
-              // Height stays same - NO ratio maintenance
-              newHeight = startHeight;
-            }
-            // Top/Bottom edge handles: FREE resize (height only, width stays same)
-            else if (position === "n" || position === "s") {
-              if (position === "s") {
-                newHeight = startHeight + deltaY;
-              } else {
-                newHeight = startHeight - deltaY;
-              }
-              // Width stays same - NO ratio maintenance
-              newWidth = startWidth;
+              shouldUpdateWidth = true;
+              shouldUpdateHeight = true;
+            } else if (position === "e") {
+              nextWidth = startWidth + deltaX;
+              shouldUpdateWidth = true;
+            } else if (position === "w") {
+              nextWidth = startWidth - deltaX;
+              shouldUpdateWidth = true;
+            } else if (position === "n") {
+              nextHeight = startHeight - deltaY;
+              shouldUpdateHeight = true;
+            } else if (position === "s") {
+              nextHeight = startHeight + deltaY;
+              shouldUpdateHeight = true;
             }
 
-            if (newWidth > 50 && newWidth <= 1200 && newHeight > 50) {
-              // Use style.width and style.height for full control (no auto ratio)
-              img.style.width = newWidth + "px";
-              img.style.height = newHeight + "px";
-              img.width = newWidth;
-              img.height = newHeight;
-              updateImageNodeAttributes({
-                width: newWidth,
-                height: newHeight,
-              });
+            nextWidth = Math.min(Math.max(nextWidth, minSize), maxSize);
+            nextHeight = Math.min(Math.max(nextHeight, minSize), maxSize);
+
+            const previewWidth = shouldUpdateWidth ? nextWidth : startWidth;
+            const previewHeight = shouldUpdateHeight ? nextHeight : startHeight;
+
+            if (shouldUpdateWidth) {
+              img.style.width = `${previewWidth}px`;
+              img.width = previewWidth;
+            }
+            if (shouldUpdateHeight) {
+              img.style.height = `${previewHeight}px`;
+              img.height = previewHeight;
+            }
+
+            updateSizeBadge(previewWidth, previewHeight);
+
+            if (typeof getPos === "function") {
+              const attrs: Record<string, number> = {};
+              if (shouldUpdateWidth) {
+                attrs.width = Math.round(previewWidth);
+              }
+              if (shouldUpdateHeight) {
+                attrs.height = Math.round(previewHeight);
+              }
+
+              if (Object.keys(attrs).length) {
+                editor.commands.updateAttributes("image", attrs);
+              }
             }
           };
 
@@ -583,15 +617,38 @@ const ResizableImage = Image.extend({
         return handle;
       };
 
-      // Create all 8 handles
-      const handleNW = createHandle("nw");
-      const handleNE = createHandle("ne");
-      const handleSW = createHandle("sw");
-      const handleSE = createHandle("se");
-      const handleN = createHandle("n");
-      const handleS = createHandle("s");
-      const handleE = createHandle("e");
-      const handleW = createHandle("w");
+      const handleOrder: HandlePosition[] = [
+        "nw",
+        "n",
+        "ne",
+        "e",
+        "se",
+        "s",
+        "sw",
+        "w",
+      ];
+
+      const handles: Record<HandlePosition, HTMLDivElement> = handleOrder.reduce(
+        (acc, position) => {
+          acc[position] = createHandle(position);
+          return acc;
+        },
+        {} as Record<HandlePosition, HTMLDivElement>
+      );
+
+      const showHandles = () => {
+        handleOrder.forEach((position) => {
+          handles[position].style.display = "block";
+        });
+        sizeBadge.style.display = "inline-flex";
+      };
+
+      const hideHandles = () => {
+        handleOrder.forEach((position) => {
+          handles[position].style.display = "none";
+        });
+        sizeBadge.style.display = "none";
+      };
 
       // Click to select
       let isSelected = false;
@@ -602,15 +659,9 @@ const ResizableImage = Image.extend({
           isSelected = true;
           selectionBorder.style.display = "block";
           toolbar.style.display = "flex";
-          // Show all 8 handles
-          handleNW.style.display = "block";
-          handleNE.style.display = "block";
-          handleSW.style.display = "block";
-          handleSE.style.display = "block";
-          handleN.style.display = "block";
-          handleS.style.display = "block";
-          handleE.style.display = "block";
-          handleW.style.display = "block";
+          const { width, height } = getCurrentDimensions();
+          updateSizeBadge(width, height);
+          showHandles();
         }
       });
 
@@ -620,15 +671,7 @@ const ResizableImage = Image.extend({
           isSelected = false;
           selectionBorder.style.display = "none";
           toolbar.style.display = "none";
-          // Hide all 8 handles
-          handleNW.style.display = "none";
-          handleNE.style.display = "none";
-          handleSW.style.display = "none";
-          handleSE.style.display = "none";
-          handleN.style.display = "none";
-          handleS.style.display = "none";
-          handleE.style.display = "none";
-          handleW.style.display = "none";
+          hideHandles();
         }
       };
       document.addEventListener("click", handleOutsideClick);
@@ -652,23 +695,17 @@ const ResizableImage = Image.extend({
       if (descriptionCaption) {
         container.appendChild(descriptionCaption);
       }
+      container.appendChild(sizeBadge);
       container.appendChild(toolbar);
-      // Append all 8 handles
-      container.appendChild(handleNW);
-      container.appendChild(handleNE);
-      container.appendChild(handleSW);
-      container.appendChild(handleSE);
-      container.appendChild(handleN);
-      container.appendChild(handleS);
-      container.appendChild(handleE);
-      container.appendChild(handleW);
+      handleOrder.forEach((position) => {
+        container.appendChild(handles[position]);
+      });
 
       return {
         dom: container,
         update(updatedNode) {
           // Only update if it's the same image node type
           if (updatedNode.type.name !== "image") return false;
-          currentAttrs = { ...updatedNode.attrs };
 
           // Update image src, alt, dimensions
           img.src = updatedNode.attrs.src;
@@ -726,6 +763,12 @@ const ResizableImage = Image.extend({
             descriptionCaption.style.textAlign =
               updatedNode.attrs.textAlign || "center";
           }
+
+          const latestWidth =
+            updatedNode.attrs.width || img.offsetWidth || img.naturalWidth || 0;
+          const latestHeight =
+            updatedNode.attrs.height || img.offsetHeight || img.naturalHeight || 0;
+          updateSizeBadge(latestWidth, latestHeight);
 
           return true;
         },
@@ -906,92 +949,30 @@ export default function MathEditor({
     if (!editor) return;
 
     // Check if we're editing an existing image
-    if (editingImageData && editingImageData.id) {
-      // Find image by unique ID
-      const imageId = editingImageData.id;
-
-      console.log("Updating image with ID:", imageId);
-      console.log("New attributes:", {
-        description: props.description,
-        border: props.border,
-        borderColor: props.borderColor,
-        width: props.width,
-        height: props.height,
-      });
-
-      // Find the image node by ID
-      let foundPos: number | null = null;
-      const allImages: any[] = [];
-      editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === "image") {
-          allImages.push({ pos, id: node.attrs.id, src: node.attrs.src });
-          if (node.attrs.id === imageId) {
-            foundPos = pos;
-            return false; // Stop searching
-          }
-        }
-      });
-
-      console.log("All images in document:", allImages);
-      console.log("Looking for ID:", imageId);
-
-      if (foundPos === null) {
-        console.error("Image not found with ID:", imageId);
-        console.error(
-          "Available image IDs:",
-          allImages.map((img) => img.id)
-        );
-        toast.error("Failed to update image");
-        setEditingImageData(null);
-        setShowImageDialog(false);
-        return;
-      }
-
-      console.log("Found image at position:", foundPos);
-
-      // Update the image
+    if (editingImageData && editingImageData.pos !== null) {
+      // Update existing image
       editor
         .chain()
         .focus()
-        .command(({ tr, state }) => {
-          const node = state.doc.nodeAt(foundPos!);
-          if (!node || node.type.name !== "image") {
-            console.error("No image node found at position:", foundPos);
-            return false;
-          }
-
-          tr.setNodeMarkup(foundPos!, undefined, {
-            ...node.attrs,
-            src: props.url,
-            alt: props.alt,
-            title: props.alt,
-            description: props.description,
-            width: props.width,
-            height: props.height,
-            textAlign: props.alignment,
-            border: props.border,
-            borderColor: props.borderColor,
-            "data-file-id": props.fileId,
-          });
-
-          console.log("Transaction created, dispatching...");
-          return true;
+        .setNodeSelection(editingImageData.pos)
+        .updateAttributes("image", {
+          src: props.url,
+          alt: props.alt,
+          title: props.alt,
+          description: props.description,
+          width: props.width,
+          height: props.height,
+          textAlign: props.alignment,
+          border: props.border,
+          borderColor: props.borderColor,
+          "data-file-id": props.fileId,
         })
         .run();
 
-      console.log("Update complete");
-
-      // Clear editing state after a small delay to ensure update is applied
-      setTimeout(() => {
-        setEditingImageData(null);
-        setShowImageDialog(false);
-      }, 100);
+      // Clear editing state
+      setEditingImageData(null);
     } else {
-      // Insert new image with unique ID
-      const uniqueId = `img-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-
+      // Insert new image
       editor
         .chain()
         .focus()
@@ -1006,22 +987,8 @@ export default function MathEditor({
           border: props.border,
           borderColor: props.borderColor,
           "data-file-id": props.fileId,
-          id: uniqueId,
         })
         .run();
-
-      console.log("Image inserted with ID:", uniqueId);
-
-      // Verify ID was set
-      setTimeout(() => {
-        const allImages: any[] = [];
-        editor.state.doc.descendants((node, pos) => {
-          if (node.type.name === "image") {
-            allImages.push({ pos, id: node.attrs.id, src: node.attrs.src });
-          }
-        });
-        console.log("After insert - All images:", allImages);
-      }, 100);
 
       // Apply alignment if specified
       if (props.alignment && props.alignment !== "left") {
@@ -1601,3 +1568,6 @@ export default function MathEditor({
     </div>
   );
 }
+
+
+
