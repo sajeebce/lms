@@ -271,8 +271,8 @@ const ResizableImage = Image.extend({
             return;
           }
 
-          // Load image
-          const sourceImg = new Image();
+          // Load image (use HTMLImageElement to avoid conflict with TipTap Image)
+          const sourceImg = document.createElement("img") as HTMLImageElement;
           sourceImg.crossOrigin = "anonymous"; // For CORS
           sourceImg.src = img.src;
 
