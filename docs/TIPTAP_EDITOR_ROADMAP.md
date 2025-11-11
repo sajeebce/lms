@@ -206,10 +206,7 @@ const rotatedDataURL = canvas.toDataURL();
 
 ---
 
-### **2.2 Mirror Horizontal/Vertical** (~100 lines) - 🔄 **IN PROGRESS**
-
-**Current:** No flip/mirror
-**Target:** Flip horizontal/vertical buttons
+### **2.2 Mirror Horizontal/Vertical** ✅ **COMPLETE**
 
 **Implementation:**
 
@@ -221,17 +218,17 @@ const rotatedDataURL = canvas.toDataURL();
 **Canvas API Usage:**
 
 ```typescript
-ctx.scale(-1, 1); // Horizontal flip
-ctx.scale(1, -1); // Vertical flip
-ctx.drawImage(img, 0, 0);
+ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 ```
 
-**Files to modify:**
+**Files modified:**
 
 - `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
 
-**Code Impact:** +100 lines  
+**Code Impact:** +80 lines
 **Performance Impact:** Medium (only when flipping)
+**Completion Date:** 2025-01-11
 
 ---
 
