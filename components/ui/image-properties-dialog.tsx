@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,19 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilePickerModal, SelectedFile } from "./file-picker-modal";
+import { FileUploadTab } from "./file-upload-tab";
+import { ServerFilesTab } from "./server-files-tab";
+import { RecentFilesTab } from "./recent-files-tab";
+import { ExternalUrlTab } from "./external-url-tab";
 import { toast } from "sonner";
+import { Upload, Server, Clock, Link } from "lucide-react";
+import { addRecentFile } from "@/lib/storage/recent-files";
 
 export interface ImageProperties {
   url: string;
-  alt: string;
+  alt?: string; // Optional alt text
   description?: string; // Image description (like Sun Editor)
   width?: number;
   height?: number;
   alignment: "left" | "center" | "right";
   border?: "none" | "thin" | "medium" | "thick"; // Border style
   borderColor?: string; // Border color (hex)
-  isDecorative: boolean;
   fileId?: string; // For server-side deletion
 }
 
@@ -83,10 +88,9 @@ export function ImagePropertiesDialog({
     "none"
   );
   const [borderColor, setBorderColor] = useState("#d1d5db"); // Default gray
-  const [isDecorative, setIsDecorative] = useState(true); // ✅ Default checked
   const [autoSize, setAutoSize] = useState(true);
-  const [showFilePicker, setShowFilePicker] = useState(false);
   const [fileId, setFileId] = useState<string | undefined>();
+  const [activeTab, setActiveTab] = useState("upload"); // Tab state
 
   useEffect(() => {
     if (open) {
@@ -98,29 +102,36 @@ export function ImagePropertiesDialog({
       setAlignment(initialAlignment || "center");
       setBorder(initialBorder || "none");
       setBorderColor(initialBorderColor || "#d1d5db");
-      setIsDecorative(true); // ✅ Default checked
       setAutoSize(!initialWidth && !initialHeight);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const handleFileSelect = (file: SelectedFile) => {
+  const handleFileSelect = (file: {
+    url: string
+    fileName: string
+    fileSize: number
+    mimeType: string
+    id?: string
+  }) => {
     setUrl(file.url);
     setFileId(file.id); // Store file ID for deletion
 
-    // If file has dimensions, pre-fill them
-    if (file.width && file.height) {
-      setWidth(file.width);
-      setHeight(file.height);
-      setAutoSize(false); // Disable auto-size if we have dimensions
+    // Auto-fill alt text with filename if empty
+    if (!alt) {
+      setAlt(file.fileName.replace(/\.[^/.]+$/, "")); // Remove extension
     }
 
-    // If file has alt text, pre-fill it
-    if (file.altText) {
-      setAlt(file.altText);
-    }
+    // Add to recent files
+    addRecentFile({
+      url: file.url,
+      fileName: file.fileName,
+      fileSize: file.fileSize,
+      mimeType: file.mimeType,
+      id: file.id,
+      timestamp: Date.now(),
+    });
 
-    setShowFilePicker(false);
     // Keep the main dialog open so user can adjust size/alignment
   };
 
@@ -149,13 +160,6 @@ export function ImagePropertiesDialog({
       return;
     }
 
-    if (!isDecorative && !alt.trim()) {
-      toast.error(
-        "Please provide alt text for accessibility (or mark as decorative)"
-      );
-      return;
-    }
-
     if (alt.length > 125) {
       toast.error("Alt text must be 125 characters or less");
       return;
@@ -163,14 +167,13 @@ export function ImagePropertiesDialog({
 
     onInsert({
       url,
-      alt: isDecorative ? "" : alt,
+      alt: alt.trim() || undefined,
       description: description.trim() || undefined,
       width: autoSize ? undefined : width,
       height: autoSize ? undefined : height,
       alignment,
       border,
       borderColor: border !== "none" ? borderColor : undefined,
-      isDecorative,
       fileId, // Pass file ID for deletion
     });
 
@@ -182,16 +185,8 @@ export function ImagePropertiesDialog({
 
   return (
     <>
-      <Dialog
-        open={open}
-        onOpenChange={(isOpen) => {
-          // Only close if file picker is not open
-          if (!isOpen && !showFilePicker) {
-            onClose();
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl">
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? "Edit Image" : "Insert Image"}
@@ -199,61 +194,65 @@ export function ImagePropertiesDialog({
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* URL Input - Hide internal URLs for security */}
-            <div className="space-y-2">
-              <Label htmlFor="image-url">Image URL *</Label>
-              <div className="flex gap-2">
-                {isInternalUrl(url) ? (
-                  // Show masked input for internal URLs
-                  <div className="flex-1 flex items-center gap-2 px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                    <span className="text-sm">
-                      [Internal Storage - URL Hidden for Security]
-                    </span>
-                  </div>
-                ) : (
-                  // Show editable input for external URLs
-                  <Input
-                    id="image-url"
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="flex-1"
-                  />
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFilePicker(true)}
-                >
-                  Browse...
-                </Button>
-              </div>
-              {isInternalUrl(url) && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  ✓ Image uploaded to secure storage. URL is hidden to prevent
-                  unauthorized access.
-                </p>
-              )}
-            </div>
+            {/* File Selection Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </TabsTrigger>
+                <TabsTrigger value="server" className="flex items-center gap-2">
+                  <Server className="w-4 h-4" />
+                  Server Files
+                </TabsTrigger>
+                <TabsTrigger value="recent" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Recent
+                </TabsTrigger>
+                <TabsTrigger value="url" className="flex items-center gap-2">
+                  <Link className="w-4 h-4" />
+                  URL
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="upload" className="mt-4">
+                <FileUploadTab
+                  category={category}
+                  entityType={entityType}
+                  entityId={entityId}
+                  accept="image/*"
+                  maxSize={5 * 1024 * 1024}
+                  onFileSelect={handleFileSelect}
+                />
+              </TabsContent>
+
+              <TabsContent value="server" className="mt-4">
+                <ServerFilesTab
+                  category={category}
+                  entityType={entityType}
+                  entityId={entityId}
+                  onFileSelect={handleFileSelect}
+                />
+              </TabsContent>
+
+              <TabsContent value="recent" className="mt-4">
+                <RecentFilesTab onFileSelect={handleFileSelect} />
+              </TabsContent>
+
+              <TabsContent value="url" className="mt-4">
+                <ExternalUrlTab
+                  onUrlSubmit={(externalUrl) => {
+                    setUrl(externalUrl)
+                    toast.success('External URL added')
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
 
             {/* Image Preview */}
             {url && (
-              <div className="border rounded-lg p-4 bg-gray-50">
-                <p className="text-sm font-medium mb-2">Preview:</p>
+              <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                <p className="text-sm font-medium mb-2">Selected Image Preview:</p>
                 <img
                   src={url}
                   alt="Preview"
@@ -265,38 +264,20 @@ export function ImagePropertiesDialog({
               </div>
             )}
 
-            {/* Alt Text */}
+            {/* Alt Text (Optional) */}
             <div className="space-y-2">
-              <Label htmlFor="alt-text">Alt Text {!isDecorative && "*"}</Label>
+              <Label htmlFor="alt-text">Alt Text (Optional)</Label>
               <Textarea
                 id="alt-text"
-                placeholder="Describe the image for accessibility"
+                placeholder="Describe the image for accessibility (optional)"
                 value={alt}
                 onChange={(e) => setAlt(e.target.value)}
                 maxLength={125}
-                disabled={isDecorative}
                 rows={3}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {alt.length}/125 characters
               </p>
-            </div>
-
-            {/* Decorative Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="decorative"
-                checked={isDecorative}
-                onCheckedChange={(checked) =>
-                  setIsDecorative(checked as boolean)
-                }
-              />
-              <Label
-                htmlFor="decorative"
-                className="text-sm font-normal cursor-pointer"
-              >
-                This image is decorative only (no alt text needed)
-              </Label>
             </div>
 
             {/* Description Field (Optional) */}
@@ -380,41 +361,44 @@ export function ImagePropertiesDialog({
               )}
             </div>
 
-            {/* Alignment */}
-            <div className="space-y-2">
-              <Label htmlFor="alignment">Alignment</Label>
-              <Select
-                value={alignment}
-                onValueChange={(value: any) => setAlignment(value)}
-              >
-                <SelectTrigger id="alignment">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">Left</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="right">Right</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Alignment & Border - Side by Side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Alignment */}
+              <div className="space-y-2">
+                <Label htmlFor="alignment">Alignment</Label>
+                <Select
+                  value={alignment}
+                  onValueChange={(value: any) => setAlignment(value)}
+                >
+                  <SelectTrigger id="alignment">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">Left</SelectItem>
+                    <SelectItem value="center">Center</SelectItem>
+                    <SelectItem value="right">Right</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Border */}
-            <div className="space-y-2">
-              <Label htmlFor="border">Border</Label>
-              <Select
-                value={border}
-                onValueChange={(value: any) => setBorder(value)}
-              >
-                <SelectTrigger id="border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="thin">Thin (1px solid)</SelectItem>
-                  <SelectItem value="medium">Medium (2px solid)</SelectItem>
-                  <SelectItem value="thick">Thick (4px solid)</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Border */}
+              <div className="space-y-2">
+                <Label htmlFor="border">Border</Label>
+                <Select
+                  value={border}
+                  onValueChange={(value: any) => setBorder(value)}
+                >
+                  <SelectTrigger id="border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="thin">Thin (1px solid)</SelectItem>
+                    <SelectItem value="medium">Medium (2px solid)</SelectItem>
+                    <SelectItem value="thick">Thick (4px solid)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Border Color (only show if border is not "none") */}
@@ -452,19 +436,6 @@ export function ImagePropertiesDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* File Picker Modal - No URL tab (already have URL input above) */}
-      <FilePickerModal
-        open={showFilePicker}
-        onClose={() => setShowFilePicker(false)}
-        onSelect={handleFileSelect}
-        category={category}
-        entityType={entityType}
-        entityId={entityId}
-        accept="image/*"
-        maxSize={5 * 1024 * 1024}
-        allowUrl={false}
-      />
     </>
   );
 }
