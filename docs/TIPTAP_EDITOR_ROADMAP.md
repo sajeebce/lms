@@ -206,17 +206,17 @@ const rotatedDataURL = canvas.toDataURL();
 
 ---
 
-### **2.2 Mirror Horizontal/Vertical** (~100 lines)
+### **2.2 Mirror Horizontal/Vertical** (~100 lines) - 🔄 **IN PROGRESS**
 
-**Current:** No flip/mirror  
+**Current:** No flip/mirror
 **Target:** Flip horizontal/vertical buttons
 
 **Implementation:**
 
-- 🔲 Add mirror buttons to floating toolbar
-- 🔲 Use **Canvas API** to flip image
-- 🔲 Store flip state in `data-flip` attribute
-- 🔲 Apply CSS transform for preview
+- � Add mirror buttons to floating toolbar
+- � Use **Canvas API** to flip image
+- � Store flip state in `data-flip-h` and `data-flip-v` attributes
+- � Apply CSS transform for preview
 
 **Canvas API Usage:**
 

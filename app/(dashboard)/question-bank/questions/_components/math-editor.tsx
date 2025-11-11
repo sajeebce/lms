@@ -132,6 +132,27 @@ const ResizableImage = Image.extend({
           return { "data-rotation": attributes.rotation };
         },
       },
+      // Phase 2.2: Mirror attributes
+      flipH: {
+        default: false,
+        parseHTML: (element) => {
+          return element.getAttribute("data-flip-h") === "true";
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.flipH) return {};
+          return { "data-flip-h": "true" };
+        },
+      },
+      flipV: {
+        default: false,
+        parseHTML: (element) => {
+          return element.getAttribute("data-flip-v") === "true";
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.flipV) return {};
+          return { "data-flip-v": "true" };
+        },
+      },
       "data-file-id": {
         default: null,
         renderHTML: (attributes) => {
@@ -183,10 +204,20 @@ const ResizableImage = Image.extend({
         img.style.border = "none";
       }
 
-      // Phase 2.1: Apply rotation transform (visual only, actual rotation done via Canvas)
+      // Phase 2.1 & 2.2: Apply rotation and mirror transforms
       const rotation = currentNode.attrs.rotation || 0;
+      const flipH = currentNode.attrs.flipH || false;
+      const flipV = currentNode.attrs.flipV || false;
+
+      const transforms = [];
       if (rotation !== 0) {
-        img.style.transform = `rotate(${rotation}deg)`;
+        transforms.push(`rotate(${rotation}deg)`);
+      }
+      if (flipH || flipV) {
+        transforms.push(`scale(${flipH ? -1 : 1}, ${flipV ? -1 : 1})`);
+      }
+      if (transforms.length > 0) {
+        img.style.transform = transforms.join(" ");
       }
 
       // Selection border (hidden by default)
@@ -344,6 +375,82 @@ const ResizableImage = Image.extend({
           console.log(`✅ Rotated ${direction} to ${newRotation}°`);
         } catch (error) {
           console.error("Failed to rotate image:", error);
+        }
+      };
+
+      // Phase 2.2: Mirror image using Canvas API
+      const mirrorImage = async (direction: "horizontal" | "vertical") => {
+        try {
+          // Toggle flip state
+          const currentFlipH = currentNode.attrs.flipH || false;
+          const currentFlipV = currentNode.attrs.flipV || false;
+          const newFlipH =
+            direction === "horizontal" ? !currentFlipH : currentFlipH;
+          const newFlipV =
+            direction === "vertical" ? !currentFlipV : currentFlipV;
+
+          // Create canvas for mirroring
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            console.error("Canvas context not available");
+            return;
+          }
+
+          // Load image
+          const sourceImg = document.createElement("img") as HTMLImageElement;
+          sourceImg.crossOrigin = "anonymous";
+          sourceImg.src = img.src;
+
+          await new Promise((resolve, reject) => {
+            sourceImg.onload = resolve;
+            sourceImg.onerror = reject;
+          });
+
+          // Set canvas dimensions (same as source)
+          canvas.width = sourceImg.naturalWidth;
+          canvas.height = sourceImg.naturalHeight;
+
+          // Apply mirroring
+          ctx.save();
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.scale(newFlipH ? -1 : 1, newFlipV ? -1 : 1);
+          ctx.drawImage(
+            sourceImg,
+            -sourceImg.naturalWidth / 2,
+            -sourceImg.naturalHeight / 2
+          );
+          ctx.restore();
+
+          // Convert to data URL
+          const mirroredDataURL = canvas.toDataURL("image/png");
+
+          // Update image src
+          img.src = mirroredDataURL;
+
+          // Update TipTap node attributes
+          if (typeof getPos === "function") {
+            editor.commands.updateAttributes("image", {
+              src: mirroredDataURL,
+              flipH: newFlipH,
+              flipV: newFlipV,
+            });
+          }
+
+          // Update current node reference
+          currentNode = {
+            ...currentNode,
+            attrs: {
+              ...currentNode.attrs,
+              src: mirroredDataURL,
+              flipH: newFlipH,
+              flipV: newFlipV,
+            },
+          };
+
+          console.log(`✅ Mirrored ${direction}: H=${newFlipH}, V=${newFlipV}`);
+        } catch (error) {
+          console.error("Failed to mirror image:", error);
         }
       };
 
@@ -620,6 +727,59 @@ const ResizableImage = Image.extend({
 
       const divider3 = createDivider();
 
+      // Phase 2.2: Mirror buttons
+      const createMirrorBtn = (
+        direction: "horizontal" | "vertical",
+        svgIcon: string
+      ) => {
+        const btn = document.createElement("button");
+        btn.innerHTML = svgIcon;
+        btn.style.padding = "6px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "none";
+        btn.style.background = "transparent";
+        btn.style.color = "#6b7280";
+        btn.style.cursor = "pointer";
+        btn.style.display = "flex";
+        btn.style.alignItems = "center";
+        btn.style.justifyContent = "center";
+        btn.title =
+          direction === "horizontal" ? "Mirror Horizontal" : "Mirror Vertical";
+        btn.addEventListener("mouseenter", () => {
+          btn.style.background = "#f3f4f6";
+          btn.style.color = "#111827";
+        });
+        btn.addEventListener("mouseleave", () => {
+          btn.style.background = "transparent";
+          btn.style.color = "#6b7280";
+        });
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await mirrorImage(direction);
+        });
+        return btn;
+      };
+
+      const mirrorHBtn = createMirrorBtn(
+        "horizontal",
+        `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      `
+      );
+
+      const mirrorVBtn = createMirrorBtn(
+        "vertical",
+        `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      `
+      );
+
+      const divider4 = createDivider();
+
       toolbar.appendChild(deleteBtn);
       toolbar.appendChild(divider1);
       toolbar.appendChild(editBtn);
@@ -630,6 +790,9 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(divider3);
       toolbar.appendChild(rotateLeftBtn);
       toolbar.appendChild(rotateRightBtn);
+      toolbar.appendChild(divider4);
+      toolbar.appendChild(mirrorHBtn);
+      toolbar.appendChild(mirrorVBtn);
 
       // Phase 1.1: Resize handles (8 handles: 4 corners + 4 edges)
       type HandlePosition = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
@@ -963,10 +1126,20 @@ const ResizableImage = Image.extend({
             img.style.border = "none";
           }
 
-          // Phase 2.1: Update rotation
+          // Phase 2.1 & 2.2: Update rotation and mirror
           const rotation = updatedNode.attrs.rotation || 0;
+          const flipH = updatedNode.attrs.flipH || false;
+          const flipV = updatedNode.attrs.flipV || false;
+
+          const transforms = [];
           if (rotation !== 0) {
-            img.style.transform = `rotate(${rotation}deg)`;
+            transforms.push(`rotate(${rotation}deg)`);
+          }
+          if (flipH || flipV) {
+            transforms.push(`scale(${flipH ? -1 : 1}, ${flipV ? -1 : 1})`);
+          }
+          if (transforms.length > 0) {
+            img.style.transform = transforms.join(" ");
           } else {
             img.style.transform = "";
           }
