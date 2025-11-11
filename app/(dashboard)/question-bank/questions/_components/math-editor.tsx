@@ -327,10 +327,15 @@ const ResizableImage = Image.extend({
 
         // Find the React component instance and call the edit handler
         // We'll use a data attribute to store the callback
+
+        // ✅ CRITICAL FIX: Read description from DOM element, not currentNode
+        // This ensures we always get the latest value
+        const descriptionFromDOM = descriptionCaption?.textContent || null;
+
         const imageData = {
           src: currentNode.attrs.src,
           alt: currentNode.attrs.alt,
-          description: currentNode.attrs.description,
+          description: descriptionFromDOM, // ← Read from DOM, not currentNode
           width: currentNode.attrs.width,
           height: currentNode.attrs.height,
           textAlign: currentNode.attrs.textAlign,
@@ -341,6 +346,7 @@ const ResizableImage = Image.extend({
         };
 
         // 🐛 DEBUG: Log what we're sending to edit modal
+        console.log('🔍 Edit Button - Description from DOM:', descriptionFromDOM);
         console.log('🔍 Edit Button - Current node attrs:', currentNode.attrs);
         console.log('🔍 Edit Button - Image data being sent:', imageData);
 
@@ -604,10 +610,14 @@ const ResizableImage = Image.extend({
                 attrs.height = Math.round(previewHeight);
               }
 
-              // ✅ CRITICAL FIX: Always preserve ALL attributes during resize
-              // Copy all existing attributes to prevent data loss
+              // ✅ CRITICAL FIX: Read description from DOM element, not currentNode
+              // This ensures we always get the latest value, even if currentNode is stale
+              if (descriptionCaption && descriptionCaption.textContent) {
+                attrs.description = descriptionCaption.textContent;
+              }
+
+              // Preserve other attributes from currentNode
               const preservedAttrs = [
-                'description',
                 'alt',
                 'title',
                 'textAlign',
@@ -625,6 +635,7 @@ const ResizableImage = Image.extend({
 
               // 🐛 DEBUG: Log what we're sending to updateAttributes
               console.log('🔍 Resize - Updating attributes:', attrs);
+              console.log('🔍 Description from DOM:', descriptionCaption?.textContent);
               console.log('🔍 Current node attrs:', currentNode.attrs);
 
               if (Object.keys(attrs).length) {
