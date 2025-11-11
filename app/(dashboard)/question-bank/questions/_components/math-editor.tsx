@@ -340,6 +340,10 @@ const ResizableImage = Image.extend({
           pos: typeof getPos === "function" ? getPos() : null,
         };
 
+        // 🐛 DEBUG: Log what we're sending to edit modal
+        console.log('🔍 Edit Button - Current node attrs:', currentNode.attrs);
+        console.log('🔍 Edit Button - Image data being sent:', imageData);
+
         // Store in a global variable that React can access
         (window as any).__editImageData = imageData;
         (window as any).__triggerImageEdit?.();
@@ -618,6 +622,10 @@ const ResizableImage = Image.extend({
                   attrs[attrName] = value;
                 }
               });
+
+              // 🐛 DEBUG: Log what we're sending to updateAttributes
+              console.log('🔍 Resize - Updating attributes:', attrs);
+              console.log('🔍 Current node attrs:', currentNode.attrs);
 
               if (Object.keys(attrs).length) {
                 editor.commands.updateAttributes("image", attrs);
