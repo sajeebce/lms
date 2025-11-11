@@ -177,10 +177,7 @@ This document outlines the complete plan to make our TipTap-based rich text edit
 
 **Goal:** Exceed Sun Editor with rotate/mirror/zoom features
 
-### **2.1 Rotate Left/Right** (~150 lines) - 🔄 **IN PROGRESS**
-
-**Current:** No rotation
-**Target:** 90° rotation (left/right buttons)
+### **2.1 Rotate Left/Right** ✅ **COMPLETE**
 
 **Implementation:**
 
