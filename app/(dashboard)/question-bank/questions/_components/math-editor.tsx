@@ -121,6 +121,17 @@ const ResizableImage = Image.extend({
           return { "data-border-color": attributes.borderColor };
         },
       },
+      rotation: {
+        default: 0,
+        parseHTML: (element) => {
+          const rotation = element.getAttribute("data-rotation");
+          return rotation ? parseInt(rotation) : 0;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.rotation || attributes.rotation === 0) return {};
+          return { "data-rotation": attributes.rotation };
+        },
+      },
       "data-file-id": {
         default: null,
         renderHTML: (attributes) => {
@@ -170,6 +181,12 @@ const ResizableImage = Image.extend({
         img.style.border = `4px solid ${borderColor}`;
       } else {
         img.style.border = "none";
+      }
+
+      // Phase 2.1: Apply rotation transform (visual only, actual rotation done via Canvas)
+      const rotation = currentNode.attrs.rotation || 0;
+      if (rotation !== 0) {
+        img.style.transform = `rotate(${rotation}deg)`;
       }
 
       // Selection border (hidden by default)
@@ -235,6 +252,99 @@ const ResizableImage = Image.extend({
         sizeBadge.textContent = `${Math.round(width)}px x ${Math.round(
           height
         )}px`;
+      };
+
+      // Phase 2.1: Rotate image using Canvas API
+      const rotateImage = async (direction: "left" | "right") => {
+        try {
+          // Calculate new rotation (0, 90, 180, 270)
+          const currentRotation = currentNode.attrs.rotation || 0;
+          const rotationDelta = direction === "left" ? -90 : 90;
+          let newRotation = (currentRotation + rotationDelta) % 360;
+          if (newRotation < 0) newRotation += 360;
+
+          // Create canvas for rotation
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            console.error("Canvas context not available");
+            return;
+          }
+
+          // Load image
+          const sourceImg = new Image();
+          sourceImg.crossOrigin = "anonymous"; // For CORS
+          sourceImg.src = img.src;
+
+          await new Promise((resolve, reject) => {
+            sourceImg.onload = resolve;
+            sourceImg.onerror = reject;
+          });
+
+          // Calculate canvas dimensions (swap width/height for 90/270 rotation)
+          const isVerticalRotation = newRotation === 90 || newRotation === 270;
+          canvas.width = isVerticalRotation
+            ? sourceImg.naturalHeight
+            : sourceImg.naturalWidth;
+          canvas.height = isVerticalRotation
+            ? sourceImg.naturalWidth
+            : sourceImg.naturalHeight;
+
+          // Apply rotation
+          ctx.save();
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((newRotation * Math.PI) / 180);
+          ctx.drawImage(
+            sourceImg,
+            -sourceImg.naturalWidth / 2,
+            -sourceImg.naturalHeight / 2
+          );
+          ctx.restore();
+
+          // Convert to data URL
+          const rotatedDataURL = canvas.toDataURL("image/png");
+
+          // Update image src
+          img.src = rotatedDataURL;
+
+          // Update dimensions (swap if 90/270)
+          const currentWidth = currentNode.attrs.width || img.naturalWidth;
+          const currentHeight = currentNode.attrs.height || img.naturalHeight;
+
+          const newWidth = isVerticalRotation ? currentHeight : currentWidth;
+          const newHeight = isVerticalRotation ? currentWidth : currentHeight;
+
+          img.width = newWidth;
+          img.height = newHeight;
+          img.style.width = `${newWidth}px`;
+          img.style.height = `${newHeight}px`;
+
+          // Update TipTap node attributes
+          if (typeof getPos === "function") {
+            editor.commands.updateAttributes("image", {
+              src: rotatedDataURL,
+              rotation: newRotation,
+              width: newWidth,
+              height: newHeight,
+            });
+          }
+
+          // Update current node reference
+          currentNode = {
+            ...currentNode,
+            attrs: {
+              ...currentNode.attrs,
+              src: rotatedDataURL,
+              rotation: newRotation,
+              width: newWidth,
+              height: newHeight,
+            },
+          };
+
+          console.log(`✅ Rotated ${direction} to ${newRotation}°`);
+        } catch (error) {
+          console.error("Failed to rotate image:", error);
+        }
       };
 
       // Toolbar (delete + alignment buttons)
@@ -449,6 +559,67 @@ const ResizableImage = Image.extend({
       `
       );
 
+      // Phase 2.1: Rotate buttons
+      const createDivider = () => {
+        const divider = document.createElement("div");
+        divider.style.width = "1px";
+        divider.style.height = "20px";
+        divider.style.background = "#e5e7eb";
+        return divider;
+      };
+
+      const createRotateBtn = (
+        direction: "left" | "right",
+        svgIcon: string
+      ) => {
+        const btn = document.createElement("button");
+        btn.innerHTML = svgIcon;
+        btn.style.padding = "6px";
+        btn.style.borderRadius = "4px";
+        btn.style.border = "none";
+        btn.style.background = "transparent";
+        btn.style.color = "#6b7280";
+        btn.style.cursor = "pointer";
+        btn.style.display = "flex";
+        btn.style.alignItems = "center";
+        btn.style.justifyContent = "center";
+        btn.title =
+          direction === "left" ? "Rotate Left (90°)" : "Rotate Right (90°)";
+        btn.addEventListener("mouseenter", () => {
+          btn.style.background = "#f3f4f6";
+          btn.style.color = "#111827";
+        });
+        btn.addEventListener("mouseleave", () => {
+          btn.style.background = "transparent";
+          btn.style.color = "#6b7280";
+        });
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await rotateImage(direction);
+        });
+        return btn;
+      };
+
+      const rotateLeftBtn = createRotateBtn(
+        "left",
+        `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      `
+      );
+
+      const rotateRightBtn = createRotateBtn(
+        "right",
+        `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+        </svg>
+      `
+      );
+
+      const divider3 = createDivider();
+
       toolbar.appendChild(deleteBtn);
       toolbar.appendChild(divider1);
       toolbar.appendChild(editBtn);
@@ -456,6 +627,9 @@ const ResizableImage = Image.extend({
       toolbar.appendChild(alignLeftBtn);
       toolbar.appendChild(alignCenterBtn);
       toolbar.appendChild(alignRightBtn);
+      toolbar.appendChild(divider3);
+      toolbar.appendChild(rotateLeftBtn);
+      toolbar.appendChild(rotateRightBtn);
 
       // Phase 1.1: Resize handles (8 handles: 4 corners + 4 edges)
       type HandlePosition = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
@@ -787,6 +961,14 @@ const ResizableImage = Image.extend({
             img.style.border = `4px solid ${borderColor}`;
           } else {
             img.style.border = "none";
+          }
+
+          // Phase 2.1: Update rotation
+          const rotation = updatedNode.attrs.rotation || 0;
+          if (rotation !== 0) {
+            img.style.transform = `rotate(${rotation}deg)`;
+          } else {
+            img.style.transform = "";
           }
 
           // Update description caption
