@@ -126,25 +126,26 @@ const ResizableImage = Image.extend({
   },
   addNodeView() {
     return ({ node, getPos, editor }) => {
+      let currentNode = node;
       const container = document.createElement("div");
       container.className = "image-wrapper";
       container.style.position = "relative";
       container.style.display = "block";
       container.style.maxWidth = "100%";
       container.style.margin = "10px 0";
-      container.style.textAlign = node.attrs.textAlign || "center";
+      container.style.textAlign = currentNode.attrs.textAlign || "center";
 
       const img = document.createElement("img");
-      img.src = node.attrs.src;
-      img.alt = node.attrs.alt || "";
-      img.title = node.attrs.title || "";
-      if (node.attrs.width) {
-        img.width = node.attrs.width;
-        img.style.width = node.attrs.width + "px";
+      img.src = currentNode.attrs.src;
+      img.alt = currentNode.attrs.alt || "";
+      img.title = currentNode.attrs.title || "";
+      if (currentNode.attrs.width) {
+        img.width = currentNode.attrs.width;
+        img.style.width = currentNode.attrs.width + "px";
       }
-      if (node.attrs.height) {
-        img.height = node.attrs.height;
-        img.style.height = node.attrs.height + "px";
+      if (currentNode.attrs.height) {
+        img.height = currentNode.attrs.height;
+        img.style.height = currentNode.attrs.height + "px";
       }
       img.style.maxWidth = "100%";
       // Remove height: auto to allow manual height control
@@ -153,8 +154,8 @@ const ResizableImage = Image.extend({
       img.style.transition = "all 0.2s ease";
 
       // Apply border style with custom color
-      const borderStyle = node.attrs.border || "none";
-      const borderColor = node.attrs.borderColor || "#d1d5db";
+      const borderStyle = currentNode.attrs.border || "none";
+      const borderColor = currentNode.attrs.borderColor || "#d1d5db";
       if (borderStyle === "thin") {
         img.style.border = `1px solid ${borderColor}`;
       } else if (borderStyle === "medium") {
@@ -171,7 +172,7 @@ const ResizableImage = Image.extend({
       selectionBorder.style.top = "-4px";
       selectionBorder.style.left = "-4px";
       selectionBorder.style.right = "-4px";
-      selectionBorder.style.bottom = "-4px";
+      selectionBorder.style.bottom = "-4px"; // Will be updated dynamically
       selectionBorder.style.border = "3px solid #4F46E5";
       selectionBorder.style.borderRadius = "4px";
       selectionBorder.style.pointerEvents = "none";
@@ -199,13 +200,13 @@ const ResizableImage = Image.extend({
           rect.width ||
           img.offsetWidth ||
           img.naturalWidth ||
-          node.attrs.width ||
+          currentNode.attrs.width ||
           0;
         let height =
           rect.height ||
           img.offsetHeight ||
           img.naturalHeight ||
-          node.attrs.height ||
+          currentNode.attrs.height ||
           0;
 
         if (!height && width && img.naturalWidth) {
@@ -275,7 +276,7 @@ const ResizableImage = Image.extend({
         e.stopPropagation();
 
         // Delete from server if file ID exists
-        const fileId = node.attrs["data-file-id"];
+        const fileId = currentNode.attrs["data-file-id"];
         if (fileId) {
           try {
             await fetch(`/api/files/${fileId}`, { method: "DELETE" });
@@ -288,7 +289,7 @@ const ResizableImage = Image.extend({
         if (typeof getPos === "function") {
           editor.commands.deleteRange({
             from: getPos(),
-            to: getPos() + node.nodeSize,
+            to: getPos() + currentNode.nodeSize,
           });
         }
       });
@@ -327,15 +328,15 @@ const ResizableImage = Image.extend({
         // Find the React component instance and call the edit handler
         // We'll use a data attribute to store the callback
         const imageData = {
-          src: node.attrs.src,
-          alt: node.attrs.alt,
-          description: node.attrs.description,
-          width: node.attrs.width,
-          height: node.attrs.height,
-          textAlign: node.attrs.textAlign,
-          border: node.attrs.border,
-          borderColor: node.attrs.borderColor,
-          fileId: node.attrs["data-file-id"],
+          src: currentNode.attrs.src,
+          alt: currentNode.attrs.alt,
+          description: currentNode.attrs.description,
+          width: currentNode.attrs.width,
+          height: currentNode.attrs.height,
+          textAlign: currentNode.attrs.textAlign,
+          border: currentNode.attrs.border,
+          borderColor: currentNode.attrs.borderColor,
+          fileId: currentNode.attrs["data-file-id"],
           pos: typeof getPos === "function" ? getPos() : null,
         };
 
@@ -589,14 +590,21 @@ const ResizableImage = Image.extend({
             }
 
             updateSizeBadge(previewWidth, previewHeight);
+            updateSelectionBorder(); // ✅ Update border during resize
 
             if (typeof getPos === "function") {
-              const attrs: Record<string, number> = {};
+              const attrs: Record<string, number | string> = {};
               if (shouldUpdateWidth) {
                 attrs.width = Math.round(previewWidth);
               }
               if (shouldUpdateHeight) {
                 attrs.height = Math.round(previewHeight);
+              }
+              if (
+                currentNode.attrs.description !== undefined &&
+                currentNode.attrs.description !== null
+              ) {
+                attrs.description = currentNode.attrs.description;
               }
 
               if (Object.keys(attrs).length) {
@@ -657,6 +665,7 @@ const ResizableImage = Image.extend({
         if (typeof getPos === "function") {
           editor.commands.setNodeSelection(getPos());
           isSelected = true;
+          updateSelectionBorder(); // ✅ Update border to cover description
           selectionBorder.style.display = "block";
           toolbar.style.display = "flex";
           const { width, height } = getCurrentDimensions();
@@ -678,15 +687,16 @@ const ResizableImage = Image.extend({
 
       // Description caption (if exists)
       let descriptionCaption: HTMLDivElement | null = null;
-      if (node.attrs.description) {
+      if (currentNode.attrs.description) {
         descriptionCaption = document.createElement("div");
         descriptionCaption.className = "image-description";
-        descriptionCaption.textContent = node.attrs.description;
+        descriptionCaption.textContent = currentNode.attrs.description;
         descriptionCaption.style.fontSize = "14px";
         descriptionCaption.style.color = "#6b7280";
         descriptionCaption.style.marginTop = "8px";
         descriptionCaption.style.fontStyle = "italic";
-        descriptionCaption.style.textAlign = node.attrs.textAlign || "center";
+        descriptionCaption.style.textAlign =
+          currentNode.attrs.textAlign || "center";
         descriptionCaption.style.padding = "0 4px";
       }
 
@@ -701,11 +711,21 @@ const ResizableImage = Image.extend({
         container.appendChild(handles[position]);
       });
 
+      // ✅ Helper function to update selection border to cover image + description
+      // This ensures the purple border includes the description caption
+      const updateSelectionBorder = () => {
+        // Border always covers the full container (image + description if exists)
+        // The bottom is already set to -4px which covers the entire container
+        // No need to calculate dynamically since container already includes description
+        selectionBorder.style.bottom = "-4px";
+      };
+
       return {
         dom: container,
         update(updatedNode) {
           // Only update if it's the same image node type
           if (updatedNode.type.name !== "image") return false;
+          currentNode = updatedNode;
 
           // Update image src, alt, dimensions
           img.src = updatedNode.attrs.src;
@@ -769,6 +789,11 @@ const ResizableImage = Image.extend({
           const latestHeight =
             updatedNode.attrs.height || img.offsetHeight || img.naturalHeight || 0;
           updateSizeBadge(latestWidth, latestHeight);
+
+          // ✅ Update selection border when description changes
+          if (isSelected) {
+            updateSelectionBorder();
+          }
 
           return true;
         },
