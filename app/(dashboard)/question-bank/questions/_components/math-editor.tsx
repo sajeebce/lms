@@ -103,6 +103,9 @@ const ResizableImage = Image.extend({
       },
       border: {
         default: "none",
+        parseHTML: (element) => {
+          return element.getAttribute("data-border") || "none";
+        },
         renderHTML: (attributes) => {
           if (!attributes.border || attributes.border === "none") return {};
           return { "data-border": attributes.border };
@@ -110,6 +113,9 @@ const ResizableImage = Image.extend({
       },
       borderColor: {
         default: "#d1d5db",
+        parseHTML: (element) => {
+          return element.getAttribute("data-border-color") || "#d1d5db";
+        },
         renderHTML: (attributes) => {
           if (!attributes.borderColor) return {};
           return { "data-border-color": attributes.borderColor };
@@ -346,9 +352,12 @@ const ResizableImage = Image.extend({
         };
 
         // 🐛 DEBUG: Log what we're sending to edit modal
-        console.log('🔍 Edit Button - Description from DOM:', descriptionFromDOM);
-        console.log('🔍 Edit Button - Current node attrs:', currentNode.attrs);
-        console.log('🔍 Edit Button - Image data being sent:', imageData);
+        console.log(
+          "🔍 Edit Button - Description from DOM:",
+          descriptionFromDOM
+        );
+        console.log("🔍 Edit Button - Current node attrs:", currentNode.attrs);
+        console.log("🔍 Edit Button - Image data being sent:", imageData);
 
         // Store in a global variable that React can access
         (window as any).__editImageData = imageData;
@@ -469,7 +478,9 @@ const ResizableImage = Image.extend({
           handle.style.borderRadius = "50%";
           handle.style.background = "#4F46E5";
           handle.style.cursor =
-            position === "nw" || position === "se" ? "nwse-resize" : "nesw-resize";
+            position === "nw" || position === "se"
+              ? "nwse-resize"
+              : "nesw-resize";
         } else {
           handle.style.borderRadius = "6px";
           handle.style.background = "#F97316";
@@ -556,10 +567,12 @@ const ResizableImage = Image.extend({
             let shouldUpdateHeight = false;
 
             if (isCorner) {
-              const widthCandidate =
-                position.includes("e") ? startWidth + deltaX : startWidth - deltaX;
-              const heightCandidate =
-                position.includes("s") ? startHeight + deltaY : startHeight - deltaY;
+              const widthCandidate = position.includes("e")
+                ? startWidth + deltaX
+                : startWidth - deltaX;
+              const heightCandidate = position.includes("s")
+                ? startHeight + deltaY
+                : startHeight - deltaY;
 
               if (Math.abs(deltaX) >= Math.abs(deltaY)) {
                 nextWidth = widthCandidate;
@@ -618,25 +631,28 @@ const ResizableImage = Image.extend({
 
               // Preserve other attributes from currentNode
               const preservedAttrs = [
-                'alt',
-                'title',
-                'textAlign',
-                'border',
-                'borderColor',
-                'data-file-id'
+                "alt",
+                "title",
+                "textAlign",
+                "border",
+                "borderColor",
+                "data-file-id",
               ];
 
-              preservedAttrs.forEach(attrName => {
+              preservedAttrs.forEach((attrName) => {
                 const value = currentNode.attrs[attrName];
-                if (value !== undefined && value !== null && value !== '') {
+                if (value !== undefined && value !== null && value !== "") {
                   attrs[attrName] = value;
                 }
               });
 
               // 🐛 DEBUG: Log what we're sending to updateAttributes
-              console.log('🔍 Resize - Updating attributes:', attrs);
-              console.log('🔍 Description from DOM:', descriptionCaption?.textContent);
-              console.log('🔍 Current node attrs:', currentNode.attrs);
+              console.log("🔍 Resize - Updating attributes:", attrs);
+              console.log(
+                "🔍 Description from DOM:",
+                descriptionCaption?.textContent
+              );
+              console.log("🔍 Current node attrs:", currentNode.attrs);
 
               if (Object.keys(attrs).length) {
                 editor.commands.updateAttributes("image", attrs);
@@ -667,13 +683,11 @@ const ResizableImage = Image.extend({
         "w",
       ];
 
-      const handles: Record<HandlePosition, HTMLDivElement> = handleOrder.reduce(
-        (acc, position) => {
+      const handles: Record<HandlePosition, HTMLDivElement> =
+        handleOrder.reduce((acc, position) => {
           acc[position] = createHandle(position);
           return acc;
-        },
-        {} as Record<HandlePosition, HTMLDivElement>
-      );
+        }, {} as Record<HandlePosition, HTMLDivElement>);
 
       const showHandles = () => {
         handleOrder.forEach((position) => {
@@ -808,7 +822,10 @@ const ResizableImage = Image.extend({
           const latestWidth =
             updatedNode.attrs.width || img.offsetWidth || img.naturalWidth || 0;
           const latestHeight =
-            updatedNode.attrs.height || img.offsetHeight || img.naturalHeight || 0;
+            updatedNode.attrs.height ||
+            img.offsetHeight ||
+            img.naturalHeight ||
+            0;
           updateSizeBadge(latestWidth, latestHeight);
 
           return true;
@@ -1609,6 +1626,3 @@ export default function MathEditor({
     </div>
   );
 }
-
-
-
