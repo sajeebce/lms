@@ -2298,14 +2298,17 @@ export default function RichTextEditor({
                 size="sm"
                 className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
                 onClick={() => {
+                  // Insert HR with custom attributes using insertContent
                   editor
                     .chain()
                     .focus()
-                    .setHorizontalRule()
-                    .updateAttributes("horizontalRule", {
-                      style: hrStyle,
-                      thickness: hrThickness,
-                      color: hrColor,
+                    .insertContent({
+                      type: "horizontalRule",
+                      attrs: {
+                        style: hrStyle,
+                        thickness: hrThickness,
+                        color: hrColor,
+                      },
                     })
                     .run();
                 }}
