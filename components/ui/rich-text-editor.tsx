@@ -53,6 +53,7 @@ import {
   IndentIncrease,
   IndentDecrease,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import "./editor-styles.css";
@@ -74,6 +75,8 @@ import {
   ImagePropertiesDialog,
   type ImageProperties,
 } from "@/components/ui/image-properties-dialog";
+import { LinkDialog } from "@/components/ui/link-dialog";
+import { FontFamilySelector } from "@/components/ui/font-family-selector";
 
 const lowlight = createLowlight(common);
 
@@ -1285,11 +1288,135 @@ const CustomHorizontalRule = HorizontalRule.extend({
   },
 });
 
+// Phase 3.3: Custom Indent Extension for Paragraphs, Headings, and Lists
+const CustomIndent = Extension.create({
+  name: "customIndent",
+
+  addOptions() {
+    return {
+      types: ["paragraph", "heading", "listItem"],
+      minLevel: 0,
+      maxLevel: 8,
+      indentSize: 40, // 40px per level
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          indent: {
+            default: 0,
+            parseHTML: (element) => {
+              const indent = element.getAttribute("data-indent");
+              return indent ? parseInt(indent, 10) : 0;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.indent || attributes.indent === 0) {
+                return {};
+              }
+              return {
+                "data-indent": attributes.indent,
+                style: `padding-left: ${
+                  attributes.indent * this.options.indentSize
+                }px`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      indent:
+        () =>
+        ({ tr, state, dispatch, editor }) => {
+          const { selection } = state;
+          const { from, to } = selection;
+
+          // Check if we're in a list
+          const isInList =
+            editor.isActive("bulletList") || editor.isActive("orderedList");
+
+          if (isInList) {
+            // Use default list indent behavior
+            return editor.commands.sinkListItem("listItem");
+          }
+
+          // For paragraphs and headings
+          let updated = false;
+          state.doc.nodesBetween(from, to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent < this.options.maxLevel) {
+                if (dispatch) {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    indent: currentIndent + 1,
+                  });
+                }
+                updated = true;
+              }
+            }
+          });
+
+          return updated;
+        },
+
+      outdent:
+        () =>
+        ({ tr, state, dispatch, editor }) => {
+          const { selection } = state;
+          const { from, to } = selection;
+
+          // Check if we're in a list
+          const isInList =
+            editor.isActive("bulletList") || editor.isActive("orderedList");
+
+          if (isInList) {
+            // Use default list outdent behavior
+            return editor.commands.liftListItem("listItem");
+          }
+
+          // For paragraphs and headings
+          let updated = false;
+          state.doc.nodesBetween(from, to, (node, pos) => {
+            if (this.options.types.includes(node.type.name)) {
+              const currentIndent = node.attrs.indent || 0;
+              if (currentIndent > this.options.minLevel) {
+                if (dispatch) {
+                  tr.setNodeMarkup(pos, undefined, {
+                    ...node.attrs,
+                    indent: currentIndent - 1,
+                  });
+                }
+                updated = true;
+              }
+            }
+          });
+
+          return updated;
+        },
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => this.editor.commands.indent(),
+      "Shift-Tab": () => this.editor.commands.outdent(),
+    };
+  },
+});
+
 type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  showIndentGuides?: boolean; // Phase 3.3: Optional indent guide styling (default: true)
 };
 
 export default function RichTextEditor({
@@ -1297,16 +1424,36 @@ export default function RichTextEditor({
   onChange,
   placeholder = "Type here...",
   minHeight = "200px",
+  showIndentGuides: showIndentGuidesProp,
 }: RichTextEditorProps) {
+  // Phase 3.3: Indent guides toggle with localStorage persistence
+  const [showIndentGuides, setShowIndentGuides] = useState(() => {
+    if (showIndentGuidesProp !== undefined) return showIndentGuidesProp;
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("tiptap-indent-guides");
+    return saved !== "false"; // Default: true
+  });
   const [showMathLive, setShowMathLive] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [editingImageData, setEditingImageData] = useState<any>(null);
   const wasMathLiveOpen = useRef(false);
 
+  // Phase 3.4: Link Dialog state
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkOpenInNewTab, setLinkOpenInNewTab] = useState(true);
+
   // Phase 3.2: Horizontal Rule state
   const [hrStyle, setHrStyle] = useState("solid");
   const [hrThickness, setHrThickness] = useState("medium");
   const [hrColor, setHrColor] = useState("#e5e7eb");
+
+  // Phase 3.3: Save indent guides preference to localStorage
+  useEffect(() => {
+    if (showIndentGuidesProp === undefined && typeof window !== "undefined") {
+      localStorage.setItem("tiptap-indent-guides", String(showIndentGuides));
+    }
+  }, [showIndentGuides, showIndentGuidesProp]);
 
   const editor = useEditor({
     immediatelyRender: false, // ✅ Fix SSR hydration mismatch
@@ -1319,6 +1466,7 @@ export default function RichTextEditor({
       }),
       CustomBlockquote, // Phase 3.1: Custom blockquote with styles
       CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
+      CustomIndent, // Phase 3.3: Custom indent/outdent for paragraphs and headings
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
         inlineOptions: {
@@ -1344,7 +1492,28 @@ export default function RichTextEditor({
         placeholder,
       }),
       // Phase 1: Text Color & Highlight
-      TextStyle,
+      // Phase 3.5: Extended TextStyle with fontWeight support
+      TextStyle.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            fontWeight: {
+              default: null,
+              parseHTML: (element) =>
+                element.style.fontWeight || element.getAttribute("data-font-weight"),
+              renderHTML: (attributes) => {
+                if (!attributes.fontWeight) {
+                  return {};
+                }
+                return {
+                  style: `font-weight: ${attributes.fontWeight}`,
+                  "data-font-weight": attributes.fontWeight,
+                };
+              },
+            },
+          };
+        },
+      }),
       Color,
       Highlight.configure({
         multicolor: true,
@@ -1364,12 +1533,15 @@ export default function RichTextEditor({
       TableRow,
       TableHeader,
       TableCell,
-      // Phase 3: Link
+      // Phase 3.4: Link - Modern & Secure
       Link.configure({
         openOnClick: false,
+        autolink: true, // Auto-detect URLs
+        linkOnPaste: true, // Auto-link on paste
         HTMLAttributes: {
-          class:
-            "text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300",
+          // Security: rel="noopener noreferrer" prevents window.opener access
+          rel: "noopener noreferrer",
+          // Styling handled by CSS (editor-styles.css)
         },
       }),
       // Phase 3: Font Family
@@ -1457,6 +1629,35 @@ export default function RichTextEditor({
     if (latex) {
       insertMathNode(latex);
     }
+  };
+
+  // Phase 3.4: Link handlers
+  const handleLinkInsert = (url: string, openInNewTab: boolean) => {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .setLink({
+        href: url,
+        target: openInNewTab ? "_blank" : undefined,
+        rel: openInNewTab ? "noopener noreferrer" : undefined, // 🔒 Security: Prevent window.opener access
+      })
+      .run();
+  };
+
+  const handleLinkEdit = () => {
+    if (!editor) return;
+
+    const { href, target } = editor.getAttributes("link");
+    setLinkUrl(href || "");
+    setLinkOpenInNewTab(target === "_blank");
+    setShowLinkDialog(true);
+  };
+
+  const handleLinkRemove = () => {
+    if (!editor) return;
+    editor.chain().focus().unsetLink().run();
   };
 
   const handleImageInsert = (props: ImageProperties) => {
@@ -1562,7 +1763,11 @@ export default function RichTextEditor({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
+      <div
+        className={`border rounded-lg dark:border-slate-700 overflow-hidden ${
+          !showIndentGuides ? "no-indent-guides" : ""
+        }`}
+      >
         {/* Toolbar */}
         <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
@@ -1761,48 +1966,37 @@ export default function RichTextEditor({
             </PopoverContent>
           </Popover>
 
-          {/* Phase 3.5: Font Family */}
+          {/* Phase 3.5: Font Family - Bangla + English with Weight Control */}
           <Popover>
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      editor.getAttributes("textStyle").fontFamily
+                        ? "bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900"
+                        : ""
+                    }
+                  >
                     <Type className="h-4 w-4 mr-1" />
                     Font
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <TooltipContent>Font Family</TooltipContent>
+              <TooltipContent>
+                <div className="text-center">
+                  <div className="font-semibold">Font Family</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Choose font and weight
+                  </div>
+                </div>
+              </TooltipContent>
             </Tooltip>
-            <PopoverContent className="w-48">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Font Family</Label>
-                {[
-                  { label: "Default", value: "" },
-                  { label: "Serif", value: "serif" },
-                  { label: "Monospace", value: "monospace" },
-                  { label: "Cursive", value: "cursive" },
-                ].map((font) => (
-                  <Button
-                    key={font.label}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      if (font.value) {
-                        editor.chain().focus().setFontFamily(font.value).run();
-                      } else {
-                        editor.chain().focus().unsetFontFamily().run();
-                      }
-                    }}
-                  >
-                    <span style={{ fontFamily: font.value || "inherit" }}>
-                      {font.label}
-                    </span>
-                  </Button>
-                ))}
-              </div>
+            <PopoverContent className="w-auto p-0" align="start">
+              <FontFamilySelector editor={editor} />
             </PopoverContent>
           </Popover>
 
@@ -2170,29 +2364,99 @@ export default function RichTextEditor({
             </PopoverContent>
           </Popover>
 
-          {/* Phase 3.3: Indent/Outdent (for lists) */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              editor.chain().focus().sinkListItem("listItem").run()
-            }
-            title="Indent (Tab)"
-          >
-            <IndentIncrease className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              editor.chain().focus().liftListItem("listItem").run()
-            }
-            title="Outdent (Shift+Tab)"
-          >
-            <IndentDecrease className="h-4 w-4" />
-          </Button>
+          {/* Phase 3.3: Indent/Outdent - Beautiful Enhanced Version */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().indent().run()}
+                className="relative group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-950 dark:hover:to-indigo-950 transition-all duration-200"
+              >
+                <IndentIncrease className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                <span className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Sparkles className="h-3 w-3 text-blue-500 dark:text-blue-400" />
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-center">
+                <div className="font-semibold">Increase Indent</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Tab</kbd>
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().outdent().run()}
+                className="relative group hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950 dark:hover:to-pink-950 transition-all duration-200"
+              >
+                <IndentDecrease className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                <span className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Sparkles className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-center">
+                <div className="font-semibold">Decrease Indent</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Shift</kbd> + <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Tab</kbd>
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Phase 3.3: Toggle Indent Guides - User Preference */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowIndentGuides(!showIndentGuides)}
+                className={`relative transition-all duration-200 ${
+                  showIndentGuides
+                    ? "bg-gradient-to-r from-violet-100 to-fuchsia-100 dark:from-violet-900 dark:to-fuchsia-900 hover:from-violet-200 hover:to-fuchsia-200 dark:hover:from-violet-800 dark:hover:to-fuchsia-800"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                <Sparkles
+                  className={`h-4 w-4 transition-all duration-200 ${
+                    showIndentGuides
+                      ? "text-violet-600 dark:text-violet-400 scale-110"
+                      : "text-slate-400 dark:text-slate-600"
+                  }`}
+                />
+                {showIndentGuides && (
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                  </span>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-center">
+                <div className="font-semibold">
+                  {showIndentGuides ? "Hide" : "Show"} Indent Guides
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {showIndentGuides
+                    ? "Click to use simple indent style"
+                    : "Click to show colorful guide lines"}
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
@@ -2458,7 +2722,7 @@ export default function RichTextEditor({
             </PopoverContent>
           </Popover>
 
-          {/* Phase 3.4: Link */}
+          {/* Phase 3.4: Link - Modern Dialog with Security */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -2466,22 +2730,75 @@ export default function RichTextEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  const url = window.prompt("Enter URL:");
-                  if (url) {
-                    editor.chain().focus().setLink({ href: url }).run();
+                  if (editor.isActive("link")) {
+                    // Edit existing link
+                    handleLinkEdit();
+                  } else {
+                    // Insert new link
+                    setLinkUrl("");
+                    setLinkOpenInNewTab(true);
+                    setShowLinkDialog(true);
                   }
                 }}
-                className={
+                className={`relative transition-all duration-200 ${
                   editor.isActive("link")
-                    ? "bg-slate-200 dark:bg-slate-700"
-                    : ""
-                }
+                    ? "bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900 dark:to-cyan-900"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
               >
-                <LinkIcon className="h-4 w-4" />
+                <LinkIcon
+                  className={`h-4 w-4 transition-all duration-200 ${
+                    editor.isActive("link")
+                      ? "text-blue-600 dark:text-blue-400 scale-110"
+                      : ""
+                  }`}
+                />
+                {editor.isActive("link") && (
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                  </span>
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Insert Link</TooltipContent>
+            <TooltipContent>
+              <div className="text-center">
+                <div className="font-semibold">
+                  {editor.isActive("link") ? "Edit Link" : "Insert Link"}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {editor.isActive("link")
+                    ? "Click to edit or remove link"
+                    : "Add a hyperlink to selected text"}
+                </div>
+              </div>
+            </TooltipContent>
           </Tooltip>
+
+          {/* Remove Link Button (only show when link is active) */}
+          {editor.isActive("link") && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLinkRemove}
+                  className="relative hover:bg-red-50 dark:hover:bg-red-950 transition-all duration-200"
+                >
+                  <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-center">
+                  <div className="font-semibold">Remove Link</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Unlink selected text
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
@@ -2579,6 +2896,17 @@ export default function RichTextEditor({
           open={showMathLive}
           onClose={() => setShowMathLive(false)}
           onInsert={handleMathLiveInsert}
+        />
+
+        {/* Phase 3.4: Link Dialog - Modern & Secure */}
+        <LinkDialog
+          open={showLinkDialog}
+          onClose={() => setShowLinkDialog(false)}
+          onInsert={handleLinkInsert}
+          onRemove={handleLinkRemove}
+          initialUrl={linkUrl}
+          initialOpenInNewTab={linkOpenInNewTab}
+          isEditMode={editor?.isActive("link") || false}
         />
 
         {/* Image Properties Dialog - Enhanced File Upload */}

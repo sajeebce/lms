@@ -1,5 +1,279 @@
 /* TipTap Editor Custom Styles */
 
+/* Phase 3.5: Font Family Support - Bangla + English */
+.ProseMirror [style*="font-family"] {
+  font-feature-settings: "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Bangla font rendering optimization */
+.ProseMirror [style*="--font-hind-siliguri"],
+.ProseMirror [style*="--font-noto-serif-bengali"] {
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
+}
+
+/* Font weight support - ensure inline styles are applied */
+.ProseMirror span[style*="font-weight"] {
+  /* Font weight is applied via inline style */
+}
+
+/* Ensure font weight is not overridden by other styles */
+.ProseMirror span[data-font-weight] {
+  font-weight: attr(data-font-weight) !important;
+}
+
+/* Phase 3.3: Indent Styles - Beautiful Visual Feedback */
+.ProseMirror [data-indent] {
+  position: relative;
+  transition: padding-left 0.2s ease-out, background-color 0.2s ease-out;
+}
+
+/* Visual indent guide lines */
+.ProseMirror [data-indent="1"]::before,
+.ProseMirror [data-indent="2"]::before,
+.ProseMirror [data-indent="3"]::before,
+.ProseMirror [data-indent="4"]::before,
+.ProseMirror [data-indent="5"]::before,
+.ProseMirror [data-indent="6"]::before,
+.ProseMirror [data-indent="7"]::before,
+.ProseMirror [data-indent="8"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #3b82f6 20%,
+    #8b5cf6 50%,
+    #ec4899 80%,
+    transparent 100%
+  );
+  opacity: 0.3;
+  transition: opacity 0.2s ease-out;
+}
+
+.ProseMirror [data-indent]:hover::before {
+  opacity: 0.6;
+}
+
+/* Different colors for different indent levels */
+.ProseMirror [data-indent="1"]::before {
+  left: 10px;
+  background: linear-gradient(to bottom, transparent, #3b82f6, transparent);
+}
+
+.ProseMirror [data-indent="2"]::before {
+  left: 50px;
+  background: linear-gradient(to bottom, transparent, #8b5cf6, transparent);
+}
+
+.ProseMirror [data-indent="3"]::before {
+  left: 90px;
+  background: linear-gradient(to bottom, transparent, #ec4899, transparent);
+}
+
+.ProseMirror [data-indent="4"]::before {
+  left: 130px;
+  background: linear-gradient(to bottom, transparent, #f59e0b, transparent);
+}
+
+.ProseMirror [data-indent="5"]::before {
+  left: 170px;
+  background: linear-gradient(to bottom, transparent, #10b981, transparent);
+}
+
+.ProseMirror [data-indent="6"]::before {
+  left: 210px;
+  background: linear-gradient(to bottom, transparent, #06b6d4, transparent);
+}
+
+.ProseMirror [data-indent="7"]::before {
+  left: 250px;
+  background: linear-gradient(to bottom, transparent, #6366f1, transparent);
+}
+
+.ProseMirror [data-indent="8"]::before {
+  left: 290px;
+  background: linear-gradient(to bottom, transparent, #ef4444, transparent);
+}
+
+/* Subtle background for indented content */
+.ProseMirror [data-indent]:hover {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.05),
+    transparent 50%
+  );
+}
+
+.dark .ProseMirror [data-indent]:hover {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.1),
+    transparent 50%
+  );
+}
+
+/* Smooth animation when indent changes */
+@keyframes indent-pulse {
+  0% {
+    transform: translateX(-5px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ProseMirror [data-indent] {
+  animation: indent-pulse 0.3s ease-out;
+}
+
+/* Phase 3.3: Clean Mode - Disable All Indent Decorations */
+.no-indent-guides .ProseMirror [data-indent]::before {
+  display: none !important;
+}
+
+.no-indent-guides .ProseMirror [data-indent]:hover {
+  background: none !important;
+}
+
+.no-indent-guides .ProseMirror [data-indent] {
+  animation: none !important;
+}
+
+/* Phase 3.4: Modern Link Styles - Beautiful & Secure */
+.ProseMirror a {
+  position: relative;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #06b6d4 100%
+  );
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: all 0.3s ease-out;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
+}
+
+/* External link indicator */
+.ProseMirror a[target="_blank"]::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 3px;
+  font-size: 0.75em;
+  opacity: 0.6;
+  transition: all 0.2s ease-out;
+}
+
+.ProseMirror a[target="_blank"]:hover::after {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+/* Dark mode link styles */
+.dark .ProseMirror a {
+  color: #60a5fa;
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #06b6d4 100%
+  );
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.dark .ProseMirror a:hover {
+  color: #93c5fd;
+  background-size: 100% 2px;
+}
+
+.dark .ProseMirror a[target="_blank"]::after {
+  opacity: 0.5;
+}
+
+.dark .ProseMirror a[target="_blank"]:hover::after {
+  opacity: 0.9;
+}
+
+/* Link selection/focus state */
+.ProseMirror a.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 3px;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .ProseMirror a.ProseMirror-selectednode {
+  outline-color: #60a5fa;
+  background-color: rgba(96, 165, 250, 0.1);
+}
+
+/* Mailto and Tel links - different color */
+.ProseMirror a[href^="mailto:"] {
+  color: #7c3aed;
+  background: linear-gradient(to right, #7c3aed 0%, #a855f7 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.ProseMirror a[href^="mailto:"]:hover {
+  color: #6d28d9;
+  background-size: 100% 2px;
+}
+
+.ProseMirror a[href^="tel:"] {
+  color: #059669;
+  background: linear-gradient(to right, #059669 0%, #10b981 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.ProseMirror a[href^="tel:"]:hover {
+  color: #047857;
+  background-size: 100% 2px;
+}
+
+.dark .ProseMirror a[href^="mailto:"] {
+  color: #a78bfa;
+}
+
+.dark .ProseMirror a[href^="mailto:"]:hover {
+  color: #c4b5fd;
+}
+
+.dark .ProseMirror a[href^="tel:"] {
+  color: #34d399;
+}
+
+.dark .ProseMirror a[href^="tel:"]:hover {
+  color: #6ee7b7;
+}
+
 /* Code Block Styles */
 .ProseMirror pre {
   background: #1e293b;
