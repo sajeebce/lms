@@ -63,6 +63,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import MathLiveModal from "./mathlive-modal";
 import {
   ImagePropertiesDialog,
@@ -1555,886 +1561,920 @@ export default function RichTextEditor({
   ];
 
   return (
-    <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
-      {/* Toolbar */}
-      <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
-        {/* Text Formatting */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={
-            editor.isActive("bold") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={
-            editor.isActive("italic") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={
-            editor.isActive("underline") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Text Color */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="gap-1">
-              <Palette className="h-4 w-4" />
-              <div
-                className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600"
-                style={{
-                  backgroundColor:
-                    editor.getAttributes("textStyle").color || "#000000",
-                }}
-              />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Text Color</Label>
-              <div className="grid grid-cols-8 gap-2">
-                {textColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="w-6 h-6 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() => editor.chain().focus().setColor(color).run()}
-                  />
-                ))}
-              </div>
+    <TooltipProvider delayDuration={300}>
+      <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
+        {/* Toolbar */}
+        <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
+          {/* Text Formatting */}
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="w-full"
-                onClick={() => editor.chain().focus().unsetColor().run()}
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={
+                  editor.isActive("bold")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
               >
-                Remove Color
+                <Bold className="h-4 w-4" />
               </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </TooltipTrigger>
+            <TooltipContent>Bold</TooltipContent>
+          </Tooltip>
 
-        {/* Highlight */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="gap-1">
-              <Highlighter className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Highlight</Label>
-              <div className="grid grid-cols-6 gap-2">
-                {highlightColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="w-8 h-8 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() =>
-                      editor.chain().focus().toggleHighlight({ color }).run()
-                    }
-                  />
-                ))}
-              </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="w-full"
-                onClick={() => editor.chain().focus().unsetHighlight().run()}
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={
+                  editor.isActive("italic")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
               >
-                Remove Highlight
+                <Italic className="h-4 w-4" />
               </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </TooltipTrigger>
+            <TooltipContent>Italic</TooltipContent>
+          </Tooltip>
 
-        {/* Font Size */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm">
-              <Type className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-40">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Font Size</Label>
-              {fontSizes.map((size) => (
-                <Button
-                  key={size.value}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .setMark("textStyle", { fontSize: size.value })
-                      .run()
-                  }
-                >
-                  {size.label}
-                </Button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={
+                  editor.isActive("underline")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <UnderlineIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Underline</TooltipContent>
+          </Tooltip>
 
-        {/* Phase 3.5: Font Family */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" title="Font Family">
-              <Type className="h-4 w-4 mr-1" />
-              Font
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Font Family</Label>
-              {[
-                { label: "Default", value: "" },
-                { label: "Serif", value: "serif" },
-                { label: "Monospace", value: "monospace" },
-                { label: "Cursive", value: "cursive" },
-              ].map((font) => (
-                <Button
-                  key={font.label}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    if (font.value) {
-                      editor.chain().focus().setFontFamily(font.value).run();
-                    } else {
-                      editor.chain().focus().unsetFontFamily().run();
-                    }
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Text Color */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" className="gap-1">
+                <Palette className="h-4 w-4" />
+                <div
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600"
+                  style={{
+                    backgroundColor:
+                      editor.getAttributes("textStyle").color || "#000000",
                   }}
-                >
-                  <span style={{ fontFamily: font.value || "inherit" }}>
-                    {font.label}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Phase 3.6: Heading Levels */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" title="Heading">
-              <Heading className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Heading</Label>
-              {[
-                { label: "Normal", level: 0 },
-                { label: "Heading 1", level: 1 },
-                { label: "Heading 2", level: 2 },
-                { label: "Heading 3", level: 3 },
-                { label: "Heading 4", level: 4 },
-                { label: "Heading 5", level: 5 },
-                { label: "Heading 6", level: 6 },
-              ].map((heading) => (
+                />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Text Color</Label>
+                <div className="grid grid-cols-8 gap-2">
+                  {textColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className="w-6 h-6 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() =>
+                        editor.chain().focus().setColor(color).run()
+                      }
+                    />
+                  ))}
+                </div>
                 <Button
-                  key={heading.level}
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    if (heading.level === 0) {
-                      editor.chain().focus().setParagraph().run();
-                    } else {
+                  className="w-full"
+                  onClick={() => editor.chain().focus().unsetColor().run()}
+                >
+                  Remove Color
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Highlight */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" className="gap-1">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Highlight</Label>
+                <div className="grid grid-cols-6 gap-2">
+                  {highlightColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className="w-8 h-8 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={() =>
+                        editor.chain().focus().toggleHighlight({ color }).run()
+                      }
+                    />
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => editor.chain().focus().unsetHighlight().run()}
+                >
+                  Remove Highlight
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Font Size */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="ghost" size="sm">
+                <Type className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Font Size</Label>
+                {fontSizes.map((size) => (
+                  <Button
+                    key={size.value}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() =>
                       editor
                         .chain()
                         .focus()
-                        .toggleHeading({ level: heading.level as any })
-                        .run();
+                        .setMark("textStyle", { fontSize: size.value })
+                        .run()
+                    }
+                  >
+                    {size.label}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Phase 3.5: Font Family */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="Font Family"
+              >
+                <Type className="h-4 w-4 mr-1" />
+                Font
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Font Family</Label>
+                {[
+                  { label: "Default", value: "" },
+                  { label: "Serif", value: "serif" },
+                  { label: "Monospace", value: "monospace" },
+                  { label: "Cursive", value: "cursive" },
+                ].map((font) => (
+                  <Button
+                    key={font.label}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      if (font.value) {
+                        editor.chain().focus().setFontFamily(font.value).run();
+                      } else {
+                        editor.chain().focus().unsetFontFamily().run();
+                      }
+                    }}
+                  >
+                    <span style={{ fontFamily: font.value || "inherit" }}>
+                      {font.label}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Phase 3.6: Heading Levels */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" title="Heading">
+                <Heading className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Heading</Label>
+                {[
+                  { label: "Normal", level: 0 },
+                  { label: "Heading 1", level: 1 },
+                  { label: "Heading 2", level: 2 },
+                  { label: "Heading 3", level: 3 },
+                  { label: "Heading 4", level: 4 },
+                  { label: "Heading 5", level: 5 },
+                  { label: "Heading 6", level: 6 },
+                ].map((heading) => (
+                  <Button
+                    key={heading.level}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      if (heading.level === 0) {
+                        editor.chain().focus().setParagraph().run();
+                      } else {
+                        editor
+                          .chain()
+                          .focus()
+                          .toggleHeading({ level: heading.level as any })
+                          .run();
+                      }
+                    }}
+                  >
+                    {heading.label}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Subscript & Superscript */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleSubscript().run()}
+            className={
+              editor.isActive("subscript")
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <SubscriptIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleSuperscript().run()}
+            className={
+              editor.isActive("superscript")
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <SuperscriptIcon className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Lists */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            className={
+              editor.isActive("bulletList")
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={
+              editor.isActive("orderedList")
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+
+          {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={
+                  editor.isActive("blockquote")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <Quote className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">
+                    Blockquote Style
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {[
+                      { value: "classic", label: "Classic", icon: "📝" },
+                      { value: "modern", label: "Modern", icon: "✨" },
+                      { value: "minimal", label: "Minimal", icon: "▫️" },
+                      { value: "callout", label: "Callout", icon: "💡" },
+                      { value: "quote", label: "Quote", icon: "💬" },
+                      { value: "highlight", label: "Highlight", icon: "🎨" },
+                    ].map((style) => (
+                      <Button
+                        key={style.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`justify-start ${
+                          editor.getAttributes("blockquote").style ===
+                          style.value
+                            ? "bg-violet-100 dark:bg-violet-900 border-violet-500"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (editor.isActive("blockquote")) {
+                            editor
+                              .chain()
+                              .focus()
+                              .updateAttributes("blockquote", {
+                                style: style.value,
+                              })
+                              .run();
+                          } else {
+                            editor
+                              .chain()
+                              .focus()
+                              .toggleBlockquote()
+                              .updateAttributes("blockquote", {
+                                style: style.value,
+                              })
+                              .run();
+                          }
+                        }}
+                      >
+                        <span className="mr-2">{style.icon}</span>
+                        {style.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Color Theme</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {[
+                      {
+                        name: "Default",
+                        icon: "🔵",
+                        color: "#4f46e5",
+                        emoji: "💡",
+                        isCallout: false,
+                      },
+                      {
+                        name: "Success",
+                        icon: "✅",
+                        color: "#10b981",
+                        emoji: "✅",
+                        isCallout: true,
+                      },
+                      {
+                        name: "Warning",
+                        icon: "⚠️",
+                        color: "#f59e0b",
+                        emoji: "⚠️",
+                        isCallout: true,
+                      },
+                      {
+                        name: "Error",
+                        icon: "❌",
+                        color: "#ef4444",
+                        emoji: "❌",
+                        isCallout: true,
+                      },
+                      {
+                        name: "Info",
+                        icon: "ℹ️",
+                        color: "#3b82f6",
+                        emoji: "ℹ️",
+                        isCallout: true,
+                      },
+                    ].map((theme) => (
+                      <Button
+                        key={theme.name}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className={`justify-start ${
+                          editor.getAttributes("blockquote").color ===
+                          theme.color
+                            ? "ring-2 ring-offset-2"
+                            : ""
+                        }`}
+                        style={{
+                          borderColor: theme.color,
+                          color:
+                            editor.getAttributes("blockquote").color ===
+                            theme.color
+                              ? theme.color
+                              : undefined,
+                        }}
+                        onClick={() => {
+                          if (editor.isActive("blockquote")) {
+                            // Update existing blockquote
+                            const updates: any = { color: theme.color };
+                            if (theme.isCallout) {
+                              updates.style = "callout";
+                              updates.icon = theme.emoji;
+                            }
+                            editor
+                              .chain()
+                              .focus()
+                              .updateAttributes("blockquote", updates)
+                              .run();
+                          } else {
+                            // Create new blockquote
+                            const attrs: any = { color: theme.color };
+                            if (theme.isCallout) {
+                              attrs.style = "callout";
+                              attrs.icon = theme.emoji;
+                            }
+                            editor
+                              .chain()
+                              .focus()
+                              .toggleBlockquote()
+                              .updateAttributes("blockquote", attrs)
+                              .run();
+                          }
+                        }}
+                      >
+                        <span className="mr-1">{theme.icon}</span>
+                        <span className="text-xs">{theme.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Custom Color</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      value={
+                        editor.getAttributes("blockquote").color || "#4f46e5"
+                      }
+                      onChange={(e) => {
+                        if (editor.isActive("blockquote")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("blockquote", {
+                              color: e.target.value,
+                            })
+                            .run();
+                        }
+                      }}
+                      className="w-12 h-10 rounded border cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={
+                        editor.getAttributes("blockquote").color || "#4f46e5"
+                      }
+                      onChange={(e) => {
+                        if (editor.isActive("blockquote")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("blockquote", {
+                              color: e.target.value,
+                            })
+                            .run();
+                        }
+                      }}
+                      className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
+                      placeholder="#4f46e5"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Click color box or enter hex code
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    if (editor.isActive("blockquote")) {
+                      editor.chain().focus().toggleBlockquote().run();
                     }
                   }}
                 >
-                  {heading.label}
+                  Remove Blockquote
                 </Button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Subscript & Superscript */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleSubscript().run()}
-          className={
-            editor.isActive("subscript") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-        >
-          <SubscriptIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleSuperscript().run()}
-          className={
-            editor.isActive("superscript")
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <SuperscriptIcon className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Lists */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={
-            editor.isActive("bulletList")
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={
-            editor.isActive("orderedList")
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-
-        {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={
-                editor.isActive("blockquote")
-                  ? "bg-slate-200 dark:bg-slate-700"
-                  : ""
-              }
-            >
-              <Quote className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Blockquote Style</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {[
-                    { value: "classic", label: "Classic", icon: "📝" },
-                    { value: "modern", label: "Modern", icon: "✨" },
-                    { value: "minimal", label: "Minimal", icon: "▫️" },
-                    { value: "callout", label: "Callout", icon: "💡" },
-                    { value: "quote", label: "Quote", icon: "💬" },
-                    { value: "highlight", label: "Highlight", icon: "🎨" },
-                  ].map((style) => (
-                    <Button
-                      key={style.value}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={`justify-start ${
-                        editor.getAttributes("blockquote").style === style.value
-                          ? "bg-violet-100 dark:bg-violet-900 border-violet-500"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        if (editor.isActive("blockquote")) {
-                          editor
-                            .chain()
-                            .focus()
-                            .updateAttributes("blockquote", {
-                              style: style.value,
-                            })
-                            .run();
-                        } else {
-                          editor
-                            .chain()
-                            .focus()
-                            .toggleBlockquote()
-                            .updateAttributes("blockquote", {
-                              style: style.value,
-                            })
-                            .run();
-                        }
-                      }}
-                    >
-                      <span className="mr-2">{style.icon}</span>
-                      {style.label}
-                    </Button>
-                  ))}
-                </div>
               </div>
+            </PopoverContent>
+          </Popover>
 
-              <div>
-                <Label className="text-sm font-medium">Color Theme</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    {
-                      name: "Default",
-                      icon: "🔵",
-                      color: "#4f46e5",
-                      emoji: "💡",
-                      isCallout: false,
-                    },
-                    {
-                      name: "Success",
-                      icon: "✅",
-                      color: "#10b981",
-                      emoji: "✅",
-                      isCallout: true,
-                    },
-                    {
-                      name: "Warning",
-                      icon: "⚠️",
-                      color: "#f59e0b",
-                      emoji: "⚠️",
-                      isCallout: true,
-                    },
-                    {
-                      name: "Error",
-                      icon: "❌",
-                      color: "#ef4444",
-                      emoji: "❌",
-                      isCallout: true,
-                    },
-                    {
-                      name: "Info",
-                      icon: "ℹ️",
-                      color: "#3b82f6",
-                      emoji: "ℹ️",
-                      isCallout: true,
-                    },
-                  ].map((theme) => (
-                    <Button
-                      key={theme.name}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={`justify-start ${
-                        editor.getAttributes("blockquote").color === theme.color
-                          ? "ring-2 ring-offset-2"
-                          : ""
-                      }`}
-                      style={{
-                        borderColor: theme.color,
-                        color:
-                          editor.getAttributes("blockquote").color ===
-                          theme.color
-                            ? theme.color
-                            : undefined,
-                      }}
-                      onClick={() => {
-                        if (editor.isActive("blockquote")) {
-                          // Update existing blockquote
-                          const updates: any = { color: theme.color };
-                          if (theme.isCallout) {
-                            updates.style = "callout";
-                            updates.icon = theme.emoji;
-                          }
-                          editor
-                            .chain()
-                            .focus()
-                            .updateAttributes("blockquote", updates)
-                            .run();
-                        } else {
-                          // Create new blockquote
-                          const attrs: any = { color: theme.color };
-                          if (theme.isCallout) {
-                            attrs.style = "callout";
-                            attrs.icon = theme.emoji;
-                          }
-                          editor
-                            .chain()
-                            .focus()
-                            .toggleBlockquote()
-                            .updateAttributes("blockquote", attrs)
-                            .run();
-                        }
-                      }}
-                    >
-                      <span className="mr-1">{theme.icon}</span>
-                      <span className="text-xs">{theme.name}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Custom Color</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="color"
-                    value={
-                      editor.getAttributes("blockquote").color || "#4f46e5"
-                    }
-                    onChange={(e) => {
-                      if (editor.isActive("blockquote")) {
-                        editor
-                          .chain()
-                          .focus()
-                          .updateAttributes("blockquote", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      }
-                    }}
-                    className="w-12 h-10 rounded border cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={
-                      editor.getAttributes("blockquote").color || "#4f46e5"
-                    }
-                    onChange={(e) => {
-                      if (editor.isActive("blockquote")) {
-                        editor
-                          .chain()
-                          .focus()
-                          .updateAttributes("blockquote", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      }
-                    }}
-                    className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
-                    placeholder="#4f46e5"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Click color box or enter hex code
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (editor.isActive("blockquote")) {
-                    editor.chain().focus().toggleBlockquote().run();
-                  }
-                }}
-              >
-                Remove Blockquote
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Phase 3.3: Indent/Outdent (for lists) */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().sinkListItem("listItem").run()}
-          title="Indent (Tab)"
-        >
-          <IndentIncrease className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().liftListItem("listItem").run()}
-          title="Outdent (Shift+Tab)"
-        >
-          <IndentDecrease className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Alignment */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          className={
-            editor.isActive({ textAlign: "left" })
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <AlignLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          className={
-            editor.isActive({ textAlign: "center" })
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <AlignCenter className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          className={
-            editor.isActive({ textAlign: "right" })
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-        >
-          <AlignRight className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Code Block */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={
-            editor.isActive("codeBlock") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-        >
-          <Code className="h-4 w-4" />
-        </Button>
-
-        {/* Table */}
-        <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
-          <TableIcon className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Phase 3.1: Blockquote */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={
-            editor.isActive("blockquote")
-              ? "bg-slate-200 dark:bg-slate-700"
-              : ""
-          }
-          title="Blockquote"
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
-
-        {/* Phase 3.2: Horizontal Rule with Styles */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={
-                editor.isActive("horizontalRule")
-                  ? "bg-slate-200 dark:bg-slate-700"
-                  : ""
-              }
-              title="Horizontal Rule"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">
-                  Horizontal Rule Style
-                </Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {[
-                    { value: "solid", label: "Solid", icon: "━" },
-                    { value: "dashed", label: "Dashed", icon: "╌" },
-                    { value: "dotted", label: "Dotted", icon: "┄" },
-                    { value: "double", label: "Double", icon: "═" },
-                    { value: "gradient", label: "Gradient", icon: "▬" },
-                    { value: "decorative", label: "Decorative", icon: "✦" },
-                  ].map((style) => (
-                    <Button
-                      key={style.value}
-                      type="button"
-                      variant={hrStyle === style.value ? "default" : "outline"}
-                      size="sm"
-                      className="justify-start"
-                      onClick={() => setHrStyle(style.value)}
-                    >
-                      <span className="mr-2 text-lg">{style.icon}</span>
-                      <span className="text-xs">{style.label}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Thickness</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    { value: "thin", label: "Thin" },
-                    { value: "medium", label: "Medium" },
-                    { value: "thick", label: "Thick" },
-                  ].map((thickness) => (
-                    <Button
-                      key={thickness.value}
-                      type="button"
-                      variant={
-                        hrThickness === thickness.value ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setHrThickness(thickness.value)}
-                    >
-                      <span className="text-xs">{thickness.label}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Color Theme</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    { name: "Gray", color: "#e5e7eb" },
-                    { name: "Blue", color: "#3b82f6" },
-                    { name: "Green", color: "#10b981" },
-                    { name: "Orange", color: "#f59e0b" },
-                    { name: "Red", color: "#ef4444" },
-                    { name: "Purple", color: "#a855f7" },
-                  ].map((theme) => (
-                    <Button
-                      key={theme.name}
-                      type="button"
-                      variant={hrColor === theme.color ? "default" : "outline"}
-                      size="sm"
-                      className="justify-start"
-                      onClick={() => setHrColor(theme.color)}
-                    >
-                      <div
-                        className="w-4 h-4 rounded mr-2 border"
-                        style={{ backgroundColor: theme.color }}
-                      />
-                      <span className="text-xs">{theme.name}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Custom Color</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    type="color"
-                    value={hrColor}
-                    onChange={(e) => setHrColor(e.target.value)}
-                    className="w-12 h-10 rounded border cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={hrColor}
-                    onChange={(e) => setHrColor(e.target.value)}
-                    className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
-                    placeholder="#e5e7eb"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Click color box or enter hex code
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  // Insert HR with custom attributes using insertContent
-                  editor
-                    .chain()
-                    .focus()
-                    .insertContent({
-                      type: "horizontalRule",
-                      attrs: {
-                        style: hrStyle,
-                        thickness: hrThickness,
-                        color: hrColor,
-                      },
-                    })
-                    .run();
-                }}
-              >
-                <Minus className="h-4 w-4 mr-2" />
-                Insert Horizontal Rule
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Phase 3.4: Link */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const url = window.prompt("Enter URL:");
-            if (url) {
-              editor.chain().focus().setLink({ href: url }).run();
+          {/* Phase 3.3: Indent/Outdent (for lists) */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              editor.chain().focus().sinkListItem("listItem").run()
             }
+            title="Indent (Tab)"
+          >
+            <IndentIncrease className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              editor.chain().focus().liftListItem("listItem").run()
+            }
+            title="Outdent (Shift+Tab)"
+          >
+            <IndentDecrease className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Alignment */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            className={
+              editor.isActive({ textAlign: "left" })
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            className={
+              editor.isActive({ textAlign: "center" })
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            className={
+              editor.isActive({ textAlign: "right" })
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Code Block */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            className={
+              editor.isActive("codeBlock")
+                ? "bg-slate-200 dark:bg-slate-700"
+                : ""
+            }
+          >
+            <Code className="h-4 w-4" />
+          </Button>
+
+          {/* Table */}
+          <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
+            <TableIcon className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Phase 3.2: Horizontal Rule with Styles */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={
+                  editor.isActive("horizontalRule")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+                title="Horizontal Rule"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">
+                    Horizontal Rule Style
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {[
+                      { value: "solid", label: "Solid", icon: "━" },
+                      { value: "dashed", label: "Dashed", icon: "╌" },
+                      { value: "dotted", label: "Dotted", icon: "┄" },
+                      { value: "double", label: "Double", icon: "═" },
+                      { value: "gradient", label: "Gradient", icon: "▬" },
+                      { value: "decorative", label: "Decorative", icon: "✦" },
+                    ].map((style) => (
+                      <Button
+                        key={style.value}
+                        type="button"
+                        variant={
+                          hrStyle === style.value ? "default" : "outline"
+                        }
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => setHrStyle(style.value)}
+                      >
+                        <span className="mr-2 text-lg">{style.icon}</span>
+                        <span className="text-xs">{style.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Thickness</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {[
+                      { value: "thin", label: "Thin" },
+                      { value: "medium", label: "Medium" },
+                      { value: "thick", label: "Thick" },
+                    ].map((thickness) => (
+                      <Button
+                        key={thickness.value}
+                        type="button"
+                        variant={
+                          hrThickness === thickness.value
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setHrThickness(thickness.value)}
+                      >
+                        <span className="text-xs">{thickness.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Color Theme</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {[
+                      { name: "Gray", color: "#e5e7eb" },
+                      { name: "Blue", color: "#3b82f6" },
+                      { name: "Green", color: "#10b981" },
+                      { name: "Orange", color: "#f59e0b" },
+                      { name: "Red", color: "#ef4444" },
+                      { name: "Purple", color: "#a855f7" },
+                    ].map((theme) => (
+                      <Button
+                        key={theme.name}
+                        type="button"
+                        variant={
+                          hrColor === theme.color ? "default" : "outline"
+                        }
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => setHrColor(theme.color)}
+                      >
+                        <div
+                          className="w-4 h-4 rounded mr-2 border"
+                          style={{ backgroundColor: theme.color }}
+                        />
+                        <span className="text-xs">{theme.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Custom Color</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="color"
+                      value={hrColor}
+                      onChange={(e) => setHrColor(e.target.value)}
+                      className="w-12 h-10 rounded border cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={hrColor}
+                      onChange={(e) => setHrColor(e.target.value)}
+                      className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
+                      placeholder="#e5e7eb"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Click color box or enter hex code
+                  </p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    // Insert HR with custom attributes using insertContent
+                    editor
+                      .chain()
+                      .focus()
+                      .insertContent({
+                        type: "horizontalRule",
+                        attrs: {
+                          style: hrStyle,
+                          thickness: hrThickness,
+                          color: hrColor,
+                        },
+                      })
+                      .run();
+                  }}
+                >
+                  <Minus className="h-4 w-4 mr-2" />
+                  Insert Horizontal Rule
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Phase 3.4: Link */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const url = window.prompt("Enter URL:");
+              if (url) {
+                editor.chain().focus().setLink({ href: url }).run();
+              }
+            }}
+            className={
+              editor.isActive("link") ? "bg-slate-200 dark:bg-slate-700" : ""
+            }
+            title="Insert Link"
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Math (LaTeX Prompt) */}
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={addMath}
+            title="Insert LaTeX (Prompt)"
+          >
+            <Sigma className="h-4 w-4 mr-1" />
+            LaTeX
+          </Button>
+
+          {/* Math (MathLive Visual Editor) */}
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={() => setShowMathLive(true)}
+            title="Insert Math (Visual Editor)"
+          >
+            <Sigma className="h-4 w-4 mr-1" />
+            Math
+          </Button>
+
+          {/* Image - Enhanced with File Upload */}
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={() => setShowImageDialog(true)}
+            title="Insert Image"
+          >
+            <ImageIcon className="h-4 w-4 mr-1" />
+            Image
+          </Button>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Undo/Redo */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <Undo className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <Redo className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Editor Content */}
+        <EditorContent
+          editor={editor}
+          className="prose dark:prose-invert max-w-none p-4"
+          style={{ minHeight }}
+        />
+
+        {/* MathLive Modal */}
+        <MathLiveModal
+          open={showMathLive}
+          onClose={() => setShowMathLive(false)}
+          onInsert={handleMathLiveInsert}
+        />
+
+        {/* Image Properties Dialog - Enhanced File Upload */}
+        <ImagePropertiesDialog
+          open={showImageDialog}
+          onClose={() => {
+            setShowImageDialog(false);
+            setEditingImageData(null);
           }}
-          className={
-            editor.isActive("link") ? "bg-slate-200 dark:bg-slate-700" : ""
-          }
-          title="Insert Link"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Math (LaTeX Prompt) */}
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={addMath}
-          title="Insert LaTeX (Prompt)"
-        >
-          <Sigma className="h-4 w-4 mr-1" />
-          LaTeX
-        </Button>
-
-        {/* Math (MathLive Visual Editor) */}
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={() => setShowMathLive(true)}
-          title="Insert Math (Visual Editor)"
-        >
-          <Sigma className="h-4 w-4 mr-1" />
-          Math
-        </Button>
-
-        {/* Image - Enhanced with File Upload */}
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={() => setShowImageDialog(true)}
-          title="Insert Image"
-        >
-          <ImageIcon className="h-4 w-4 mr-1" />
-          Image
-        </Button>
-
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-        {/* Undo/Redo */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
+          onInsert={handleImageInsert}
+          isEditMode={!!editingImageData}
+          category="question_image"
+          entityType="question"
+          entityId="temp"
+          initialUrl={editingImageData?.src || ""}
+          initialAlt={editingImageData?.alt || ""}
+          initialDescription={editingImageData?.description || ""}
+          initialWidth={editingImageData?.width}
+          initialHeight={editingImageData?.height}
+          initialAlignment={editingImageData?.textAlign || "center"}
+          initialBorder={editingImageData?.border || "none"}
+          initialBorderColor={editingImageData?.borderColor || "#d1d5db"}
+        />
       </div>
-
-      {/* Editor Content */}
-      <EditorContent
-        editor={editor}
-        className="prose dark:prose-invert max-w-none p-4"
-        style={{ minHeight }}
-      />
-
-      {/* MathLive Modal */}
-      <MathLiveModal
-        open={showMathLive}
-        onClose={() => setShowMathLive(false)}
-        onInsert={handleMathLiveInsert}
-      />
-
-      {/* Image Properties Dialog - Enhanced File Upload */}
-      <ImagePropertiesDialog
-        open={showImageDialog}
-        onClose={() => {
-          setShowImageDialog(false);
-          setEditingImageData(null);
-        }}
-        onInsert={handleImageInsert}
-        isEditMode={!!editingImageData}
-        category="question_image"
-        entityType="question"
-        entityId="temp"
-        initialUrl={editingImageData?.src || ""}
-        initialAlt={editingImageData?.alt || ""}
-        initialDescription={editingImageData?.description || ""}
-        initialWidth={editingImageData?.width}
-        initialHeight={editingImageData?.height}
-        initialAlignment={editingImageData?.textAlign || "center"}
-        initialBorder={editingImageData?.border || "none"}
-        initialBorderColor={editingImageData?.borderColor || "#d1d5db"}
-      />
-    </div>
+    </TooltipProvider>
   );
 }
