@@ -1789,7 +1789,7 @@ export default function MathEditor({
           <ListOrdered className="h-4 w-4" />
         </Button>
 
-        {/* Phase 3.1: Blockquote with Styles */}
+        {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -1857,52 +1857,96 @@ export default function MathEditor({
               </div>
 
               <div>
-                <Label
-                  htmlFor="blockquote-color"
-                  className="text-sm font-medium"
-                >
-                  Accent Color
-                </Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <input
-                    id="blockquote-color"
-                    type="color"
-                    value={
-                      editor.getAttributes("blockquote").color || "#4F46E5"
-                    }
-                    onChange={(e) => {
-                      if (editor.isActive("blockquote")) {
+                <Label className="text-sm font-medium">Color Theme</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {[
+                    { name: "Default", icon: "🔵", color: "#4f46e5" },
+                    { name: "Success", icon: "✅", color: "#10b981" },
+                    { name: "Warning", icon: "⚠️", color: "#f59e0b" },
+                    { name: "Error", icon: "❌", color: "#ef4444" },
+                    { name: "Info", icon: "ℹ️", color: "#3b82f6" },
+                  ].map((theme) => (
+                    <Button
+                      key={theme.name}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={`justify-start ${
+                        editor.getAttributes("blockquote").color === theme.color
+                          ? "ring-2 ring-offset-2"
+                          : ""
+                      }`}
+                      style={{
+                        borderColor: theme.color,
+                        color:
+                          editor.getAttributes("blockquote").color ===
+                          theme.color
+                            ? theme.color
+                            : undefined,
+                      }}
+                      onClick={() => {
+                        if (editor.isActive("blockquote")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("blockquote", {
+                              color: theme.color,
+                            })
+                            .run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleBlockquote()
+                            .updateAttributes("blockquote", {
+                              color: theme.color,
+                            })
+                            .run();
+                        }
+                      }}
+                    >
+                      <span className="mr-1">{theme.icon}</span>
+                      <span className="text-xs">{theme.name}</span>
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="justify-start col-span-3"
+                    onClick={() => {
+                      const customColor = prompt(
+                        "Enter custom color (hex):",
+                        editor.getAttributes("blockquote").color || "#4f46e5"
+                      );
+                      if (customColor && editor.isActive("blockquote")) {
                         editor
                           .chain()
                           .focus()
                           .updateAttributes("blockquote", {
-                            color: e.target.value,
+                            color: customColor,
                           })
                           .run();
                       }
                     }}
-                    className="w-12 h-10 rounded border cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={
-                      editor.getAttributes("blockquote").color || "#4F46E5"
-                    }
-                    onChange={(e) => {
-                      if (editor.isActive("blockquote")) {
-                        editor
-                          .chain()
-                          .focus()
-                          .updateAttributes("blockquote", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      }
-                    }}
-                    className="flex-1 px-2 py-1 text-sm border rounded font-mono"
-                    placeholder="#4F46E5"
-                  />
+                  >
+                    <span className="mr-2">🎨</span>
+                    Custom Color...
+                  </Button>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs">
+                <div
+                  className="w-4 h-4 rounded border"
+                  style={{
+                    backgroundColor:
+                      editor.getAttributes("blockquote").color || "#4f46e5",
+                  }}
+                />
+                <span className="font-mono">
+                  {editor.getAttributes("blockquote").color || "#4f46e5"}
+                </span>
               </div>
 
               <Button
