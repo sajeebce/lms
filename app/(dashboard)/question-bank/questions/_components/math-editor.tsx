@@ -19,6 +19,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import Link from "@tiptap/extension-link";
 import { FontFamily } from "@tiptap/extension-font-family";
+import Blockquote from "@tiptap/extension-blockquote";
 import { Extension } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
 import { common, createLowlight } from "lowlight";
@@ -1193,6 +1194,41 @@ const ResizableImage = Image.extend({
   },
 });
 
+// Phase 3.1: Custom Blockquote Extension with Styles and Colors
+const CustomBlockquote = Blockquote.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: "classic",
+        parseHTML: (element) => element.getAttribute("data-style") || "classic",
+        renderHTML: (attributes) => {
+          return { "data-style": attributes.style };
+        },
+      },
+      color: {
+        default: "#4F46E5",
+        parseHTML: (element) => element.getAttribute("data-color") || "#4F46E5",
+        renderHTML: (attributes) => {
+          return { "data-color": attributes.color };
+        },
+      },
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "blockquote",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        class: `blockquote-${HTMLAttributes["data-style"] || "classic"}`,
+        style: `--blockquote-color: ${
+          HTMLAttributes["data-color"] || "#4F46E5"
+        }`,
+      }),
+      0,
+    ];
+  },
+});
+
 type MathEditorProps = {
   value: string;
   onChange: (value: string) => void;
@@ -1217,7 +1253,9 @@ export default function MathEditor({
       StarterKit.configure({
         codeBlock: false, // Disable default code block (we use lowlight)
         underline: false, // Avoid duplicate underline extension
+        blockquote: false, // Disable default blockquote (we use custom)
       }),
+      CustomBlockquote, // Phase 3.1: Custom blockquote with styles
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
         inlineOptions: {
@@ -1750,6 +1788,139 @@ export default function MathEditor({
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
+
+        {/* Phase 3.1: Blockquote with Styles */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={
+                editor.isActive("blockquote")
+                  ? "bg-slate-200 dark:bg-slate-700"
+                  : ""
+              }
+            >
+              <Quote className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Blockquote Style</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {[
+                    { value: "classic", label: "Classic", icon: "📝" },
+                    { value: "modern", label: "Modern", icon: "✨" },
+                    { value: "minimal", label: "Minimal", icon: "▫️" },
+                    { value: "callout", label: "Callout", icon: "💡" },
+                    { value: "quote", label: "Quote", icon: "💬" },
+                    { value: "highlight", label: "Highlight", icon: "🎨" },
+                  ].map((style) => (
+                    <Button
+                      key={style.value}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={`justify-start ${
+                        editor.getAttributes("blockquote").style === style.value
+                          ? "bg-violet-100 dark:bg-violet-900 border-violet-500"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        if (editor.isActive("blockquote")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("blockquote", {
+                              style: style.value,
+                            })
+                            .run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleBlockquote()
+                            .updateAttributes("blockquote", {
+                              style: style.value,
+                            })
+                            .run();
+                        }
+                      }}
+                    >
+                      <span className="mr-2">{style.icon}</span>
+                      {style.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="blockquote-color"
+                  className="text-sm font-medium"
+                >
+                  Accent Color
+                </Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    id="blockquote-color"
+                    type="color"
+                    value={
+                      editor.getAttributes("blockquote").color || "#4F46E5"
+                    }
+                    onChange={(e) => {
+                      if (editor.isActive("blockquote")) {
+                        editor
+                          .chain()
+                          .focus()
+                          .updateAttributes("blockquote", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      }
+                    }}
+                    className="w-12 h-10 rounded border cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={
+                      editor.getAttributes("blockquote").color || "#4F46E5"
+                    }
+                    onChange={(e) => {
+                      if (editor.isActive("blockquote")) {
+                        editor
+                          .chain()
+                          .focus()
+                          .updateAttributes("blockquote", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 text-sm border rounded font-mono"
+                    placeholder="#4F46E5"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (editor.isActive("blockquote")) {
+                    editor.chain().focus().toggleBlockquote().run();
+                  }
+                }}
+              >
+                Remove Blockquote
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Phase 3.3: Indent/Outdent (for lists) */}
         <Button

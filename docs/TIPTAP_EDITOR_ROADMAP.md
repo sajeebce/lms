@@ -273,23 +273,25 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
 **Goal:** Add missing text features to match/exceed Sun Editor
 
-### **3.1 Blockquote** (~30 lines)
+### **3.1 Blockquote** (~150 lines) - 🔄 **IN PROGRESS**
 
-**Current:** Not implemented  
-**Target:** Blockquote button with markdown shortcut (`> Quote`)
+**Current:** Not implemented
+**Target:** Advanced blockquote with multiple styles and color picker
 
 **Implementation:**
 
-- 🔲 Add `@tiptap/extension-blockquote` (already in StarterKit)
-- 🔲 Add blockquote button to toolbar
-- 🔲 Style with left border + background
+- � Extend `@tiptap/extension-blockquote` with custom attributes
+- � Add blockquote dropdown button to toolbar (6 styles)
+- � Add color picker for accent color customization
+- 🔄 Styles: Classic, Modern, Minimal, Callout, Quote, Highlight
+- 🔄 Store style and color in `data-style` and `data-color` attributes
 
 **Files to modify:**
 
 - `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
 
-**Code Impact:** +30 lines  
-**Bundle size:** 0 KB (already included in StarterKit)
+**Code Impact:** +150 lines
+**Bundle size:** 0 KB (extends existing StarterKit extension)
 
 ---
 
