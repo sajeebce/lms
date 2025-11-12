@@ -4,7 +4,7 @@
 .ProseMirror pre {
   background: #1e293b;
   color: #e2e8f0;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -125,3 +125,121 @@
   height: 0;
 }
 
+/* ========================================
+   Phase 3.2: Horizontal Rule Styles
+   ======================================== */
+
+/* Base HR Styles */
+.ProseMirror hr {
+  border: none;
+  margin: 2rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror hr:hover {
+  opacity: 0.8;
+}
+
+/* Thickness Variants */
+.ProseMirror hr.hr-thickness-thin {
+  height: 1px;
+}
+
+.ProseMirror hr.hr-thickness-medium {
+  height: 2px;
+}
+
+.ProseMirror hr.hr-thickness-thick {
+  height: 4px;
+}
+
+/* Style 1: Solid */
+.ProseMirror hr.hr-solid {
+  background: var(--hr-color, #e5e7eb);
+}
+
+.dark .ProseMirror hr.hr-solid {
+  background: var(--hr-color, #374151);
+}
+
+/* Style 2: Dashed */
+.ProseMirror hr.hr-dashed {
+  background: transparent;
+  border-top: 2px dashed var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-dashed {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 3: Dotted */
+.ProseMirror hr.hr-dotted {
+  background: transparent;
+  border-top: 2px dotted var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-dotted {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 4: Double */
+.ProseMirror hr.hr-double {
+  background: transparent;
+  border-top: 3px double var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-double {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 5: Gradient */
+.ProseMirror hr.hr-gradient {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hr-color, #e5e7eb),
+    transparent
+  );
+  height: 2px;
+}
+
+.dark .ProseMirror hr.hr-gradient {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hr-color, #374151),
+    transparent
+  );
+}
+
+/* Style 6: Decorative (with center ornament) */
+.ProseMirror hr.hr-decorative {
+  position: relative;
+  background: var(--hr-color, #e5e7eb);
+  height: 1px;
+}
+
+.ProseMirror hr.hr-decorative::before {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  color: var(--hr-color, #e5e7eb);
+  padding: 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dark .ProseMirror hr.hr-decorative {
+  background: var(--hr-color, #374151);
+}
+
+.dark .ProseMirror hr.hr-decorative::before {
+  background: #0f172a;
+  color: var(--hr-color, #374151);
+}

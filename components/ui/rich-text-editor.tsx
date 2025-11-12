@@ -20,6 +20,7 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import Link from "@tiptap/extension-link";
 import { FontFamily } from "@tiptap/extension-font-family";
 import Blockquote from "@tiptap/extension-blockquote";
+import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import { Extension } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
 import { common, createLowlight } from "lowlight";
@@ -51,6 +52,7 @@ import {
   Heading,
   IndentIncrease,
   IndentDecrease,
+  Sparkles,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import "./editor-styles.css";
@@ -1236,6 +1238,47 @@ const CustomBlockquote = Blockquote.extend({
   },
 });
 
+// Phase 3.2: Custom Horizontal Rule Extension with Styles
+const CustomHorizontalRule = HorizontalRule.extend({
+  addAttributes() {
+    return {
+      style: {
+        default: "solid",
+        parseHTML: (element) => element.getAttribute("data-style") || "solid",
+        renderHTML: (attributes) => {
+          return { "data-style": attributes.style };
+        },
+      },
+      color: {
+        default: "#e5e7eb",
+        parseHTML: (element) => element.getAttribute("data-color") || "#e5e7eb",
+        renderHTML: (attributes) => {
+          return { "data-color": attributes.color };
+        },
+      },
+      thickness: {
+        default: "medium",
+        parseHTML: (element) =>
+          element.getAttribute("data-thickness") || "medium",
+        renderHTML: (attributes) => {
+          return { "data-thickness": attributes.thickness };
+        },
+      },
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "hr",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        class: `hr-${HTMLAttributes["data-style"] || "solid"} hr-thickness-${
+          HTMLAttributes["data-thickness"] || "medium"
+        }`,
+        style: `--hr-color: ${HTMLAttributes["data-color"] || "#e5e7eb"}`,
+      }),
+    ];
+  },
+});
+
 type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
@@ -1261,8 +1304,10 @@ export default function RichTextEditor({
         codeBlock: false, // Disable default code block (we use lowlight)
         underline: false, // Avoid duplicate underline extension
         blockquote: false, // Disable default blockquote (we use custom)
+        horizontalRule: false, // Disable default horizontal rule (we use custom)
       }),
       CustomBlockquote, // Phase 3.1: Custom blockquote with styles
+      CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
         inlineOptions: {
@@ -2121,16 +2166,239 @@ export default function RichTextEditor({
           <Quote className="h-4 w-4" />
         </Button>
 
-        {/* Phase 3.2: Horizontal Rule */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          title="Horizontal Line"
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
+        {/* Phase 3.2: Horizontal Rule with Styles */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={
+                editor.isActive("horizontalRule")
+                  ? "bg-slate-200 dark:bg-slate-700"
+                  : ""
+              }
+              title="Horizontal Rule"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">
+                  Horizontal Rule Style
+                </Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {[
+                    { value: "solid", label: "Solid", icon: "━" },
+                    { value: "dashed", label: "Dashed", icon: "╌" },
+                    { value: "dotted", label: "Dotted", icon: "┄" },
+                    { value: "double", label: "Double", icon: "═" },
+                    { value: "gradient", label: "Gradient", icon: "▬" },
+                    { value: "decorative", label: "Decorative", icon: "✦" },
+                  ].map((style) => (
+                    <Button
+                      key={style.value}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => {
+                        if (!editor.isActive("horizontalRule")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .setHorizontalRule()
+                            .updateAttributes("horizontalRule", {
+                              style: style.value,
+                            })
+                            .run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("horizontalRule", {
+                              style: style.value,
+                            })
+                            .run();
+                        }
+                      }}
+                    >
+                      <span className="mr-2 text-lg">{style.icon}</span>
+                      <span className="text-xs">{style.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Thickness</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {[
+                    { value: "thin", label: "Thin" },
+                    { value: "medium", label: "Medium" },
+                    { value: "thick", label: "Thick" },
+                  ].map((thickness) => (
+                    <Button
+                      key={thickness.value}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (!editor.isActive("horizontalRule")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .setHorizontalRule()
+                            .updateAttributes("horizontalRule", {
+                              thickness: thickness.value,
+                            })
+                            .run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("horizontalRule", {
+                              thickness: thickness.value,
+                            })
+                            .run();
+                        }
+                      }}
+                    >
+                      <span className="text-xs">{thickness.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Color Theme</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {[
+                    { name: "Gray", color: "#e5e7eb" },
+                    { name: "Blue", color: "#3b82f6" },
+                    { name: "Green", color: "#10b981" },
+                    { name: "Orange", color: "#f59e0b" },
+                    { name: "Red", color: "#ef4444" },
+                    { name: "Purple", color: "#a855f7" },
+                  ].map((theme) => (
+                    <Button
+                      key={theme.name}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => {
+                        if (!editor.isActive("horizontalRule")) {
+                          editor
+                            .chain()
+                            .focus()
+                            .setHorizontalRule()
+                            .updateAttributes("horizontalRule", {
+                              color: theme.color,
+                            })
+                            .run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .updateAttributes("horizontalRule", {
+                              color: theme.color,
+                            })
+                            .run();
+                        }
+                      }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded mr-2 border"
+                        style={{ backgroundColor: theme.color }}
+                      />
+                      <span className="text-xs">{theme.name}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Custom Color</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={
+                      editor.getAttributes("horizontalRule").color || "#e5e7eb"
+                    }
+                    onChange={(e) => {
+                      if (!editor.isActive("horizontalRule")) {
+                        editor
+                          .chain()
+                          .focus()
+                          .setHorizontalRule()
+                          .updateAttributes("horizontalRule", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      } else {
+                        editor
+                          .chain()
+                          .focus()
+                          .updateAttributes("horizontalRule", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      }
+                    }}
+                    className="w-12 h-10 rounded border cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={
+                      editor.getAttributes("horizontalRule").color || "#e5e7eb"
+                    }
+                    onChange={(e) => {
+                      if (!editor.isActive("horizontalRule")) {
+                        editor
+                          .chain()
+                          .focus()
+                          .setHorizontalRule()
+                          .updateAttributes("horizontalRule", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      } else {
+                        editor
+                          .chain()
+                          .focus()
+                          .updateAttributes("horizontalRule", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
+                    placeholder="#e5e7eb"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Click color box or enter hex code
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  editor.chain().focus().setHorizontalRule().run();
+                }}
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Insert Horizontal Rule
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Phase 3.4: Link */}
         <Button
