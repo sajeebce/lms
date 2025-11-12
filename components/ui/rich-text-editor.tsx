@@ -2296,7 +2296,7 @@ export default function RichTextEditor({
                 type="button"
                 variant="default"
                 size="sm"
-                className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
+                className="w-full"
                 onClick={() => {
                   // Insert HR with custom attributes using insertContent
                   editor
