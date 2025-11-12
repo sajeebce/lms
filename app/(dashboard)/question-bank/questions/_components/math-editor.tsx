@@ -1213,6 +1213,13 @@ const CustomBlockquote = Blockquote.extend({
           return { "data-color": attributes.color };
         },
       },
+      icon: {
+        default: "💡",
+        parseHTML: (element) => element.getAttribute("data-icon") || "💡",
+        renderHTML: (attributes) => {
+          return { "data-icon": attributes.icon };
+        },
+      },
     };
   },
   renderHTML({ HTMLAttributes }) {
@@ -1860,11 +1867,41 @@ export default function MathEditor({
                 <Label className="text-sm font-medium">Color Theme</Label>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {[
-                    { name: "Default", icon: "🔵", color: "#4f46e5" },
-                    { name: "Success", icon: "✅", color: "#10b981" },
-                    { name: "Warning", icon: "⚠️", color: "#f59e0b" },
-                    { name: "Error", icon: "❌", color: "#ef4444" },
-                    { name: "Info", icon: "ℹ️", color: "#3b82f6" },
+                    {
+                      name: "Default",
+                      icon: "🔵",
+                      color: "#4f46e5",
+                      emoji: "💡",
+                      isCallout: false,
+                    },
+                    {
+                      name: "Success",
+                      icon: "✅",
+                      color: "#10b981",
+                      emoji: "✅",
+                      isCallout: true,
+                    },
+                    {
+                      name: "Warning",
+                      icon: "⚠️",
+                      color: "#f59e0b",
+                      emoji: "⚠️",
+                      isCallout: true,
+                    },
+                    {
+                      name: "Error",
+                      icon: "❌",
+                      color: "#ef4444",
+                      emoji: "❌",
+                      isCallout: true,
+                    },
+                    {
+                      name: "Info",
+                      icon: "ℹ️",
+                      color: "#3b82f6",
+                      emoji: "ℹ️",
+                      isCallout: true,
+                    },
                   ].map((theme) => (
                     <Button
                       key={theme.name}
@@ -1886,21 +1923,29 @@ export default function MathEditor({
                       }}
                       onClick={() => {
                         if (editor.isActive("blockquote")) {
+                          // Update existing blockquote
+                          const updates: any = { color: theme.color };
+                          if (theme.isCallout) {
+                            updates.style = "callout";
+                            updates.icon = theme.emoji;
+                          }
                           editor
                             .chain()
                             .focus()
-                            .updateAttributes("blockquote", {
-                              color: theme.color,
-                            })
+                            .updateAttributes("blockquote", updates)
                             .run();
                         } else {
+                          // Create new blockquote
+                          const attrs: any = { color: theme.color };
+                          if (theme.isCallout) {
+                            attrs.style = "callout";
+                            attrs.icon = theme.emoji;
+                          }
                           editor
                             .chain()
                             .focus()
                             .toggleBlockquote()
-                            .updateAttributes("blockquote", {
-                              color: theme.color,
-                            })
+                            .updateAttributes("blockquote", attrs)
                             .run();
                         }
                       }}
