@@ -1297,6 +1297,11 @@ export default function RichTextEditor({
   const [editingImageData, setEditingImageData] = useState<any>(null);
   const wasMathLiveOpen = useRef(false);
 
+  // Phase 3.2: Horizontal Rule state
+  const [hrStyle, setHrStyle] = useState("solid");
+  const [hrThickness, setHrThickness] = useState("medium");
+  const [hrColor, setHrColor] = useState("#e5e7eb");
+
   const editor = useEditor({
     immediatelyRender: false, // ✅ Fix SSR hydration mismatch
     extensions: [
@@ -2201,29 +2206,10 @@ export default function RichTextEditor({
                     <Button
                       key={style.value}
                       type="button"
-                      variant="outline"
+                      variant={hrStyle === style.value ? "default" : "outline"}
                       size="sm"
                       className="justify-start"
-                      onClick={() => {
-                        if (!editor.isActive("horizontalRule")) {
-                          editor
-                            .chain()
-                            .focus()
-                            .setHorizontalRule()
-                            .updateAttributes("horizontalRule", {
-                              style: style.value,
-                            })
-                            .run();
-                        } else {
-                          editor
-                            .chain()
-                            .focus()
-                            .updateAttributes("horizontalRule", {
-                              style: style.value,
-                            })
-                            .run();
-                        }
-                      }}
+                      onClick={() => setHrStyle(style.value)}
                     >
                       <span className="mr-2 text-lg">{style.icon}</span>
                       <span className="text-xs">{style.label}</span>
@@ -2243,28 +2229,11 @@ export default function RichTextEditor({
                     <Button
                       key={thickness.value}
                       type="button"
-                      variant="outline"
+                      variant={
+                        hrThickness === thickness.value ? "default" : "outline"
+                      }
                       size="sm"
-                      onClick={() => {
-                        if (!editor.isActive("horizontalRule")) {
-                          editor
-                            .chain()
-                            .focus()
-                            .setHorizontalRule()
-                            .updateAttributes("horizontalRule", {
-                              thickness: thickness.value,
-                            })
-                            .run();
-                        } else {
-                          editor
-                            .chain()
-                            .focus()
-                            .updateAttributes("horizontalRule", {
-                              thickness: thickness.value,
-                            })
-                            .run();
-                        }
-                      }}
+                      onClick={() => setHrThickness(thickness.value)}
                     >
                       <span className="text-xs">{thickness.label}</span>
                     </Button>
@@ -2286,29 +2255,10 @@ export default function RichTextEditor({
                     <Button
                       key={theme.name}
                       type="button"
-                      variant="outline"
+                      variant={hrColor === theme.color ? "default" : "outline"}
                       size="sm"
                       className="justify-start"
-                      onClick={() => {
-                        if (!editor.isActive("horizontalRule")) {
-                          editor
-                            .chain()
-                            .focus()
-                            .setHorizontalRule()
-                            .updateAttributes("horizontalRule", {
-                              color: theme.color,
-                            })
-                            .run();
-                        } else {
-                          editor
-                            .chain()
-                            .focus()
-                            .updateAttributes("horizontalRule", {
-                              color: theme.color,
-                            })
-                            .run();
-                        }
-                      }}
+                      onClick={() => setHrColor(theme.color)}
                     >
                       <div
                         className="w-4 h-4 rounded mr-2 border"
@@ -2325,56 +2275,14 @@ export default function RichTextEditor({
                 <div className="flex items-center gap-2 mt-2">
                   <input
                     type="color"
-                    value={
-                      editor.getAttributes("horizontalRule").color || "#e5e7eb"
-                    }
-                    onChange={(e) => {
-                      if (!editor.isActive("horizontalRule")) {
-                        editor
-                          .chain()
-                          .focus()
-                          .setHorizontalRule()
-                          .updateAttributes("horizontalRule", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .updateAttributes("horizontalRule", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      }
-                    }}
+                    value={hrColor}
+                    onChange={(e) => setHrColor(e.target.value)}
                     className="w-12 h-10 rounded border cursor-pointer"
                   />
                   <input
                     type="text"
-                    value={
-                      editor.getAttributes("horizontalRule").color || "#e5e7eb"
-                    }
-                    onChange={(e) => {
-                      if (!editor.isActive("horizontalRule")) {
-                        editor
-                          .chain()
-                          .focus()
-                          .setHorizontalRule()
-                          .updateAttributes("horizontalRule", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .updateAttributes("horizontalRule", {
-                            color: e.target.value,
-                          })
-                          .run();
-                      }
-                    }}
+                    value={hrColor}
+                    onChange={(e) => setHrColor(e.target.value)}
                     className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
                     placeholder="#e5e7eb"
                   />
@@ -2386,11 +2294,20 @@ export default function RichTextEditor({
 
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
                 onClick={() => {
-                  editor.chain().focus().setHorizontalRule().run();
+                  editor
+                    .chain()
+                    .focus()
+                    .setHorizontalRule()
+                    .updateAttributes("horizontalRule", {
+                      style: hrStyle,
+                      thickness: hrThickness,
+                      color: hrColor,
+                    })
+                    .run();
                 }}
               >
                 <Minus className="h-4 w-4 mr-2" />
