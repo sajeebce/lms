@@ -1954,44 +1954,53 @@ export default function MathEditor({
                       <span className="text-xs">{theme.name}</span>
                     </Button>
                   ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="justify-start col-span-3"
-                    onClick={() => {
-                      const customColor = prompt(
-                        "Enter custom color (hex):",
-                        editor.getAttributes("blockquote").color || "#4f46e5"
-                      );
-                      if (customColor && editor.isActive("blockquote")) {
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">Custom Color</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="color"
+                    value={
+                      editor.getAttributes("blockquote").color || "#4f46e5"
+                    }
+                    onChange={(e) => {
+                      if (editor.isActive("blockquote")) {
                         editor
                           .chain()
                           .focus()
                           .updateAttributes("blockquote", {
-                            color: customColor,
+                            color: e.target.value,
                           })
                           .run();
                       }
                     }}
-                  >
-                    <span className="mr-2">🎨</span>
-                    Custom Color...
-                  </Button>
+                    className="w-12 h-10 rounded border cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={
+                      editor.getAttributes("blockquote").color || "#4f46e5"
+                    }
+                    onChange={(e) => {
+                      if (editor.isActive("blockquote")) {
+                        editor
+                          .chain()
+                          .focus()
+                          .updateAttributes("blockquote", {
+                            color: e.target.value,
+                          })
+                          .run();
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 text-sm border rounded font-mono dark:bg-slate-800"
+                    placeholder="#4f46e5"
+                  />
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs">
-                <div
-                  className="w-4 h-4 rounded border"
-                  style={{
-                    backgroundColor:
-                      editor.getAttributes("blockquote").color || "#4f46e5",
-                  }}
-                />
-                <span className="font-mono">
-                  {editor.getAttributes("blockquote").color || "#4f46e5"}
-                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Click color box or enter hex code
+                </p>
               </div>
 
               <Button
