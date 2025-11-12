@@ -1627,18 +1627,28 @@ export default function RichTextEditor({
 
           {/* Text Color */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="gap-1">
-                <Palette className="h-4 w-4" />
-                <div
-                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600"
-                  style={{
-                    backgroundColor:
-                      editor.getAttributes("textStyle").color || "#000000",
-                  }}
-                />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <Palette className="h-4 w-4" />
+                    <div
+                      className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600"
+                      style={{
+                        backgroundColor:
+                          editor.getAttributes("textStyle").color || "#000000",
+                      }}
+                    />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Text Color</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-64">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Text Color</Label>
@@ -1670,11 +1680,21 @@ export default function RichTextEditor({
 
           {/* Highlight */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="gap-1">
-                <Highlighter className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <Highlighter className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Highlight</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-64">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Highlight</Label>
@@ -1706,11 +1726,16 @@ export default function RichTextEditor({
 
           {/* Font Size */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="ghost" size="sm">
-                <Type className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="sm">
+                    <Type className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Font Size</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-40">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Font Size</Label>
@@ -1738,17 +1763,17 @@ export default function RichTextEditor({
 
           {/* Phase 3.5: Font Family */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                title="Font Family"
-              >
-                <Type className="h-4 w-4 mr-1" />
-                Font
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="sm">
+                    <Type className="h-4 w-4 mr-1" />
+                    Font
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Font Family</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-48">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Font Family</Label>
@@ -1783,11 +1808,16 @@ export default function RichTextEditor({
 
           {/* Phase 3.6: Heading Levels */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" title="Heading">
-                <Heading className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="sm">
+                    <Heading className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Heading</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-48">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Heading</Label>
@@ -1828,79 +1858,106 @@ export default function RichTextEditor({
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Subscript & Superscript */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleSubscript().run()}
-            className={
-              editor.isActive("subscript")
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <SubscriptIcon className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleSuperscript().run()}
-            className={
-              editor.isActive("superscript")
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <SuperscriptIcon className="h-4 w-4" />
-          </Button>
-
-          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
-
-          {/* Lists */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={
-              editor.isActive("bulletList")
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={
-              editor.isActive("orderedList")
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-
-          {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
-          <Popover>
-            <PopoverTrigger asChild>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
+                onClick={() => editor.chain().focus().toggleSubscript().run()}
                 className={
-                  editor.isActive("blockquote")
+                  editor.isActive("subscript")
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
               >
-                <Quote className="h-4 w-4" />
+                <SubscriptIcon className="h-4 w-4" />
               </Button>
-            </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Subscript</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleSuperscript().run()}
+                className={
+                  editor.isActive("superscript")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <SuperscriptIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Superscript</TooltipContent>
+          </Tooltip>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Lists */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className={
+                  editor.isActive("bulletList")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bullet List</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className={
+                  editor.isActive("orderedList")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <ListOrdered className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Numbered List</TooltipContent>
+          </Tooltip>
+
+          {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      editor.isActive("blockquote")
+                        ? "bg-slate-200 dark:bg-slate-700"
+                        : ""
+                    }
+                  >
+                    <Quote className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Blockquote</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-80">
               <div className="space-y-4">
                 <div>
@@ -2140,87 +2197,129 @@ export default function RichTextEditor({
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Alignment */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            className={
-              editor.isActive({ textAlign: "left" })
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            className={
-              editor.isActive({ textAlign: "center" })
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            className={
-              editor.isActive({ textAlign: "right" })
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  editor.chain().focus().setTextAlign("left").run()
+                }
+                className={
+                  editor.isActive({ textAlign: "left" })
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <AlignLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align Left</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  editor.chain().focus().setTextAlign("center").run()
+                }
+                className={
+                  editor.isActive({ textAlign: "center" })
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <AlignCenter className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align Center</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  editor.chain().focus().setTextAlign("right").run()
+                }
+                className={
+                  editor.isActive({ textAlign: "right" })
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <AlignRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Align Right</TooltipContent>
+          </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Code Block */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={
-              editor.isActive("codeBlock")
-                ? "bg-slate-200 dark:bg-slate-700"
-                : ""
-            }
-          >
-            <Code className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                className={
+                  editor.isActive("codeBlock")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <Code className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Code Block</TooltipContent>
+          </Tooltip>
 
           {/* Table */}
-          <Button type="button" variant="ghost" size="sm" onClick={insertTable}>
-            <TableIcon className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={insertTable}
+              >
+                <TableIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert Table</TooltipContent>
+          </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Phase 3.2: Horizontal Rule with Styles */}
           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={
-                  editor.isActive("horizontalRule")
-                    ? "bg-slate-200 dark:bg-slate-700"
-                    : ""
-                }
-                title="Horizontal Rule"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      editor.isActive("horizontalRule")
+                        ? "bg-slate-200 dark:bg-slate-700"
+                        : ""
+                    }
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Horizontal Rule</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-80">
               <div className="space-y-4">
                 <div>
@@ -2360,83 +2459,112 @@ export default function RichTextEditor({
           </Popover>
 
           {/* Phase 3.4: Link */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              const url = window.prompt("Enter URL:");
-              if (url) {
-                editor.chain().focus().setLink({ href: url }).run();
-              }
-            }}
-            className={
-              editor.isActive("link") ? "bg-slate-200 dark:bg-slate-700" : ""
-            }
-            title="Insert Link"
-          >
-            <LinkIcon className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const url = window.prompt("Enter URL:");
+                  if (url) {
+                    editor.chain().focus().setLink({ href: url }).run();
+                  }
+                }}
+                className={
+                  editor.isActive("link")
+                    ? "bg-slate-200 dark:bg-slate-700"
+                    : ""
+                }
+              >
+                <LinkIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert Link</TooltipContent>
+          </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Math (LaTeX Prompt) */}
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={addMath}
-            title="Insert LaTeX (Prompt)"
-          >
-            <Sigma className="h-4 w-4 mr-1" />
-            LaTeX
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={addMath}
+              >
+                <Sigma className="h-4 w-4 mr-1" />
+                LaTeX
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert LaTeX (Prompt)</TooltipContent>
+          </Tooltip>
 
           {/* Math (MathLive Visual Editor) */}
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={() => setShowMathLive(true)}
-            title="Insert Math (Visual Editor)"
-          >
-            <Sigma className="h-4 w-4 mr-1" />
-            Math
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() => setShowMathLive(true)}
+              >
+                <Sigma className="h-4 w-4 mr-1" />
+                Math
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert Math (Visual Editor)</TooltipContent>
+          </Tooltip>
 
           {/* Image - Enhanced with File Upload */}
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={() => setShowImageDialog(true)}
-            title="Insert Image"
-          >
-            <ImageIcon className="h-4 w-4 mr-1" />
-            Image
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() => setShowImageDialog(true)}
+              >
+                <ImageIcon className="h-4 w-4 mr-1" />
+                Image
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert Image</TooltipContent>
+          </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Undo/Redo */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
-          >
-            <Undo className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
-          >
-            <Redo className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().undo().run()}
+                disabled={!editor.can().undo()}
+              >
+                <Undo className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Undo</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().redo().run()}
+                disabled={!editor.can().redo()}
+              >
+                <Redo className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Redo</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Editor Content */}
