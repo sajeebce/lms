@@ -173,7 +173,7 @@
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
   border-radius: 0.25rem;
-  font-family: 'KaTeX_Main', 'Times New Roman', serif;
+  font-family: "KaTeX_Main", "Times New Roman", serif;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -210,7 +210,7 @@
 
 /* Classic Style - Traditional left border with italic */
 .ProseMirror blockquote.blockquote-classic {
-  border-left: 4px solid var(--blockquote-color, #4F46E5);
+  border-left: 4px solid var(--blockquote-color, #4f46e5);
   background: rgba(79, 70, 229, 0.05);
   font-style: italic;
   color: #374151;
@@ -223,7 +223,7 @@
 
 /* Modern Style - Bold border with gradient background */
 .ProseMirror blockquote.blockquote-modern {
-  border-left: 6px solid var(--blockquote-color, #4F46E5);
+  border-left: 6px solid var(--blockquote-color, #4f46e5);
   background: linear-gradient(
     to right,
     rgba(79, 70, 229, 0.1),
@@ -243,7 +243,7 @@
 
 /* Minimal Style - Thin border, clean look */
 .ProseMirror blockquote.blockquote-minimal {
-  border-left: 2px solid var(--blockquote-color, #4F46E5);
+  border-left: 2px solid var(--blockquote-color, #4f46e5);
   padding-left: 1rem;
   color: #6b7280;
   font-size: 0.95rem;
@@ -256,13 +256,13 @@
 /* Callout Style - Icon-based with background */
 .ProseMirror blockquote.blockquote-callout {
   border-left: none;
-  background: var(--blockquote-color, #4F46E5);
+  background: var(--blockquote-color, #4f46e5);
   background: linear-gradient(
     135deg,
     rgba(79, 70, 229, 0.15),
     rgba(79, 70, 229, 0.05)
   );
-  border: 1px solid var(--blockquote-color, #4F46E5);
+  border: 1px solid var(--blockquote-color, #4f46e5);
   border-radius: 0.75rem;
   padding: 1.25rem 1.5rem;
 }
@@ -290,9 +290,9 @@
 }
 
 .ProseMirror blockquote.blockquote-quote::before {
-  content: """;
+  content: "\201C";
   font-size: 5rem;
-  color: var(--blockquote-color, #4F46E5);
+  color: var(--blockquote-color, #4f46e5);
   opacity: 0.3;
   position: absolute;
   left: 0.5rem;
@@ -308,7 +308,7 @@
 /* Highlight Style - Full background with shadow */
 .ProseMirror blockquote.blockquote-highlight {
   border-left: none;
-  background: var(--blockquote-color, #4F46E5);
+  background: var(--blockquote-color, #4f46e5);
   background: linear-gradient(
     135deg,
     rgba(79, 70, 229, 0.2),
