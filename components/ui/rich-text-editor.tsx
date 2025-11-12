@@ -1236,19 +1236,19 @@ const CustomBlockquote = Blockquote.extend({
   },
 });
 
-type MathEditorProps = {
+type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
 };
 
-export default function MathEditor({
+export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Type here...",
   minHeight = "200px",
-}: MathEditorProps) {
+}: RichTextEditorProps) {
   const [showMathLive, setShowMathLive] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [editingImageData, setEditingImageData] = useState<any>(null);

@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
-import { toast } from 'sonner'
-import { createQuestion, updateQuestion } from '@/lib/actions/question.actions'
-import { Plus, Trash2, Save, X, Eye } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import MathEditor from './math-editor'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
+import { toast } from "sonner";
+import { createQuestion, updateQuestion } from "@/lib/actions/question.actions";
+import { Plus, Trash2, Save, X, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 
 type Props = {
-  subjects: any[]
-  classes: any[]
-  chapters: any[]
-  topics: any[]
-  sources: any[]
-  initialData?: any
-}
+  subjects: any[];
+  classes: any[];
+  chapters: any[];
+  topics: any[];
+  sources: any[];
+  initialData?: any;
+};
 
 export default function QuestionFormFull({
   subjects,
@@ -30,112 +30,151 @@ export default function QuestionFormFull({
   sources,
   initialData,
 }: Props) {
-  const router = useRouter()
-  const [saving, setSaving] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Form State (all in one view - no steps!)
-  const [selectedSubject, setSelectedSubject] = useState(initialData?.topic?.chapter?.subjectId || '')
-  const [selectedClass, setSelectedClass] = useState(initialData?.topic?.chapter?.classId || '')
-  const [selectedChapter, setSelectedChapter] = useState(initialData?.topic?.chapterId || '')
-  const [selectedTopic, setSelectedTopic] = useState(initialData?.topicId || '')
-  const [questionType, setQuestionType] = useState(initialData?.questionType || 'MCQ')
-  const [questionText, setQuestionText] = useState(initialData?.questionText || '')
-  const [mcqOptions, setMcqOptions] = useState<{ text: string; isCorrect: boolean }[]>(
-    initialData?.options ? JSON.parse(initialData.options) : [
-      { text: '', isCorrect: false },
-      { text: '', isCorrect: false },
-    ]
-  )
-  const [trueFalseAnswer, setTrueFalseAnswer] = useState(initialData?.correctAnswer || 'TRUE')
-  const [textAnswer, setTextAnswer] = useState(initialData?.correctAnswer || '')
-  const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'MEDIUM')
-  const [marks, setMarks] = useState(initialData?.marks?.toString() || '1')
-  const [negativeMarks, setNegativeMarks] = useState(initialData?.negativeMarks?.toString() || '0')
-  const [sourceId, setSourceId] = useState(initialData?.sourceId || '')
-  const [explanation, setExplanation] = useState(initialData?.explanation || '')
+  const [selectedSubject, setSelectedSubject] = useState(
+    initialData?.topic?.chapter?.subjectId || ""
+  );
+  const [selectedClass, setSelectedClass] = useState(
+    initialData?.topic?.chapter?.classId || ""
+  );
+  const [selectedChapter, setSelectedChapter] = useState(
+    initialData?.topic?.chapterId || ""
+  );
+  const [selectedTopic, setSelectedTopic] = useState(
+    initialData?.topicId || ""
+  );
+  const [questionType, setQuestionType] = useState(
+    initialData?.questionType || "MCQ"
+  );
+  const [questionText, setQuestionText] = useState(
+    initialData?.questionText || ""
+  );
+  const [mcqOptions, setMcqOptions] = useState<
+    { text: string; isCorrect: boolean }[]
+  >(
+    initialData?.options
+      ? JSON.parse(initialData.options)
+      : [
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+        ]
+  );
+  const [trueFalseAnswer, setTrueFalseAnswer] = useState(
+    initialData?.correctAnswer || "TRUE"
+  );
+  const [textAnswer, setTextAnswer] = useState(
+    initialData?.correctAnswer || ""
+  );
+  const [difficulty, setDifficulty] = useState(
+    initialData?.difficulty || "MEDIUM"
+  );
+  const [marks, setMarks] = useState(initialData?.marks?.toString() || "1");
+  const [negativeMarks, setNegativeMarks] = useState(
+    initialData?.negativeMarks?.toString() || "0"
+  );
+  const [sourceId, setSourceId] = useState(initialData?.sourceId || "");
+  const [explanation, setExplanation] = useState(
+    initialData?.explanation || ""
+  );
 
   // Filter logic
   const filteredChapters = chapters.filter(
     (ch) => ch.subjectId === selectedSubject && ch.classId === selectedClass
-  )
-  const filteredTopics = topics.filter((t) => t.chapterId === selectedChapter)
+  );
+  const filteredTopics = topics.filter((t) => t.chapterId === selectedChapter);
 
   const addMcqOption = () => {
-    setMcqOptions([...mcqOptions, { text: '', isCorrect: false }])
-  }
+    setMcqOptions([...mcqOptions, { text: "", isCorrect: false }]);
+  };
 
   const removeMcqOption = (index: number) => {
     if (mcqOptions.length > 2) {
-      setMcqOptions(mcqOptions.filter((_, i) => i !== index))
+      setMcqOptions(mcqOptions.filter((_, i) => i !== index));
     }
-  }
+  };
 
-  const updateMcqOption = (index: number, field: 'text' | 'isCorrect', value: string | boolean) => {
-    const updated = [...mcqOptions]
-    updated[index] = { ...updated[index], [field]: value }
-    setMcqOptions(updated)
-  }
+  const updateMcqOption = (
+    index: number,
+    field: "text" | "isCorrect",
+    value: string | boolean
+  ) => {
+    const updated = [...mcqOptions];
+    updated[index] = { ...updated[index], [field]: value };
+    setMcqOptions(updated);
+  };
 
   const handleSubmit = async () => {
     // Validation
     if (!selectedTopic) {
-      toast.error('Please select a topic')
-      return
+      toast.error("Please select a topic");
+      return;
     }
     if (!questionText.trim()) {
-      toast.error('Please enter question text')
-      return
+      toast.error("Please enter question text");
+      return;
     }
 
     // Type-specific validation
-    if (questionType === 'MCQ') {
-      const hasCorrect = mcqOptions.some((opt) => opt.isCorrect)
-      const allFilled = mcqOptions.every((opt) => opt.text.trim())
+    if (questionType === "MCQ") {
+      const hasCorrect = mcqOptions.some((opt) => opt.isCorrect);
+      const allFilled = mcqOptions.every((opt) => opt.text.trim());
       if (!allFilled) {
-        toast.error('Please fill all MCQ options')
-        return
+        toast.error("Please fill all MCQ options");
+        return;
       }
       if (!hasCorrect) {
-        toast.error('Please mark at least one correct answer')
-        return
+        toast.error("Please mark at least one correct answer");
+        return;
       }
     }
 
-    setSaving(true)
+    setSaving(true);
 
     try {
       const data = {
         topicId: selectedTopic,
         questionText,
         questionType,
-        options: questionType === 'MCQ' ? mcqOptions : undefined,
-        correctAnswer: questionType === 'TRUE_FALSE' ? trueFalseAnswer : questionType !== 'MCQ' ? textAnswer : undefined,
+        options: questionType === "MCQ" ? mcqOptions : undefined,
+        correctAnswer:
+          questionType === "TRUE_FALSE"
+            ? trueFalseAnswer
+            : questionType !== "MCQ"
+            ? textAnswer
+            : undefined,
         explanation,
         difficulty,
         marks: parseInt(marks),
         negativeMarks: parseFloat(negativeMarks),
         sourceId: sourceId || undefined,
-      }
+      };
 
       const result = initialData
         ? await updateQuestion(initialData.id, data)
-        : await createQuestion(data)
+        : await createQuestion(data);
 
       if (result.success) {
-        toast.success(initialData ? 'Question updated successfully!' : 'Question created successfully!')
-        router.push('/question-bank/questions')
-        router.refresh()
+        toast.success(
+          initialData
+            ? "Question updated successfully!"
+            : "Question created successfully!"
+        );
+        router.push("/question-bank/questions");
+        router.refresh();
       } else {
-        toast.error(result.error || 'Failed to save question')
+        toast.error(result.error || "Failed to save question");
       }
     } catch (error) {
-      console.error('Error saving question:', error)
-      toast.error('An error occurred while saving')
+      console.error("Error saving question:", error);
+      toast.error("An error occurred while saving");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -143,7 +182,7 @@ export default function QuestionFormFull({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold dark:text-slate-200">
-            {initialData ? 'Edit Question' : 'Create New Question'}
+            {initialData ? "Edit Question" : "Create New Question"}
           </h1>
           <p className="text-muted-foreground mt-1">
             Fill in all fields below to create a complete question
@@ -155,12 +194,9 @@ export default function QuestionFormFull({
             onClick={() => setShowPreview(!showPreview)}
           >
             <Eye className="h-4 w-4 mr-2" />
-            {showPreview ? 'Hide' : 'Show'} Preview
+            {showPreview ? "Hide" : "Show"} Preview
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-          >
+          <Button variant="outline" onClick={() => router.back()}>
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
@@ -170,7 +206,7 @@ export default function QuestionFormFull({
             className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Question'}
+            {saving ? "Saving..." : "Save Question"}
           </Button>
         </div>
       </div>
@@ -180,12 +216,17 @@ export default function QuestionFormFull({
         <div className="lg:col-span-2 space-y-6">
           {/* Section 1: Location */}
           <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">📍 Question Location</h2>
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              📍 Question Location
+            </h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Subject *</Label>
                 <SearchableDropdown
-                  options={subjects.map((s) => ({ value: s.id, label: s.name }))}
+                  options={subjects.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  }))}
                   value={selectedSubject}
                   onChange={setSelectedSubject}
                   placeholder="Select subject"
@@ -203,7 +244,10 @@ export default function QuestionFormFull({
               <div className="space-y-2">
                 <Label>Chapter *</Label>
                 <SearchableDropdown
-                  options={filteredChapters.map((ch) => ({ value: ch.id, label: ch.name }))}
+                  options={filteredChapters.map((ch) => ({
+                    value: ch.id,
+                    label: ch.name,
+                  }))}
                   value={selectedChapter}
                   onChange={setSelectedChapter}
                   placeholder="Select chapter"
@@ -213,7 +257,10 @@ export default function QuestionFormFull({
               <div className="space-y-2">
                 <Label>Topic *</Label>
                 <SearchableDropdown
-                  options={filteredTopics.map((t) => ({ value: t.id, label: t.name }))}
+                  options={filteredTopics.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                  }))}
                   value={selectedTopic}
                   onChange={setSelectedTopic}
                   placeholder="Select topic"
@@ -225,17 +272,19 @@ export default function QuestionFormFull({
 
           {/* Section 2: Question Details */}
           <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">❓ Question Details</h2>
-            
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              ❓ Question Details
+            </h2>
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Question Type *</Label>
                 <SearchableDropdown
                   options={[
-                    { value: 'MCQ', label: '📝 Multiple Choice (MCQ)' },
-                    { value: 'TRUE_FALSE', label: '✓✗ True/False' },
-                    { value: 'SHORT_ANSWER', label: '📄 Short Answer' },
-                    { value: 'LONG_ANSWER', label: '📋 Long Answer' },
+                    { value: "MCQ", label: "📝 Multiple Choice (MCQ)" },
+                    { value: "TRUE_FALSE", label: "✓✗ True/False" },
+                    { value: "SHORT_ANSWER", label: "📄 Short Answer" },
+                    { value: "LONG_ANSWER", label: "📋 Long Answer" },
                   ]}
                   value={questionType}
                   onChange={setQuestionType}
@@ -245,14 +294,16 @@ export default function QuestionFormFull({
 
               <div className="space-y-2">
                 <Label>Question Text * (Supports Math Equations)</Label>
-                <MathEditor
+                <RichTextEditor
                   value={questionText}
                   onChange={setQuestionText}
                   placeholder="Enter your question here... Click 'Math' button to add equations like E=mc², ∫x²dx, etc."
                   minHeight="150px"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  💡 Tip: Use the <strong>Math</strong> button to insert LaTeX equations. Examples: E=mc², \frac{'{a}'}{'{b}'}, \sqrt{'{x}'}
+                  💡 Tip: Use the <strong>Math</strong> button to insert LaTeX
+                  equations. Examples: E=mc², \frac{"{a}"}
+                  {"{b}"}, \sqrt{"{x}"}
                 </p>
               </div>
             </div>
@@ -260,22 +311,28 @@ export default function QuestionFormFull({
 
           {/* Section 3: Answer */}
           <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">✅ Answer</h2>
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              ✅ Answer
+            </h2>
 
-            {questionType === 'MCQ' && (
+            {questionType === "MCQ" && (
               <div className="space-y-3">
                 <Label>Options * (Check correct answer)</Label>
                 {mcqOptions.map((opt, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <Checkbox
                       checked={opt.isCorrect}
-                      onCheckedChange={(checked) => updateMcqOption(idx, 'isCorrect', checked as boolean)}
+                      onCheckedChange={(checked) =>
+                        updateMcqOption(idx, "isCorrect", checked as boolean)
+                      }
                       className="mt-3"
                     />
                     <div className="flex-1">
-                      <MathEditor
+                      <RichTextEditor
                         value={opt.text}
-                        onChange={(value) => updateMcqOption(idx, 'text', value)}
+                        onChange={(value) =>
+                          updateMcqOption(idx, "text", value)
+                        }
                         placeholder={`Option ${idx + 1}`}
                         minHeight="80px"
                       />
@@ -305,10 +362,13 @@ export default function QuestionFormFull({
               </div>
             )}
 
-            {questionType === 'TRUE_FALSE' && (
+            {questionType === "TRUE_FALSE" && (
               <div>
                 <Label>Correct Answer *</Label>
-                <RadioGroup value={trueFalseAnswer} onValueChange={setTrueFalseAnswer}>
+                <RadioGroup
+                  value={trueFalseAnswer}
+                  onValueChange={setTrueFalseAnswer}
+                >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="TRUE" id="true" />
                     <Label htmlFor="true">True</Label>
@@ -321,10 +381,11 @@ export default function QuestionFormFull({
               </div>
             )}
 
-            {(questionType === 'SHORT_ANSWER' || questionType === 'LONG_ANSWER') && (
+            {(questionType === "SHORT_ANSWER" ||
+              questionType === "LONG_ANSWER") && (
               <div>
                 <Label>Correct Answer *</Label>
-                <MathEditor
+                <RichTextEditor
                   value={textAnswer}
                   onChange={setTextAnswer}
                   placeholder="Enter the correct answer..."
@@ -335,7 +396,7 @@ export default function QuestionFormFull({
 
             <div className="mt-4 space-y-2">
               <Label>Explanation (Optional)</Label>
-              <MathEditor
+              <RichTextEditor
                 value={explanation}
                 onChange={setExplanation}
                 placeholder="Explain the answer with steps, formulas, etc..."
@@ -349,17 +410,19 @@ export default function QuestionFormFull({
         <div className="space-y-6">
           {/* Section 4: Metadata */}
           <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">⚙️ Settings</h2>
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              ⚙️ Settings
+            </h2>
 
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Difficulty *</Label>
                 <SearchableDropdown
                   options={[
-                    { value: 'EASY', label: '🟢 Easy' },
-                    { value: 'MEDIUM', label: '🟡 Medium' },
-                    { value: 'HARD', label: '🟠 Hard' },
-                    { value: 'EXPERT', label: '🔴 Expert' },
+                    { value: "EASY", label: "🟢 Easy" },
+                    { value: "MEDIUM", label: "🟡 Medium" },
+                    { value: "HARD", label: "🟠 Hard" },
+                    { value: "EXPERT", label: "🔴 Expert" },
                   ]}
                   value={difficulty}
                   onChange={setDifficulty}
@@ -395,7 +458,7 @@ export default function QuestionFormFull({
                 <Label>Source (Optional)</Label>
                 <SearchableDropdown
                   options={[
-                    { value: '', label: 'No Source' },
+                    { value: "", label: "No Source" },
                     ...sources.map((s) => ({ value: s.id, label: s.name })),
                   ]}
                   value={sourceId}
@@ -409,7 +472,9 @@ export default function QuestionFormFull({
           {/* Preview Section (if enabled) */}
           {showPreview && (
             <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-              <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">👁️ Preview</h2>
+              <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+                👁️ Preview
+              </h2>
               <div className="prose dark:prose-invert max-w-none">
                 <div dangerouslySetInnerHTML={{ __html: questionText }} />
               </div>
@@ -418,6 +483,5 @@ export default function QuestionFormFull({
         </div>
       </div>
     </div>
-  )
+  );
 }
-
