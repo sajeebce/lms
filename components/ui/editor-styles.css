@@ -569,3 +569,134 @@
   background: #0f172a;
   color: var(--hr-color, #374151);
 }
+
+/* ========================================
+   PHASE 4: MODERN TABLE STYLING
+   ======================================== */
+
+/* Table Container */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Cells - Base Styling */
+.ProseMirror td,
+.ProseMirror th {
+  min-width: 1em;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Header Cells - Bold & Gradient Background */
+.ProseMirror th {
+  font-weight: 600;
+  text-align: left;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #1e293b;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+/* Hover Effect on Cells */
+.ProseMirror td:not([data-background-color]):hover,
+.ProseMirror th:not([data-background-color]):hover {
+  background-color: #f8fafc;
+  cursor: pointer;
+}
+
+/* Hover effect for cells with custom background - slight brightness increase */
+.ProseMirror td[data-background-color]:hover,
+.ProseMirror th[data-background-color]:hover {
+  filter: brightness(1.05);
+  cursor: pointer;
+}
+
+/* Selected Cell */
+.ProseMirror .selectedCell {
+  background-color: #dbeafe !important;
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Phase 4.2: Cell Background Color Support */
+.ProseMirror td[data-background-color],
+.ProseMirror th[data-background-color] {
+  /* Background color is applied via inline style */
+  /* This ensures it works with the backgroundColor attribute */
+}
+
+/* Zebra Striping - Alternating Row Colors */
+/* Only apply if cell doesn't have custom background */
+.ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
+  background-color: #f9fafb;
+}
+
+.ProseMirror tbody tr:hover td:not([data-background-color]) {
+  background-color: #f1f5f9;
+}
+
+/* Column Resize Handle */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ProseMirror td:hover .column-resize-handle,
+.ProseMirror th:hover .column-resize-handle {
+  opacity: 1;
+}
+
+/* Dark Mode Table Styles */
+.dark .ProseMirror table {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+}
+
+.dark .ProseMirror td,
+.dark .ProseMirror th {
+  border-color: #334155;
+}
+
+.dark .ProseMirror th {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #f1f5f9;
+  border-bottom-color: #475569;
+}
+
+.dark .ProseMirror td:not([data-background-color]):hover,
+.dark .ProseMirror th:not([data-background-color]):hover {
+  background-color: #1e293b;
+}
+
+.dark .ProseMirror td[data-background-color]:hover,
+.dark .ProseMirror th[data-background-color]:hover {
+  filter: brightness(1.15);
+}
+
+.dark .ProseMirror .selectedCell {
+  background-color: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+}
+
+.dark .ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
+  background-color: #0f172a;
+}
+
+.dark .ProseMirror tbody tr:hover td:not([data-background-color]) {
+  background-color: #1e293b;
+}

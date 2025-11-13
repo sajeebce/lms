@@ -79,6 +79,8 @@ import {
 } from "@/components/ui/image-properties-dialog";
 import { LinkDialog } from "@/components/ui/link-dialog";
 import { FontFamilySelector } from "@/components/ui/font-family-selector";
+import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern table grid selector
+import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
 
 const lowlight = createLowlight(common);
 
@@ -1745,13 +1747,36 @@ export default function RichTextEditor({
         lowlight,
         defaultLanguage: "javascript",
       }),
-      // Phase 1: Tables
+      // Phase 4: Tables - Modern & Beautiful
       Table.configure({
         resizable: true,
       }),
       TableRow,
       TableHeader,
-      TableCell,
+      // Phase 4.2: TableCell with background color support
+      TableCell.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            backgroundColor: {
+              default: null,
+              parseHTML: (element) =>
+                element.getAttribute("data-background-color") ||
+                element.style.backgroundColor ||
+                null,
+              renderHTML: (attributes) => {
+                if (!attributes.backgroundColor) {
+                  return {};
+                }
+                return {
+                  "data-background-color": attributes.backgroundColor,
+                  style: `background-color: ${attributes.backgroundColor}`,
+                };
+              },
+            },
+          };
+        },
+      }),
       // Phase 3.4: Link - Modern & Secure
       Link.configure({
         openOnClick: false,
@@ -3018,17 +3043,20 @@ export default function RichTextEditor({
             <TooltipContent>Code Block</TooltipContent>
           </Tooltip>
 
-          {/* Table */}
+          {/* Table - Phase 4.1: Modern grid selector */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={insertTable}
-              >
-                <TableIcon className="h-4 w-4" />
-              </Button>
+              <div>
+                <TableGridSelector
+                  onSelect={(rows, cols) =>
+                    editor
+                      .chain()
+                      .focus()
+                      .insertTable({ rows, cols, withHeaderRow: true })
+                      .run()
+                  }
+                />
+              </div>
             </TooltipTrigger>
             <TooltipContent>Insert Table</TooltipContent>
           </Tooltip>
@@ -3362,6 +3390,9 @@ export default function RichTextEditor({
           className="prose dark:prose-invert max-w-none p-4"
           style={{ minHeight }}
         />
+
+        {/* Phase 4.2: Table Bubble Menu - Floating Toolbar */}
+        {editor && <TableBubbleMenu editor={editor} />}
 
         {/* MathLive Modal */}
         <MathLiveModal
