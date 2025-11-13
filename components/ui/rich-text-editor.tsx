@@ -1767,9 +1767,10 @@ export default function RichTextEditor({
                 if (!attributes.backgroundColor) {
                   return {};
                 }
+                const color = attributes.backgroundColor;
                 return {
-                  "data-background-color": attributes.backgroundColor,
-                  style: `background-color: ${attributes.backgroundColor}`,
+                  "data-background-color": color,
+                  style: `background: ${color}; background-color: ${color}`,
                 };
               },
             },

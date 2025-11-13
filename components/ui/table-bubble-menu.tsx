@@ -1,6 +1,8 @@
 "use client";
 
 import type { Editor } from "@tiptap/react";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { CellSelection } from "@tiptap/pm/tables";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,7 +12,11 @@ import {
   Plus,
   Palette,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useState, useEffect, useRef } from "react";
 
 interface TableBubbleMenuProps {
@@ -72,7 +78,42 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   if (!editor || !isVisible) return null;
 
   const setCellBackground = (color: string) => {
-    editor.chain().focus().setCellAttribute("backgroundColor", color).run();
+    if (!editor) return;
+
+    const applied = editor.chain().focus().setCellAttribute("backgroundColor", color).run();
+
+    if (!applied) {
+      const { state, view } = editor;
+      const { selection } = state;
+
+      if (selection instanceof CellSelection) {
+        const tr = state.tr;
+        selection.forEachCell((node: ProseMirrorNode, pos: number) => {
+          tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            backgroundColor: color,
+          });
+        });
+        view.dispatch(tr);
+      } else {
+        const { $from } = selection;
+
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+
+          if (node.type.name === "tableCell" || node.type.name === "tableHeader") {
+            const cellPos = $from.before(depth);
+            const tr = state.tr.setNodeMarkup(cellPos, undefined, {
+              ...node.attrs,
+              backgroundColor: color,
+            });
+            view.dispatch(tr);
+            break;
+          }
+        }
+      }
+    }
+
     setColorPickerOpen(false);
   };
 
@@ -285,4 +326,3 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
     </div>
   );
 }
-
