@@ -1752,7 +1752,30 @@ export default function RichTextEditor({
         resizable: true,
       }),
       TableRow,
-      TableHeader,
+      // Ensure header cells support background colors like body cells
+      TableHeader.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            backgroundColor: {
+              default: null,
+              parseHTML: (element) =>
+                element.getAttribute("data-background-color") ||
+                element.style.backgroundColor ||
+                null,
+              renderHTML: (attributes) => {
+                if (!attributes.backgroundColor) {
+                  return {};
+                }
+                return {
+                  "data-background-color": attributes.backgroundColor,
+                  style: `background-color: ${attributes.backgroundColor}`,
+                };
+              },
+            },
+          };
+        },
+      }),
       // Phase 4.2: TableCell with background color support
       TableCell.extend({
         addAttributes() {
