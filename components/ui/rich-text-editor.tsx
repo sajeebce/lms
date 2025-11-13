@@ -54,6 +54,7 @@ import {
   IndentIncrease,
   IndentDecrease,
   Sparkles,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
@@ -1387,6 +1388,10 @@ const CustomIndent = Extension.create({
             }
           });
 
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
+
           return updated;
         },
 
@@ -1422,6 +1427,10 @@ const CustomIndent = Extension.create({
             }
           });
 
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
+
           return updated;
         },
     };
@@ -1432,6 +1441,49 @@ const CustomIndent = Extension.create({
       Tab: () => this.editor.commands.indent(),
       "Shift-Tab": () => this.editor.commands.outdent(),
     };
+  },
+});
+
+// Phase 3.7: Line Height controls for paragraphs and headings
+const LineHeight = Extension.create({
+  name: "lineHeight",
+
+  addOptions() {
+    return {
+      types: ["paragraph", "heading"],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (element) => {
+              const dataValue = element.getAttribute("data-line-height");
+              if (dataValue) {
+                return dataValue;
+              }
+
+              const styleValue = element.style.lineHeight;
+              return styleValue || null;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.lineHeight) {
+                return {};
+              }
+
+              return {
+                "data-line-height": attributes.lineHeight,
+                style: `line-height: ${attributes.lineHeight}`,
+              };
+            },
+          },
+        },
+      },
+    ];
   },
 });
 
@@ -1494,6 +1546,7 @@ export default function RichTextEditor({
       CustomBlockquote, // Phase 3.1: Custom blockquote with styles
       CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
       CustomIndent, // Phase 3.3: Custom indent/outdent for paragraphs and headings
+      LineHeight, // Phase 3.7: Line height controls
       HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
@@ -1790,6 +1843,62 @@ export default function RichTextEditor({
     { label: "Huge", value: "24px" },
   ];
 
+  const lineHeightOptions = [
+    { label: "1.0x", value: "1" },
+    { label: "1.15x", value: "1.15" },
+    { label: "1.5x", value: "1.5" },
+    { label: "2.0x", value: "2" },
+  ];
+
+  const currentLineHeight =
+    editor.getAttributes("heading")?.lineHeight ||
+    editor.getAttributes("paragraph")?.lineHeight ||
+    null;
+
+  const lineHeightTargetTypes = ["paragraph", "heading"];
+
+  const applyLineHeightValue = (lineHeightValue: string | null) => {
+    if (!editor) return;
+
+    editor
+      .chain()
+      .focus()
+      .command(({ tr, state, dispatch }) => {
+        const { from, to } = state.selection;
+        let updated = false;
+
+        state.doc.nodesBetween(from, to, (node, pos) => {
+          if (!lineHeightTargetTypes.includes(node.type.name)) {
+            return;
+          }
+
+          const currentValue = node.attrs.lineHeight ?? null;
+          if (currentValue === lineHeightValue) {
+            return;
+          }
+
+          const nextAttrs = { ...node.attrs };
+          if (lineHeightValue === null) {
+            delete nextAttrs.lineHeight;
+          } else {
+            nextAttrs.lineHeight = lineHeightValue;
+          }
+
+          if (dispatch) {
+            tr.setNodeMarkup(pos, undefined, nextAttrs);
+          }
+          updated = true;
+        });
+
+        if (updated && dispatch) {
+          dispatch(tr);
+        }
+
+        return updated;
+      })
+      .run();
+  };
+
   return (
     <TooltipProvider delayDuration={300}>
       <div
@@ -1991,6 +2100,72 @@ export default function RichTextEditor({
                     {size.label}
                   </Button>
                 ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Line Height */}
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      currentLineHeight
+                        ? "bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900"
+                        : ""
+                    }
+                  >
+                    <SlidersHorizontal className="h-4 w-4 mr-1" />
+                    {currentLineHeight ? `${currentLineHeight}x` : "Line"}
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Line Height</TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-48" align="start">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Line Height</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full justify-between ${
+                    !currentLineHeight
+                      ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white"
+                      : ""
+                  }`}
+                  onClick={() => applyLineHeightValue(null)}
+                >
+                  Default
+                  {!currentLineHeight && <span className="text-xs">Theme</span>}
+                </Button>
+                <div className="grid gap-1">
+                  {lineHeightOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={`w-full justify-between ${
+                        currentLineHeight === option.value
+                          ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white"
+                          : ""
+                      }`}
+                      onClick={() => applyLineHeightValue(option.value)}
+                    >
+                      {option.label}
+                      {currentLineHeight === option.value && (
+                        <span className="text-xs uppercase tracking-wide">
+                          Active
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </PopoverContent>
           </Popover>
