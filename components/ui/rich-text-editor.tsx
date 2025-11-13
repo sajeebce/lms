@@ -1487,6 +1487,81 @@ const LineHeight = Extension.create({
   },
 });
 
+// Phase 3.8: Text Direction (RTL/LTR) support with attribute preservation
+const TextDirection = Extension.create({
+  name: "textDirection",
+
+  addOptions() {
+    return {
+      types: ["paragraph", "heading"],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          dir: {
+            default: null,
+            parseHTML: (element) => element.getAttribute("dir") || null,
+            renderHTML: (attributes) => {
+              if (!attributes.dir) {
+                return {};
+              }
+              return {
+                dir: attributes.dir,
+                style: `direction: ${attributes.dir}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setTextDirection:
+        (direction: "ltr" | "rtl" | null) =>
+        ({ tr, state, dispatch }) => {
+          const { from, to } = state.selection;
+          let updated = false;
+
+          state.doc.nodesBetween(from, to, (node, pos) => {
+            if (!this.options.types.includes(node.type.name)) {
+              return;
+            }
+
+            const currentValue = node.attrs.dir ?? null;
+            if (currentValue === direction) {
+              return;
+            }
+
+            // ✅ Preserve ALL existing attributes
+            const nextAttrs = { ...node.attrs };
+            if (direction === null) {
+              delete nextAttrs.dir;
+            } else {
+              nextAttrs.dir = direction;
+            }
+
+            if (dispatch) {
+              tr.setNodeMarkup(pos, undefined, nextAttrs);
+            }
+            updated = true;
+          });
+
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
+
+          return updated;
+        },
+    };
+  },
+});
+
 type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
@@ -1547,6 +1622,7 @@ export default function RichTextEditor({
       CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
       CustomIndent, // Phase 3.3: Custom indent/outdent for paragraphs and headings
       LineHeight, // Phase 3.7: Line height controls
+      TextDirection, // Phase 3.8: RTL/LTR text direction controls
       HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
@@ -1566,8 +1642,69 @@ export default function RichTextEditor({
       }),
       ResizableImage, // ✅ Custom resizable image with delete support
       Underline,
-      TextAlign.configure({
+      // Phase 3.8: Extended TextAlign to preserve dir attribute
+      TextAlign.extend({
+        addCommands() {
+          return {
+            setTextAlign:
+              (alignment: string) =>
+              ({ commands, tr, state, dispatch }) => {
+                const { from, to } = state.selection;
+                let updated = false;
+
+                state.doc.nodesBetween(from, to, (node, pos) => {
+                  if (!["heading", "paragraph", "image"].includes(node.type.name)) {
+                    return;
+                  }
+
+                  // ✅ Preserve ALL existing attributes including dir
+                  const nextAttrs = { ...node.attrs };
+                  nextAttrs.textAlign = alignment;
+
+                  if (dispatch) {
+                    tr.setNodeMarkup(pos, undefined, nextAttrs);
+                  }
+                  updated = true;
+                });
+
+                if (updated && dispatch) {
+                  dispatch(tr);
+                }
+
+                return updated;
+              },
+            unsetTextAlign:
+              () =>
+              ({ commands, tr, state, dispatch }) => {
+                const { from, to } = state.selection;
+                let updated = false;
+
+                state.doc.nodesBetween(from, to, (node, pos) => {
+                  if (!["heading", "paragraph", "image"].includes(node.type.name)) {
+                    return;
+                  }
+
+                  // ✅ Preserve ALL existing attributes including dir
+                  const nextAttrs = { ...node.attrs };
+                  delete nextAttrs.textAlign;
+
+                  if (dispatch) {
+                    tr.setNodeMarkup(pos, undefined, nextAttrs);
+                  }
+                  updated = true;
+                });
+
+                if (updated && dispatch) {
+                  dispatch(tr);
+                }
+
+                return updated;
+              },
+          };
+        },
+      }).configure({
         types: ["heading", "paragraph", "image"],
+        alignments: ["left", "center", "right", "justify", "start", "end"], // Phase 3.8: Add start/end for RTL support
       }),
       Placeholder.configure({
         placeholder,
@@ -1856,6 +1993,39 @@ export default function RichTextEditor({
     null;
 
   const lineHeightTargetTypes = ["paragraph", "heading"];
+
+  // Phase 3.8: Text direction helpers
+  const currentTextDirection =
+    editor.getAttributes("heading")?.dir ||
+    editor.getAttributes("paragraph")?.dir ||
+    null;
+
+  const applyTextDirection = (direction: "ltr" | "rtl" | null) => {
+    if (!editor) return;
+
+    // Get current alignment BEFORE changing direction
+    const currentAlign =
+      editor.getAttributes("paragraph").textAlign ||
+      editor.getAttributes("heading").textAlign ||
+      null;
+
+    // Step 1: Set text direction using custom command (preserves textAlign)
+    editor.chain().focus().setTextDirection(direction).run();
+
+    // Step 2: Auto-align based on direction (smart default)
+    // Only auto-align if current alignment is left, right, start, end, or not set
+    // Don't override center or justify
+    const shouldAutoAlign =
+      !currentAlign ||
+      currentAlign === "left" ||
+      currentAlign === "right" ||
+      currentAlign === "start" ||
+      currentAlign === "end";
+
+    if (shouldAutoAlign) {
+      editor.chain().focus().setTextAlign("start").run();
+    }
+  };
 
   const applyLineHeightValue = (lineHeightValue: string | null) => {
     if (!editor) return;
@@ -2701,7 +2871,7 @@ export default function RichTextEditor({
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
-          {/* Alignment */}
+          {/* Alignment - Phase 3.8: Dynamic icons based on text direction */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -2709,18 +2879,27 @@ export default function RichTextEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  editor.chain().focus().setTextAlign("left").run()
+                  editor.chain().focus().setTextAlign("start").run()
                 }
                 className={
+                  editor.isActive({ textAlign: "start" }) ||
                   editor.isActive({ textAlign: "left" })
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
               >
-                <AlignLeft className="h-4 w-4" />
+                {currentTextDirection === "rtl" ? (
+                  <AlignRight className="h-4 w-4" />
+                ) : (
+                  <AlignLeft className="h-4 w-4" />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Align Left</TooltipContent>
+            <TooltipContent>
+              {currentTextDirection === "rtl"
+                ? "Align Start (Right)"
+                : "Align Start (Left)"}
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -2751,18 +2930,70 @@ export default function RichTextEditor({
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  editor.chain().focus().setTextAlign("right").run()
+                  editor.chain().focus().setTextAlign("end").run()
                 }
                 className={
+                  editor.isActive({ textAlign: "end" }) ||
                   editor.isActive({ textAlign: "right" })
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
               >
-                <AlignRight className="h-4 w-4" />
+                {currentTextDirection === "rtl" ? (
+                  <AlignLeft className="h-4 w-4" />
+                ) : (
+                  <AlignRight className="h-4 w-4" />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Align Right</TooltipContent>
+            <TooltipContent>
+              {currentTextDirection === "rtl"
+                ? "Align End (Left)"
+                : "Align End (Right)"}
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Text Direction - Phase 3.8: RTL/LTR controls */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={`px-3 ${
+                  currentTextDirection === "ltr"
+                    ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-semibold"
+                    : ""
+                }`}
+                onClick={() =>
+                  applyTextDirection(currentTextDirection === "ltr" ? null : "ltr")
+                }
+              >
+                LTR
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Left-to-Right Direction</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={`px-3 ${
+                  currentTextDirection === "rtl"
+                    ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-semibold"
+                    : ""
+                }`}
+                onClick={() =>
+                  applyTextDirection(currentTextDirection === "rtl" ? null : "rtl")
+                }
+              >
+                RTL
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Right-to-Left Direction</TooltipContent>
           </Tooltip>
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />

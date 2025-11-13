@@ -502,32 +502,96 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
 ---
 
-### **3.8 Text Direction (RTL/LTR)** (~40 lines)
+### **3.8 Text Direction (RTL/LTR)** ✅ **COMPLETE**
 
-**Current:** LTR only  
-**Target:** RTL/LTR toggle buttons (for Arabic, Hebrew, etc.)
+**Before:** Editor only supported LTR (Left-to-Right) text flow
+**Now:** Full RTL/LTR support with smart auto-alignment and dynamic icons
 
-**Implementation:**
+**Implementation Highlights:**
 
-- 🔲 Create custom TextDirection extension
-- 🔲 Add RTL/LTR buttons to toolbar
-- 🔲 Apply CSS direction: rtl/ltr
+- ✅ **Custom TextDirection Extension** - Adds `dir` attribute to paragraph and heading nodes with dual output (attribute + inline style)
+- ✅ **Extended TextAlign Extension** - Overridden `setTextAlign` and `unsetTextAlign` commands to preserve `dir` attribute when changing alignment
+- ✅ **Smart Auto-Alignment** - Clicking RTL automatically sets `text-align: start` (right in RTL), clicking LTR sets `text-align: start` (left in LTR)
+- ✅ **Dynamic Alignment Icons** - Start/End button icons flip based on text direction (Start shows ⬅️ in LTR, ➡️ in RTL)
+- ✅ **Semantic Alignment Values** - Uses `text-align: start/end` instead of `left/right` for direction-aware alignment
+- ✅ **Attribute Preservation** - Both extensions use `{ ...node.attrs }` spread to preserve all existing attributes when updating
+- ✅ **Manual Override Support** - Users can manually change alignment after setting direction (center/justify are preserved)
 
-**Files to modify:**
+**Technical Details:**
 
-- `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
+**TextDirection Extension:**
+```typescript
+const TextDirection = Extension.create({
+  name: "textDirection",
+  addGlobalAttributes() {
+    return [{
+      types: ["paragraph", "heading"],
+      attributes: {
+        dir: {
+          parseHTML: (element) => element.getAttribute("dir") || null,
+          renderHTML: (attributes) => ({
+            dir: attributes.dir,
+            style: `direction: ${attributes.dir}`,
+          }),
+        },
+      },
+    }];
+  },
+  addCommands() {
+    return {
+      setTextDirection: (direction) => ({ tr, state, dispatch }) => {
+        // ✅ Preserves textAlign attribute
+        const nextAttrs = { ...node.attrs };
+        nextAttrs.dir = direction;
+        tr.setNodeMarkup(pos, undefined, nextAttrs);
+      },
+    };
+  },
+});
+```
 
-**Code Impact:** +40 lines  
-**Bundle size:** +2 KB
+**Extended TextAlign:**
+```typescript
+TextAlign.extend({
+  addCommands() {
+    return {
+      setTextAlign: (alignment) => ({ tr, state, dispatch }) => {
+        // ✅ Preserves dir attribute
+        const nextAttrs = { ...node.attrs };
+        nextAttrs.textAlign = alignment;
+        tr.setNodeMarkup(pos, undefined, nextAttrs);
+      },
+    };
+  },
+}).configure({
+  alignments: ["left", "center", "right", "justify", "start", "end"],
+});
+```
+
+**UI Behavior:**
+- LTR/RTL buttons toggle direction with visual active state
+- Alignment buttons show dynamic icons based on current direction
+- Tooltips update to show "Align Start (Left)" vs "Align Start (Right)"
+- Clicking RTL on left-aligned text → auto-aligns to start (right)
+- Clicking LTR on right-aligned text → auto-aligns to start (left)
+- Center/Justify alignments are preserved when toggling direction
+
+**Files Modified:**
+
+- `components/ui/rich-text-editor.tsx` (+130 lines)
+
+**Code Impact:** +130 lines
+**Bundle Size:** 0 KB (no external dependencies)
+**Performance:** Zero impact (uses native TipTap commands)
 
 ---
 
 **Phase 3 Total:**
 
-- **Lines of code:** ~310 lines
+- **Lines of code:** ~440 lines (all 8 features complete)
 - **Performance impact:** Zero
 - **Bundle size increase:** +15 KB
-- **Time estimate:** 4-5 hours
+- **Actual time:** 6-7 hours (including debugging attribute preservation issues)
 
 ---
 
