@@ -374,22 +374,28 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
 ---
 
-### **3.6 Heading Levels** (~40 lines)
+### **3.6 Heading Levels** ✅ COMPLETE
 
-**Current:** Markdown shortcuts only (## → H2)  
+**Current:** Markdown shortcuts only (## → H2)
 **Target:** Heading dropdown (Paragraph, H1, H2, H3, H4, H5, H6)
 
 **Implementation:**
 
-- 🔲 Add heading dropdown to toolbar
-- 🔲 Show current heading level
-- 🔲 Keyboard shortcuts: Ctrl+Alt+1 → H1, etc.
+- ✅ Add heading dropdown to toolbar
+- ✅ Show current heading level (H1, H2, H3, H4, H5, H6, P)
+- ✅ Keyboard shortcuts: Ctrl+Alt+0 → Paragraph, Ctrl+Alt+1-6 → H1-H6
+- ✅ Active state highlighting in dropdown
+- ✅ Shortcut hints in dropdown menu
 
-**Files to modify:**
+**Files modified:**
 
-- `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
+- `components/ui/rich-text-editor.tsx` (+60 lines)
+  - Added `HeadingShortcuts` extension with keyboard shortcuts
+  - Updated heading button to show current level (H1-H6 or P)
+  - Enhanced dropdown with active states and shortcut hints
+  - Configured StarterKit heading levels [1-6]
 
-**Code Impact:** +40 lines  
+**Code Impact:** +60 lines
 **Bundle size:** 0 KB (already in StarterKit)
 
 ---

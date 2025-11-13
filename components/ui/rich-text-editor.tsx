@@ -23,6 +23,7 @@ import Blockquote from "@tiptap/extension-blockquote";
 import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import { Extension } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
+import type { Level } from "@tiptap/extension-heading";
 import { common, createLowlight } from "lowlight";
 import { Button } from "@/components/ui/button";
 import "katex/dist/katex.min.css"; // ✅ KaTeX CSS for math rendering
@@ -1288,6 +1289,29 @@ const CustomHorizontalRule = HorizontalRule.extend({
   },
 });
 
+// Phase 3.6: Heading Keyboard Shortcuts Extension
+const HeadingShortcuts = Extension.create({
+  name: "headingShortcuts",
+
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Alt-0": () => this.editor.commands.setParagraph(),
+      "Mod-Alt-1": () =>
+        this.editor.commands.toggleHeading({ level: 1 as Level }),
+      "Mod-Alt-2": () =>
+        this.editor.commands.toggleHeading({ level: 2 as Level }),
+      "Mod-Alt-3": () =>
+        this.editor.commands.toggleHeading({ level: 3 as Level }),
+      "Mod-Alt-4": () =>
+        this.editor.commands.toggleHeading({ level: 4 as Level }),
+      "Mod-Alt-5": () =>
+        this.editor.commands.toggleHeading({ level: 5 as Level }),
+      "Mod-Alt-6": () =>
+        this.editor.commands.toggleHeading({ level: 6 as Level }),
+    };
+  },
+});
+
 // Phase 3.3: Custom Indent Extension for Paragraphs, Headings, and Lists
 const CustomIndent = Extension.create({
   name: "customIndent",
@@ -1463,10 +1487,14 @@ export default function RichTextEditor({
         underline: false, // Avoid duplicate underline extension
         blockquote: false, // Disable default blockquote (we use custom)
         horizontalRule: false, // Disable default horizontal rule (we use custom)
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
+        },
       }),
       CustomBlockquote, // Phase 3.1: Custom blockquote with styles
       CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
       CustomIndent, // Phase 3.3: Custom indent/outdent for paragraphs and headings
+      HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
       Mathematics.configure({
         // ✅ Configure inline and block math nodes
         inlineOptions: {
@@ -1505,9 +1533,10 @@ export default function RichTextEditor({
                 if (!attributes.fontWeight) {
                   return {};
                 }
+                // Return style as CSS property, not string
+                // TipTap will merge this with other TextStyle attributes
                 return {
                   style: `font-weight: ${attributes.fontWeight}`,
-                  "data-font-weight": attributes.fontWeight,
                 };
               },
             },
@@ -2005,46 +2034,83 @@ export default function RichTextEditor({
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm">
-                    <Heading className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent>Heading</TooltipContent>
-            </Tooltip>
-            <PopoverContent className="w-48">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Heading</Label>
-                {[
-                  { label: "Normal", level: 0 },
-                  { label: "Heading 1", level: 1 },
-                  { label: "Heading 2", level: 2 },
-                  { label: "Heading 3", level: 3 },
-                  { label: "Heading 4", level: 4 },
-                  { label: "Heading 5", level: 5 },
-                  { label: "Heading 6", level: 6 },
-                ].map((heading) => (
                   <Button
-                    key={heading.level}
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      if (heading.level === 0) {
-                        editor.chain().focus().setParagraph().run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .toggleHeading({ level: heading.level as any })
-                          .run();
-                      }
-                    }}
+                    className="gap-1"
                   >
-                    {heading.label}
+                    <Heading className="h-4 w-4" />
+                    <span className="text-xs">
+                      {editor.isActive("heading", { level: 1 })
+                        ? "H1"
+                        : editor.isActive("heading", { level: 2 })
+                          ? "H2"
+                          : editor.isActive("heading", { level: 3 })
+                            ? "H3"
+                            : editor.isActive("heading", { level: 4 })
+                              ? "H4"
+                              : editor.isActive("heading", { level: 5 })
+                                ? "H5"
+                                : editor.isActive("heading", { level: 6 })
+                                  ? "H6"
+                                  : "P"}
+                    </span>
                   </Button>
-                ))}
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div>Heading Level</div>
+                  <div className="text-muted-foreground mt-1">
+                    Shortcuts: Ctrl+Alt+0-6
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-56" align="start">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Heading Level</Label>
+                {[
+                  { label: "Paragraph", level: 0, shortcut: "Ctrl+Alt+0" },
+                  { label: "Heading 1", level: 1, shortcut: "Ctrl+Alt+1" },
+                  { label: "Heading 2", level: 2, shortcut: "Ctrl+Alt+2" },
+                  { label: "Heading 3", level: 3, shortcut: "Ctrl+Alt+3" },
+                  { label: "Heading 4", level: 4, shortcut: "Ctrl+Alt+4" },
+                  { label: "Heading 5", level: 5, shortcut: "Ctrl+Alt+5" },
+                  { label: "Heading 6", level: 6, shortcut: "Ctrl+Alt+6" },
+                ].map((heading) => {
+                  const isActive =
+                    heading.level === 0
+                      ? !editor.isActive("heading")
+                      : editor.isActive("heading", { level: heading.level });
+
+                  return (
+                    <Button
+                      key={heading.level}
+                      type="button"
+                      variant={isActive ? "secondary" : "ghost"}
+                      size="sm"
+                      className="w-full justify-between"
+                      onClick={() => {
+                        if (heading.level === 0) {
+                          editor.chain().focus().setParagraph().run();
+                        } else {
+                          editor
+                            .chain()
+                            .focus()
+                            .toggleHeading({ level: heading.level as any })
+                            .run();
+                        }
+                      }}
+                    >
+                      <span>{heading.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {heading.shortcut}
+                      </span>
+                    </Button>
+                  );
+                })}
               </div>
             </PopoverContent>
           </Popover>

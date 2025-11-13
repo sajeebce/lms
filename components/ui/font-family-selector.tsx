@@ -104,30 +104,30 @@ export function FontFamilySelector({ editor }: FontFamilySelectorProps) {
         editor.chain().focus().unsetMark("textStyle").run();
       }
     } else {
-      // Set font family first
-      editor.chain().focus().setFontFamily(fontFamily).run();
+      // Get current textStyle attributes to preserve other properties (color, etc.)
+      const currentAttrs = editor.getAttributes("textStyle");
 
-      // Set font weight if provided
+      // Build new attributes object
+      const newAttrs: Record<string, any> = {
+        ...currentAttrs,
+        fontFamily: fontFamily,
+      };
+
+      // Add or remove fontWeight
       if (weight) {
-        // Update textStyle mark with fontWeight attribute
-        editor
-          .chain()
-          .focus()
-          .updateAttributes("textStyle", { fontWeight: weight })
-          .run();
+        newAttrs.fontWeight = weight;
       } else {
-        // Remove font weight if "Default Weight" selected
-        const currentAttrs = editor.getAttributes("textStyle");
-        if (currentAttrs.fontWeight) {
-          const { fontWeight, ...restAttrs } = currentAttrs;
-          editor
-            .chain()
-            .focus()
-            .unsetMark("textStyle")
-            .setMark("textStyle", restAttrs)
-            .run();
-        }
+        // Remove fontWeight if it exists
+        delete newAttrs.fontWeight;
       }
+
+      // Apply all attributes together using setMark
+      // This ensures fontFamily and fontWeight are in the same <span> tag
+      editor
+        .chain()
+        .focus()
+        .setMark("textStyle", newAttrs)
+        .run();
     }
 
     setShowWeights(false);
