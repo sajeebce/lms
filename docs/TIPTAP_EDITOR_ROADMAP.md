@@ -400,23 +400,24 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
 ---
 
-### **3.7 Line Height** (~30 lines)
+### **3.7 Line Height** ⏸️ SKIPPED (Technical Issues)
 
-**Current:** Default line height  
+**Current:** Default line height
 **Target:** Line height dropdown (1.0, 1.15, 1.5, 2.0)
 
-**Implementation:**
+**Status:** Skipped due to Next.js/Turbopack compilation conflicts
 
-- 🔲 Create custom LineHeight extension
-- 🔲 Add line height dropdown
-- 🔲 Apply CSS line-height
+**Issue:** Multiple implementation attempts (TextStyle extension, custom extension, data attributes) all caused server crashes during page compilation. Root cause appears to be a conflict between TipTap's line-height handling and Next.js 16.0.0 Turbopack.
 
-**Files to modify:**
+**Attempted Approaches:**
+1. ❌ Custom LineHeight extension with inline styles
+2. ❌ Extended TextStyle with lineHeight attribute
+3. ❌ Data attribute approach with CSS
 
-- `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
+**Decision:** Skip for now and revisit after Next.js/TipTap updates or in a separate debugging session.
 
-**Code Impact:** +30 lines  
-**Bundle size:** +2 KB
+**Code Impact:** 0 lines (skipped)
+**Bundle size:** 0 KB
 
 ---
 
