@@ -630,8 +630,8 @@
 
 /* Selected Cell */
 .ProseMirror .selectedCell {
+  /* Keep the table's own border style; just add a soft highlight */
   background-color: #dbeafe !important;
-  border: 2px solid #3b82f6 !important;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -699,8 +699,8 @@
 }
 
 .dark .ProseMirror .selectedCell {
+  /* Preserve custom table borders in dark mode as well */
   background-color: #1e3a8a !important;
-  border-color: #3b82f6 !important;
 }
 
 .dark .ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
