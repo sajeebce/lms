@@ -21,9 +21,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState, useEffect, useRef } from "react";
 
 type BorderStyle = "solid" | "dashed" | "dotted" | "double";
+type BackgroundScope = "cell" | "evenRows" | "oddRows";
 
 interface TableBubbleMenuProps {
   editor: Editor;
@@ -48,6 +54,8 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [customColor, setCustomColor] = useState("#ffffff");
   const [selectedCellsCount, setSelectedCellsCount] = useState(1);
+  const [backgroundScope, setBackgroundScope] =
+    useState<BackgroundScope>("cell");
   const [tableBorderWidth, setTableBorderWidth] = useState(2);
   const [tableBorderStyle, setTableBorderStyle] =
     useState<BorderStyle>("solid");
@@ -245,8 +253,67 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
 
   if (!editor || !isVisible) return null;
 
+  const applyRowBackground = (color: string, mode: "even" | "odd") => {
+    const tableInfo = findTableNode();
+    if (!tableInfo) return;
+
+    const { node: tableNode, pos: tablePos } = tableInfo;
+
+    editor
+      .chain()
+      .focus()
+      .command(({ tr }) => {
+        let bodyRowIndex = 0;
+
+        tableNode.forEach((rowNode, rowOffset) => {
+          let isHeaderRow = false;
+
+          rowNode.forEach((cellNode) => {
+            if (cellNode.type.name === "tableHeader") {
+              isHeaderRow = true;
+            }
+          });
+
+          if (isHeaderRow) {
+            return;
+          }
+
+          const isTargetRow =
+            (mode === "even" && bodyRowIndex % 2 === 1) ||
+            (mode === "odd" && bodyRowIndex % 2 === 0);
+
+          const rowPos = tablePos + 1 + rowOffset;
+
+          if (isTargetRow) {
+            rowNode.forEach((cellNode, cellOffset) => {
+              const cellPos = rowPos + 1 + cellOffset;
+              tr.setNodeMarkup(cellPos, undefined, {
+                ...cellNode.attrs,
+                backgroundColor: color,
+              });
+            });
+          }
+
+          bodyRowIndex += 1;
+        });
+
+        return true;
+      })
+      .run();
+  };
+
   const setCellBackground = (color: string) => {
     if (!editor) return;
+
+    // Row scopes: apply to all matching body rows at once
+    if (backgroundScope === "evenRows" || backgroundScope === "oddRows") {
+      applyRowBackground(
+        color,
+        backgroundScope === "evenRows" ? "even" : "odd"
+      );
+      setColorPickerOpen(false);
+      return;
+    }
 
     const { state } = editor;
     const { selection } = state;
@@ -506,6 +573,53 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
                   {selectedCellsCount} cells
                 </span>
               )}
+            </div>
+
+            {/* Apply scope: cell / even / odd */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                Apply to
+              </span>
+              <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-900/60">
+                {(
+                  [
+                    {
+                      value: "cell",
+                      label: "Cell",
+                      tooltip: "Only selected cell(s)",
+                    },
+                    {
+                      value: "evenRows",
+                      label: "Even",
+                      tooltip: "Even body rows (start after header)",
+                    },
+                    {
+                      value: "oddRows",
+                      label: "Odd",
+                      tooltip: "Odd body rows (start after header)",
+                    },
+                  ] as const
+                ).map((option) => (
+                  <Tooltip key={option.value}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setBackgroundScope(option.value)}
+                        className={`px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                          backgroundScope === option.value
+                            ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100"
+                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/80"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <span className="text-xs">{option.tooltip}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
             </div>
 
             {/* Preset Colors */}
