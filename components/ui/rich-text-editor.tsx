@@ -84,102 +84,6 @@ import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern 
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
 
 const lowlight = createLowlight(common);
-const TABLE_TEMPLATES = [
-  {
-    id: "comparison",
-    name: "Comparison Grid",
-    description: "3-column feature matrix",
-    accentFrom: "#6366f1",
-    accentTo: "#a855f7",
-  },
-  {
-    id: "checklist",
-    name: "Checklist",
-    description: "2-column status tracker",
-    accentFrom: "#14b8a6",
-    accentTo: "#0ea5e9",
-  },
-  {
-    id: "schedule",
-    name: "Weekly Schedule",
-    description: "4-column planning view",
-    accentFrom: "#f97316",
-    accentTo: "#ef4444",
-  },
-];
-
-const TABLE_TEMPLATE_HTML: Record<string, string> = {
-  comparison: `<table data-border-width="2px" data-border-style="solid" data-border-color="#94a3b8"><tbody>
-    <tr>
-      <th data-background-color="#eef2ff">Feature</th>
-      <th data-background-color="#eef2ff">Plan A</th>
-      <th data-background-color="#eef2ff">Plan B</th>
-    </tr>
-    <tr>
-      <td>Performance</td>
-      <td>High</td>
-      <td>Ultra</td>
-    </tr>
-    <tr>
-      <td>Support</td>
-      <td>Email & Chat</td>
-      <td>24/7 Priority</td>
-    </tr>
-    <tr>
-      <td>Price</td>
-      <td>$29/mo</td>
-      <td>$59/mo</td>
-    </tr>
-  </tbody></table>`,
-  checklist: `<table data-border-width="2px" data-border-style="dashed" data-border-color="#94a3b8"><tbody>
-    <tr>
-      <th data-background-color="#dcfce7">Task</th>
-      <th data-background-color="#dcfce7">Owner</th>
-    </tr>
-    <tr>
-      <td>Brief ready</td>
-      <td>Ayesha ✨</td>
-    </tr>
-    <tr>
-      <td>Assets collected</td>
-      <td>Rafi 🔄</td>
-    </tr>
-    <tr>
-      <td>QA review</td>
-      <td>Imran ✅</td>
-    </tr>
-    <tr>
-      <td>Launch date</td>
-      <td>17 Jan</td>
-    </tr>
-  </tbody></table>`,
-  schedule: `<table data-border-width="2px" data-border-style="solid" data-border-color="#f97316"><tbody>
-    <tr>
-      <th data-background-color="#ffedd5">Time</th>
-      <th data-background-color="#ffedd5">Monday</th>
-      <th data-background-color="#ffedd5">Wednesday</th>
-      <th data-background-color="#ffedd5">Friday</th>
-    </tr>
-    <tr>
-      <td>09:00</td>
-      <td>Design sync</td>
-      <td>Sprint kickoff</td>
-      <td>Standup</td>
-    </tr>
-    <tr>
-      <td>12:00</td>
-      <td>Lunch & Learn</td>
-      <td>Deep work</td>
-      <td>Demo prep</td>
-    </tr>
-    <tr>
-      <td>15:00</td>
-      <td>Client review</td>
-      <td>Content jam</td>
-      <td>Retrospective</td>
-    </tr>
-  </tbody></table>`,
-};
 
 // Custom Resizable Image Extension with Delete & Alignment
 const ResizableImage = Image.extend({
@@ -2179,13 +2083,6 @@ export default function RichTextEditor({
     }
   };
 
-  const insertTemplateTable = (templateId: string) => {
-    if (!editor) return;
-    const templateHtml = TABLE_TEMPLATE_HTML[templateId];
-    if (!templateHtml) return;
-    editor.chain().focus().insertContent(templateHtml).run();
-  };
-
   // Phase 3.4: Link handlers
   const handleLinkInsert = (url: string, openInNewTab: boolean) => {
     if (!editor) return;
@@ -3371,7 +3268,6 @@ export default function RichTextEditor({
             <TooltipTrigger asChild>
               <div>
                 <TableGridSelector
-                  templates={TABLE_TEMPLATES}
                   onSelect={(rows, cols) =>
                     editor
                       .chain()
@@ -3379,7 +3275,6 @@ export default function RichTextEditor({
                       .insertTable({ rows, cols, withHeaderRow: true })
                       .run()
                   }
-                  onTemplateSelect={insertTemplateTable}
                 />
               </div>
             </TooltipTrigger>

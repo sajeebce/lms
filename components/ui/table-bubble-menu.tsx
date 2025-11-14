@@ -687,7 +687,6 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
                   type="button"
                   size="sm"
                   onClick={() => setCellBackground(customColor)}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
                 >
                   Apply
                 </Button>
@@ -845,12 +844,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
           </div>
 
           <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-700">
-            <Button
-              type="button"
-              size="sm"
-              className="bg-gradient-to-r from-violet-600 to-purple-600 text-white"
-              onClick={applyBorderChanges}
-            >
+            <Button type="button" size="sm" onClick={applyBorderChanges}>
               Apply
             </Button>
           </div>
