@@ -1866,6 +1866,8 @@ export default function RichTextEditor({
                     attributes.borderStyle || "solid"
                   }; --table-border-color: ${
                     attributes.borderColor || "#e2e8f0"
+                  }; --table-border-radius: ${
+                    attributes.borderRadius || "0px"
                   };`,
                 };
               },
@@ -1881,6 +1883,12 @@ export default function RichTextEditor({
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-color") ||
                 "#e2e8f0",
+            },
+            borderRadius: {
+              default: "0px",
+              parseHTML: (element) =>
+                element.style.getPropertyValue("--table-border-radius") ||
+                "0px",
             },
           };
         },
@@ -2048,6 +2056,7 @@ export default function RichTextEditor({
         const width = (node.attrs.borderWidth as string) || "2px";
         const style = (node.attrs.borderStyle as string) || "solid";
         const color = (node.attrs.borderColor as string) || "#cbd5e1";
+        const radius = (node.attrs.borderRadius as string) || "0px";
 
         // Find the actual <table> element inside the node view wrapper
         const tableElement =
@@ -2064,6 +2073,7 @@ export default function RichTextEditor({
         tableElement.style.setProperty("--table-border-width", width);
         tableElement.style.setProperty("--table-border-style", style);
         tableElement.style.setProperty("--table-border-color", color);
+        tableElement.style.setProperty("--table-border-radius", radius);
       });
     };
 

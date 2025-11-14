@@ -60,10 +60,12 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   const [tableBorderStyle, setTableBorderStyle] =
     useState<BorderStyle>("solid");
   const [tableBorderColor, setTableBorderColor] = useState("#cbd5e1");
+  const [tableBorderRadius, setTableBorderRadius] = useState(0);
   const [pendingBorderWidth, setPendingBorderWidth] = useState(2);
   const [pendingBorderStyle, setPendingBorderStyle] =
     useState<BorderStyle>("solid");
   const [pendingBorderColor, setPendingBorderColor] = useState("#cbd5e1");
+  const [pendingBorderRadius, setPendingBorderRadius] = useState(0);
   const [cellAlignment, setCellAlignmentState] = useState<
     "left" | "center" | "right"
   >("left");
@@ -127,6 +129,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
       borderWidth: string;
       borderStyle: string;
       borderColor: string;
+      borderRadius: string;
     }>
   ) => {
     if (!editor) return;
@@ -165,8 +168,15 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
       setPendingBorderWidth(tableBorderWidth);
       setPendingBorderStyle(tableBorderStyle);
       setPendingBorderColor(tableBorderColor);
+      setPendingBorderRadius(tableBorderRadius);
     }
-  }, [borderStyleOpen, tableBorderWidth, tableBorderStyle, tableBorderColor]);
+  }, [
+    borderStyleOpen,
+    tableBorderWidth,
+    tableBorderStyle,
+    tableBorderColor,
+    tableBorderRadius,
+  ]);
 
   useEffect(() => {
     if (!editor) return;
@@ -220,15 +230,22 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
             "solid") as BorderStyle;
           const color =
             (tableInfo.node.attrs.borderColor as string) || "#cbd5e1";
+          const radius =
+            parseInt(
+              (tableInfo.node.attrs.borderRadius as string) || "0",
+              10
+            ) || 0;
 
           setTableBorderWidth(width);
           setTableBorderStyle(style);
           setTableBorderColor(color);
+          setTableBorderRadius(radius);
 
           // Also update pending values
           setPendingBorderWidth(width);
           setPendingBorderStyle(style);
           setPendingBorderColor(color);
+          setPendingBorderRadius(radius);
         }
 
         const cellInfo = findFirstCellNode();
@@ -400,16 +417,19 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
       width: `${pendingBorderWidth}px`,
       style: pendingBorderStyle,
       color: pendingBorderColor,
+      radius: `${pendingBorderRadius}px`,
     });
 
     setTableBorderWidth(pendingBorderWidth);
     setTableBorderStyle(pendingBorderStyle);
     setTableBorderColor(pendingBorderColor);
+    setTableBorderRadius(pendingBorderRadius);
 
     updateTableAttributes({
       borderWidth: `${pendingBorderWidth}px`,
       borderStyle: pendingBorderStyle,
       borderColor: pendingBorderColor,
+      borderRadius: `${pendingBorderRadius}px`,
     });
 
     // Close the popover after applying
@@ -802,6 +822,28 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
               )}
             </div>
           </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
+              Corners
+            </p>
+            <div className="inline-flex items-center gap-2">
+              {[0, 8].map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant={
+                    pendingBorderRadius === value ? "default" : "outline"
+                  }
+                  onClick={() => setPendingBorderRadius(value)}
+                >
+                  {value === 0 ? "Square" : "Rounded"}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-700">
             <Button
               type="button"
