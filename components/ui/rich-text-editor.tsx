@@ -83,6 +83,102 @@ import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern 
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
 
 const lowlight = createLowlight(common);
+const TABLE_TEMPLATES = [
+  {
+    id: "comparison",
+    name: "Comparison Grid",
+    description: "3-column feature matrix",
+    accentFrom: "#6366f1",
+    accentTo: "#a855f7",
+  },
+  {
+    id: "checklist",
+    name: "Checklist",
+    description: "2-column status tracker",
+    accentFrom: "#14b8a6",
+    accentTo: "#0ea5e9",
+  },
+  {
+    id: "schedule",
+    name: "Weekly Schedule",
+    description: "4-column planning view",
+    accentFrom: "#f97316",
+    accentTo: "#ef4444",
+  },
+];
+
+const TABLE_TEMPLATE_HTML: Record<string, string> = {
+  comparison: `<table data-border-width="2px" data-border-style="solid" data-border-color="#94a3b8"><tbody>
+    <tr>
+      <th data-background-color="#eef2ff">Feature</th>
+      <th data-background-color="#eef2ff">Plan A</th>
+      <th data-background-color="#eef2ff">Plan B</th>
+    </tr>
+    <tr>
+      <td>Performance</td>
+      <td>High</td>
+      <td>Ultra</td>
+    </tr>
+    <tr>
+      <td>Support</td>
+      <td>Email & Chat</td>
+      <td>24/7 Priority</td>
+    </tr>
+    <tr>
+      <td>Price</td>
+      <td>$29/mo</td>
+      <td>$59/mo</td>
+    </tr>
+  </tbody></table>`,
+  checklist: `<table data-border-width="2px" data-border-style="dashed" data-border-color="#94a3b8"><tbody>
+    <tr>
+      <th data-background-color="#dcfce7">Task</th>
+      <th data-background-color="#dcfce7">Owner</th>
+    </tr>
+    <tr>
+      <td>Brief ready</td>
+      <td>Ayesha ✨</td>
+    </tr>
+    <tr>
+      <td>Assets collected</td>
+      <td>Rafi 🔄</td>
+    </tr>
+    <tr>
+      <td>QA review</td>
+      <td>Imran ✅</td>
+    </tr>
+    <tr>
+      <td>Launch date</td>
+      <td>17 Jan</td>
+    </tr>
+  </tbody></table>`,
+  schedule: `<table data-border-width="2px" data-border-style="solid" data-border-color="#f97316"><tbody>
+    <tr>
+      <th data-background-color="#ffedd5">Time</th>
+      <th data-background-color="#ffedd5">Monday</th>
+      <th data-background-color="#ffedd5">Wednesday</th>
+      <th data-background-color="#ffedd5">Friday</th>
+    </tr>
+    <tr>
+      <td>09:00</td>
+      <td>Design sync</td>
+      <td>Sprint kickoff</td>
+      <td>Standup</td>
+    </tr>
+    <tr>
+      <td>12:00</td>
+      <td>Lunch & Learn</td>
+      <td>Deep work</td>
+      <td>Demo prep</td>
+    </tr>
+    <tr>
+      <td>15:00</td>
+      <td>Client review</td>
+      <td>Content jam</td>
+      <td>Retrospective</td>
+    </tr>
+  </tbody></table>`,
+};
 
 // Custom Resizable Image Extension with Delete & Alignment
 const ResizableImage = Image.extend({
@@ -1655,7 +1751,9 @@ export default function RichTextEditor({
                 let updated = false;
 
                 state.doc.nodesBetween(from, to, (node, pos) => {
-                  if (!["heading", "paragraph", "image"].includes(node.type.name)) {
+                  if (
+                    !["heading", "paragraph", "image"].includes(node.type.name)
+                  ) {
                     return;
                   }
 
@@ -1682,7 +1780,9 @@ export default function RichTextEditor({
                 let updated = false;
 
                 state.doc.nodesBetween(from, to, (node, pos) => {
-                  if (!["heading", "paragraph", "image"].includes(node.type.name)) {
+                  if (
+                    !["heading", "paragraph", "image"].includes(node.type.name)
+                  ) {
                     return;
                   }
 
@@ -1720,7 +1820,8 @@ export default function RichTextEditor({
             fontWeight: {
               default: null,
               parseHTML: (element) =>
-                element.style.fontWeight || element.getAttribute("data-font-weight"),
+                element.style.fontWeight ||
+                element.getAttribute("data-font-weight"),
               renderHTML: (attributes) => {
                 if (!attributes.fontWeight) {
                   return {};
@@ -1747,8 +1848,54 @@ export default function RichTextEditor({
         lowlight,
         defaultLanguage: "javascript",
       }),
-      // Phase 4: Tables - Modern & Beautiful
-      Table.configure({
+      // Phase 4: Tables - Modern & Beautiful with custom borders
+      Table.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            borderWidth: {
+              default: "2px",
+              parseHTML: (element) =>
+                element.getAttribute("data-border-width") ||
+                element.style.getPropertyValue("--table-border-width") ||
+                "2px",
+              renderHTML: (attributes) => {
+                const width = attributes.borderWidth || "2px";
+                const style = attributes.borderStyle || "solid";
+                const color = attributes.borderColor || "#cbd5e1";
+                return {
+                  "data-border-width": width,
+                  "data-border-style": style,
+                  "data-border-color": color,
+                  style: `--table-border-width:${width};--table-border-style:${style};--table-border-color:${color};border:${width} ${style} ${color};`,
+                };
+              },
+            },
+            borderStyle: {
+              default: "solid",
+              parseHTML: (element) =>
+                element.getAttribute("data-border-style") ||
+                element.style.getPropertyValue("--table-border-style") ||
+                "solid",
+              renderHTML: (attributes) => {
+                // This will be handled by borderWidth's renderHTML
+                return {};
+              },
+            },
+            borderColor: {
+              default: "#cbd5e1",
+              parseHTML: (element) =>
+                element.getAttribute("data-border-color") ||
+                element.style.getPropertyValue("--table-border-color") ||
+                "#cbd5e1",
+              renderHTML: (attributes) => {
+                // This will be handled by borderWidth's renderHTML
+                return {};
+              },
+            },
+          };
+        },
+      }).configure({
         resizable: true,
       }),
       TableRow,
@@ -1774,6 +1921,22 @@ export default function RichTextEditor({
                 };
               },
             },
+            textAlign: {
+              default: null,
+              parseHTML: (element) =>
+                element.getAttribute("data-text-align") ||
+                element.style.textAlign ||
+                null,
+              renderHTML: (attributes) => {
+                if (!attributes.textAlign) {
+                  return {};
+                }
+                return {
+                  "data-text-align": attributes.textAlign,
+                  style: `text-align: ${attributes.textAlign}`,
+                };
+              },
+            },
           };
         },
       }),
@@ -1795,6 +1958,22 @@ export default function RichTextEditor({
                 return {
                   "data-background-color": attributes.backgroundColor,
                   style: `background-color: ${attributes.backgroundColor}`,
+                };
+              },
+            },
+            textAlign: {
+              default: null,
+              parseHTML: (element) =>
+                element.getAttribute("data-text-align") ||
+                element.style.textAlign ||
+                null,
+              renderHTML: (attributes) => {
+                if (!attributes.textAlign) {
+                  return {};
+                }
+                return {
+                  "data-text-align": attributes.textAlign,
+                  style: `text-align: ${attributes.textAlign}`,
                 };
               },
             },
@@ -1868,6 +2047,103 @@ export default function RichTextEditor({
     };
   }, []);
 
+  useEffect(() => {
+    if (!editor) return;
+
+    const applyTableBorderStyles = () => {
+      const { state, view } = editor;
+      state.doc.descendants((node, pos) => {
+        if (node.type.name !== "table") return;
+        const domNode = view.nodeDOM(pos) as HTMLElement | null;
+        if (!domNode) return;
+        const width = (node.attrs.borderWidth as string) || "2px";
+        const style = (node.attrs.borderStyle as string) || "solid";
+        const color = (node.attrs.borderColor as string) || "#cbd5e1";
+
+        domNode.style.setProperty("--table-border-width", width);
+        domNode.style.setProperty("--table-border-style", style);
+        domNode.style.setProperty("--table-border-color", color);
+
+        domNode.querySelectorAll("td, th").forEach((cell) => {
+          if (!(cell instanceof HTMLElement)) return;
+          cell.style.borderWidth = width;
+          cell.style.borderStyle = style;
+          cell.style.borderColor = color;
+        });
+      });
+    };
+
+    applyTableBorderStyles();
+    editor.on("transaction", applyTableBorderStyles);
+
+    return () => {
+      editor.off("transaction", applyTableBorderStyles);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    let indicator: HTMLDivElement | null = null;
+    let activeHandle: HTMLElement | null = null;
+    let previousHandleShadow = "";
+
+    const cleanup = () => {
+      if (indicator) {
+        indicator.remove();
+        indicator = null;
+      }
+      if (activeHandle) {
+        activeHandle.style.boxShadow = previousHandleShadow;
+        previousHandleShadow = "";
+        activeHandle = null;
+      }
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    const updateIndicator = () => {
+      if (!indicator || !activeHandle) return;
+      const column = activeHandle.parentElement as HTMLElement | null;
+      if (!column) return;
+      const rect = column.getBoundingClientRect();
+      indicator.textContent = `${Math.round(rect.width)}px`;
+      indicator.style.top = `${rect.top + window.scrollY - 32}px`;
+      indicator.style.left = `${
+        rect.left + rect.width / 2 + window.scrollX - 30
+      }px`;
+    };
+
+    const handleMouseMove = () => {
+      updateIndicator();
+    };
+
+    const handleMouseUp = () => {
+      cleanup();
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target || !target.classList.contains("column-resize-handle")) {
+        return;
+      }
+      activeHandle = target;
+      previousHandleShadow = activeHandle.style.boxShadow;
+      activeHandle.style.boxShadow = "0 0 0 4px rgba(139, 92, 246, 0.35)";
+      indicator = document.createElement("div");
+      indicator.className = "table-resize-indicator";
+      document.body.appendChild(indicator);
+      updateIndicator();
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp, { once: true });
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      cleanup();
+    };
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -1897,6 +2173,13 @@ export default function RichTextEditor({
     if (latex) {
       insertMathNode(latex);
     }
+  };
+
+  const insertTemplateTable = (templateId: string) => {
+    if (!editor) return;
+    const templateHtml = TABLE_TEMPLATE_HTML[templateId];
+    if (!templateHtml) return;
+    editor.chain().focus().insertContent(templateHtml).run();
   };
 
   // Phase 3.4: Link handlers
@@ -2439,16 +2722,16 @@ export default function RichTextEditor({
                       {editor.isActive("heading", { level: 1 })
                         ? "H1"
                         : editor.isActive("heading", { level: 2 })
-                          ? "H2"
-                          : editor.isActive("heading", { level: 3 })
-                            ? "H3"
-                            : editor.isActive("heading", { level: 4 })
-                              ? "H4"
-                              : editor.isActive("heading", { level: 5 })
-                                ? "H5"
-                                : editor.isActive("heading", { level: 6 })
-                                  ? "H6"
-                                  : "P"}
+                        ? "H2"
+                        : editor.isActive("heading", { level: 3 })
+                        ? "H3"
+                        : editor.isActive("heading", { level: 4 })
+                        ? "H4"
+                        : editor.isActive("heading", { level: 5 })
+                        ? "H5"
+                        : editor.isActive("heading", { level: 6 })
+                        ? "H6"
+                        : "P"}
                     </span>
                   </Button>
                 </PopoverTrigger>
@@ -2844,7 +3127,10 @@ export default function RichTextEditor({
               <div className="text-center">
                 <div className="font-semibold">Increase Indent</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Tab</kbd>
+                  Press{" "}
+                  <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">
+                    Tab
+                  </kbd>
                 </div>
               </div>
             </TooltipContent>
@@ -2869,7 +3155,14 @@ export default function RichTextEditor({
               <div className="text-center">
                 <div className="font-semibold">Decrease Indent</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Press <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Shift</kbd> + <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Tab</kbd>
+                  Press{" "}
+                  <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">
+                    Shift
+                  </kbd>{" "}
+                  +{" "}
+                  <kbd className="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">
+                    Tab
+                  </kbd>
                 </div>
               </div>
             </TooltipContent>
@@ -2978,9 +3271,7 @@ export default function RichTextEditor({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() =>
-                  editor.chain().focus().setTextAlign("end").run()
-                }
+                onClick={() => editor.chain().focus().setTextAlign("end").run()}
                 className={
                   editor.isActive({ textAlign: "end" }) ||
                   editor.isActive({ textAlign: "right" })
@@ -3015,7 +3306,9 @@ export default function RichTextEditor({
                     : ""
                 }`}
                 onClick={() =>
-                  applyTextDirection(currentTextDirection === "ltr" ? null : "ltr")
+                  applyTextDirection(
+                    currentTextDirection === "ltr" ? null : "ltr"
+                  )
                 }
               >
                 LTR
@@ -3036,7 +3329,9 @@ export default function RichTextEditor({
                     : ""
                 }`}
                 onClick={() =>
-                  applyTextDirection(currentTextDirection === "rtl" ? null : "rtl")
+                  applyTextDirection(
+                    currentTextDirection === "rtl" ? null : "rtl"
+                  )
                 }
               >
                 RTL
@@ -3072,6 +3367,7 @@ export default function RichTextEditor({
             <TooltipTrigger asChild>
               <div>
                 <TableGridSelector
+                  templates={TABLE_TEMPLATES}
                   onSelect={(rows, cols) =>
                     editor
                       .chain()
@@ -3079,6 +3375,7 @@ export default function RichTextEditor({
                       .insertTable({ rows, cols, withHeaderRow: true })
                       .run()
                   }
+                  onTemplateSelect={insertTemplateTable}
                 />
               </div>
             </TooltipTrigger>

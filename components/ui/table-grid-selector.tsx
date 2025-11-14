@@ -5,11 +5,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Table as TableIcon } from "lucide-react";
 
-interface TableGridSelectorProps {
-  onSelect: (rows: number, cols: number) => void;
+interface TableTemplate {
+  id: string;
+  name: string;
+  description: string;
+  accentFrom: string;
+  accentTo: string;
 }
 
-export function TableGridSelector({ onSelect }: TableGridSelectorProps) {
+interface TableGridSelectorProps {
+  onSelect: (rows: number, cols: number) => void;
+  onTemplateSelect?: (templateId: string) => void;
+  templates?: TableTemplate[];
+}
+
+export function TableGridSelector({
+  onSelect,
+  onTemplateSelect,
+  templates = [],
+}: TableGridSelectorProps) {
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -68,6 +82,38 @@ export function TableGridSelector({ onSelect }: TableGridSelectorProps) {
               : "Select table size"}
           </div>
         </div>
+        {templates.length > 0 && (
+          <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+            <p className="text-xs uppercase tracking-wide font-semibold text-slate-500 dark:text-slate-400 mb-2">
+              Quick Templates
+            </p>
+            <div className="grid gap-2">
+              {templates.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => {
+                    onTemplateSelect?.(template.id);
+                    setOpen(false);
+                    setHoveredCell(null);
+                  }}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-gradient-to-r px-3 py-2 text-left transition hover:shadow-md"
+                  style={{
+                    backgroundImage: `linear-gradient(120deg, ${template.accentFrom}, ${template.accentTo})`,
+                  }}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-white">{template.name}</p>
+                    <p className="text-xs text-white/80">{template.description}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-white/90 px-2 py-0.5 rounded-full bg-black/20">
+                    Tap
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

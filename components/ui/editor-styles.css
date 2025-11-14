@@ -357,12 +357,17 @@
   width: 100%;
   margin: 1rem 0;
   overflow: hidden;
+  --table-border-width: 2px;
+  --table-border-style: solid;
+  --table-border-color: #cbd5e1;
 }
 
 .ProseMirror table td,
 .ProseMirror table th {
   min-width: 1em;
-  border: 2px solid #cbd5e1;
+  border-width: var(--table-border-width, 2px);
+  border-style: var(--table-border-style, solid);
+  border-color: var(--table-border-color, #cbd5e1);
   padding: 0.5rem;
   vertical-align: top;
   box-sizing: border-box;
@@ -377,7 +382,7 @@
 
 .dark .ProseMirror table td,
 .dark .ProseMirror table th {
-  border-color: #475569;
+  border-color: var(--table-border-color, #475569);
 }
 
 .dark .ProseMirror table th {
@@ -583,13 +588,18 @@
   overflow: hidden;
   border-radius: 8px;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --table-border-width: 2px;
+  --table-border-style: solid;
+  --table-border-color: #e2e8f0;
 }
 
 /* Table Cells - Base Styling */
 .ProseMirror td,
 .ProseMirror th {
   min-width: 1em;
-  border: 1px solid #e2e8f0;
+  border-width: var(--table-border-width, 1px);
+  border-style: var(--table-border-style, solid);
+  border-color: var(--table-border-color, #e2e8f0);
   padding: 0.75rem 1rem;
   vertical-align: top;
   box-sizing: border-box;
@@ -669,7 +679,7 @@
 
 .dark .ProseMirror td,
 .dark .ProseMirror th {
-  border-color: #334155;
+  border-color: var(--table-border-color, #334155);
 }
 
 .dark .ProseMirror th {
@@ -699,4 +709,24 @@
 
 .dark .ProseMirror tbody tr:hover td:not([data-background-color]) {
   background-color: #1e293b;
+}
+
+.table-resize-indicator {
+  position: absolute;
+  z-index: 1050;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.dark .table-resize-indicator {
+  background: rgba(15, 23, 42, 0.95);
+  color: #fff;
 }
