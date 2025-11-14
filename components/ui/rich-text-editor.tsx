@@ -2049,19 +2049,21 @@ export default function RichTextEditor({
         const style = (node.attrs.borderStyle as string) || "solid";
         const color = (node.attrs.borderColor as string) || "#cbd5e1";
 
-        // Set CSS variables so cells can read the border style
-        domNode.style.setProperty("--table-border-width", width);
-        domNode.style.setProperty("--table-border-style", style);
-        domNode.style.setProperty("--table-border-color", color);
-        // Do NOT set border on the table element itself - this avoids
-        // a second outer border that sits away from the cell grid.
+        // Find the actual <table> element inside the node view wrapper
+        const tableElement =
+          domNode instanceof HTMLTableElement
+            ? domNode
+            : (domNode.querySelector("table") as HTMLTableElement | null);
 
-        domNode.querySelectorAll("td, th").forEach((cell) => {
-          if (!(cell instanceof HTMLElement)) return;
-          cell.style.borderWidth = width;
-          cell.style.borderStyle = style;
-          cell.style.borderColor = color;
-        });
+        if (!tableElement) return;
+
+        // Set CSS variables on the <table> so all cells inherit the border style.
+        // We do NOT set per-cell inline border styles anymore so that operations
+        // like column resizing, which may re-render cells, don't "lose" the
+        // border styling.
+        tableElement.style.setProperty("--table-border-width", width);
+        tableElement.style.setProperty("--table-border-style", style);
+        tableElement.style.setProperty("--table-border-color", color);
       });
     };
 
