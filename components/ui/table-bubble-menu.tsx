@@ -248,7 +248,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   const setCellBackground = (color: string) => {
     if (!editor) return;
 
-    const { state, view } = editor;
+    const { state } = editor;
     const { selection } = state;
 
     console.log("setCellBackground called:", {
@@ -257,26 +257,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
       isCellSelection: selection instanceof CellSelection,
     });
 
-    // Handle multi-cell selection first
-    if (selection instanceof CellSelection) {
-      console.log(
-        "Multi-cell selection detected, applying to",
-        selection.ranges.length,
-        "cells"
-      );
-      const tr = state.tr;
-      selection.forEachCell((node: ProseMirrorNode, pos: number) => {
-        tr.setNodeMarkup(pos, undefined, {
-          ...node.attrs,
-          backgroundColor: color,
-        });
-      });
-      view.dispatch(tr);
-      setColorPickerOpen(false);
-      return;
-    }
-
-    // Try standard command for single cell
+    // Prefer the built-in TipTap command – it already supports CellSelection
     const applied = editor
       .chain()
       .focus()
@@ -284,24 +265,50 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
       .run();
 
     if (!applied) {
-      // Fallback: manually find and update the cell
-      console.log("Standard command failed, using fallback");
-      const { $from } = selection;
+      console.log("setCellAttribute did not apply, using manual fallback");
 
-      for (let depth = $from.depth; depth > 0; depth--) {
-        const node = $from.node(depth);
+      if (selection instanceof CellSelection) {
+        // Fallback for multi-cell selections
+        editor
+          .chain()
+          .focus()
+          .command(({ tr }) => {
+            (selection as CellSelection).forEachCell(
+              (node: ProseMirrorNode, pos: number) => {
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  backgroundColor: color,
+                });
+              }
+            );
+            return true;
+          })
+          .run();
+      } else {
+        // Fallback for single cell selections
+        const { $from } = selection;
 
-        if (
-          node.type.name === "tableCell" ||
-          node.type.name === "tableHeader"
-        ) {
-          const cellPos = $from.before(depth);
-          const tr = state.tr.setNodeMarkup(cellPos, undefined, {
-            ...node.attrs,
-            backgroundColor: color,
-          });
-          view.dispatch(tr);
-          break;
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+
+          if (
+            node.type.name === "tableCell" ||
+            node.type.name === "tableHeader"
+          ) {
+            const cellPos = $from.before(depth);
+            editor
+              .chain()
+              .focus()
+              .command(({ tr }) => {
+                tr.setNodeMarkup(cellPos, undefined, {
+                  ...node.attrs,
+                  backgroundColor: color,
+                });
+                return true;
+              })
+              .run();
+            break;
+          }
         }
       }
     }
