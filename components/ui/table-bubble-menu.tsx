@@ -124,49 +124,50 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
     if (!editor) return;
     const tableInfo = findTableNode();
     if (!tableInfo) return;
-    const { state, view } = editor;
 
     const updatedAttrs = {
       ...tableInfo.node.attrs,
       ...attrs,
     };
 
-    const tr = state.tr.setNodeMarkup(tableInfo.pos, undefined, updatedAttrs);
-    view.dispatch(tr);
+    console.log("Updating table border attributes:", updatedAttrs);
 
-    // Apply CSS variables to DOM immediately
-    // Use setTimeout to ensure DOM is updated after transaction
-    setTimeout(() => {
-      const { selection } = editor.state;
-      const from = selection.$from?.pos ?? 0;
-      const domAtPos = view.domAtPos(from);
+    // Update table attributes and force re-render by touching a cell
+    editor
+      .chain()
+      .focus()
+      .command(({ tr, state }) => {
+        // Update table node attributes
+        tr.setNodeMarkup(tableInfo.pos, undefined, updatedAttrs);
 
-      let tableElement: HTMLElement | null = null;
-      if (domAtPos.node instanceof HTMLElement) {
-        tableElement = domAtPos.node.closest("table");
-      } else if (domAtPos.node instanceof Text && domAtPos.node.parentElement) {
-        tableElement = domAtPos.node.parentElement.closest("table");
-      }
+        // Force table re-render by finding first cell and updating it
+        // This ensures the table DOM is properly reconstructed with new border styles
+        let firstCellPos: number | null = null;
+        let firstCellNode: any = null;
 
-      if (tableElement) {
-        const widthValue = updatedAttrs.borderWidth || "2px";
-        const styleValue = (updatedAttrs.borderStyle as BorderStyle) || "solid";
-        const colorValue = updatedAttrs.borderColor || "#cbd5e1";
-
-        console.log("Applying CSS variables to table:", {
-          width: widthValue,
-          style: styleValue,
-          color: colorValue,
-          element: tableElement,
+        tableInfo.node.descendants((node, pos) => {
+          if (
+            !firstCellPos &&
+            (node.type.name === "tableCell" || node.type.name === "tableHeader")
+          ) {
+            firstCellPos = tableInfo.pos + pos + 1;
+            firstCellNode = node;
+            return false; // Stop iteration
+          }
         });
 
-        tableElement.style.setProperty("--table-border-width", widthValue);
-        tableElement.style.setProperty("--table-border-style", styleValue);
-        tableElement.style.setProperty("--table-border-color", colorValue);
-      } else {
-        console.warn("Table element not found in DOM");
-      }
-    }, 0);
+        // Touch the first cell to trigger table re-render
+        if (firstCellPos !== null && firstCellNode) {
+          tr.setNodeMarkup(firstCellPos, undefined, {
+            ...firstCellNode.attrs,
+          });
+        }
+
+        return true;
+      })
+      .run();
+
+    console.log("Table border attributes updated");
   };
 
   const applyCellAlignment = (alignment: "left" | "center" | "right") => {
