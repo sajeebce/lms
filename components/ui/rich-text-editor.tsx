@@ -24,6 +24,7 @@ import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import { Extension } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
 import type { Level } from "@tiptap/extension-heading";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { common, createLowlight } from "lowlight";
 import { Button } from "@/components/ui/button";
 import "katex/dist/katex.min.css"; // ✅ KaTeX CSS for math rendering
@@ -1854,75 +1855,33 @@ export default function RichTextEditor({
           return {
             ...this.parent?.(),
             borderWidth: {
-              default: "2px",
+              default: "1px",
               parseHTML: (element) =>
-                element.getAttribute("data-border-width") || "2px",
+                element.style.getPropertyValue("--table-border-width") || "1px",
               renderHTML: (attributes) => {
-                const width = attributes.borderWidth || "2px";
-                const style = attributes.borderStyle || "solid";
-                const color = attributes.borderColor || "#cbd5e1";
                 return {
-                  "data-border-width": width,
-                  "data-border-style": style,
-                  "data-border-color": color,
-                  style: `border:${width} ${style} ${color};`,
+                  style: `--table-border-width: ${
+                    attributes.borderWidth || "1px"
+                  }; --table-border-style: ${
+                    attributes.borderStyle || "solid"
+                  }; --table-border-color: ${
+                    attributes.borderColor || "#e2e8f0"
+                  };`,
                 };
               },
             },
             borderStyle: {
               default: "solid",
               parseHTML: (element) =>
-                element.getAttribute("data-border-style") || "solid",
+                element.style.getPropertyValue("--table-border-style") ||
+                "solid",
             },
             borderColor: {
-              default: "#cbd5e1",
+              default: "#e2e8f0",
               parseHTML: (element) =>
-                element.getAttribute("data-border-color") || "#cbd5e1",
+                element.style.getPropertyValue("--table-border-color") ||
+                "#e2e8f0",
             },
-          };
-        },
-
-        addNodeView() {
-          return ({ node, HTMLAttributes, getPos, editor }) => {
-            const dom = document.createElement("table");
-            const contentDOM = document.createElement("tbody");
-
-            // Apply border styles from node attributes
-            const applyBorderStyles = (currentNode: typeof node) => {
-              const width = currentNode.attrs.borderWidth || "2px";
-              const style = currentNode.attrs.borderStyle || "solid";
-              const color = currentNode.attrs.borderColor || "#cbd5e1";
-
-              // Use outline for outer border (not affected by border-collapse)
-              dom.style.outline = `${width} ${style} ${color}`;
-              dom.style.outlineOffset = `-${width}`;
-
-              // Set CSS variables for cells (inner borders)
-              dom.style.setProperty("--table-border-width", width);
-              dom.style.setProperty("--table-border-style", style);
-              dom.style.setProperty("--table-border-color", color);
-
-              // Set data attributes for reference
-              dom.setAttribute("data-border-width", width);
-              dom.setAttribute("data-border-style", style);
-              dom.setAttribute("data-border-color", color);
-            };
-
-            applyBorderStyles(node);
-            dom.appendChild(contentDOM);
-
-            return {
-              dom,
-              contentDOM,
-              update: (updatedNode) => {
-                if (updatedNode.type !== node.type) {
-                  return false;
-                }
-                // Re-apply border styles when node attributes change
-                applyBorderStyles(updatedNode);
-                return true;
-              },
-            };
           };
         },
       }).configure({
@@ -2090,12 +2049,12 @@ export default function RichTextEditor({
         const style = (node.attrs.borderStyle as string) || "solid";
         const color = (node.attrs.borderColor as string) || "#cbd5e1";
 
+        // Set CSS variables so cells can read the border style
         domNode.style.setProperty("--table-border-width", width);
         domNode.style.setProperty("--table-border-style", style);
         domNode.style.setProperty("--table-border-color", color);
-        domNode.style.borderWidth = width;
-        domNode.style.borderStyle = style;
-        domNode.style.borderColor = color;
+        // Do NOT set border on the table element itself - this avoids
+        // a second outer border that sits away from the cell grid.
 
         domNode.querySelectorAll("td, th").forEach((cell) => {
           if (!(cell instanceof HTMLElement)) return;

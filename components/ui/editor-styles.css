@@ -349,21 +349,16 @@
   width: 100%;
   margin: 1rem 0;
   overflow: hidden;
-  --table-border-width: 2px;
-  --table-border-style: solid;
-  --table-border-color: #cbd5e1;
-  /* Apply border to table itself (all sides) */
-  border-width: var(--table-border-width, 2px);
-  border-style: var(--table-border-style, solid);
-  border-color: var(--table-border-color, #cbd5e1);
+  /* No border on table element - cells will create all borders */
 }
 
 .ProseMirror table td,
 .ProseMirror table th {
   min-width: 1em;
-  border-width: var(--table-border-width, 2px);
+  /* All cells get full border */
+  border-width: var(--table-border-width, 1px);
   border-style: var(--table-border-style, solid);
-  border-color: var(--table-border-color, #cbd5e1);
+  border-color: var(--table-border-color, #e2e8f0);
   padding: 0.5rem;
   vertical-align: top;
   box-sizing: border-box;
@@ -383,6 +378,11 @@
 
 .dark .ProseMirror table th {
   background-color: #1e293b;
+}
+
+/* Hide table selection outline (dotted border) */
+.ProseMirror table.ProseMirror-selectednode {
+  outline: none !important;
 }
 
 .ProseMirror table .selectedCell:after {
@@ -587,8 +587,8 @@
   --table-border-width: 2px;
   --table-border-style: solid;
   --table-border-color: #e2e8f0;
-  border: var(--table-border-width, 1px) var(--table-border-style, solid)
-    var(--table-border-color, #e2e8f0);
+  /* Outer border uses cell borders only; table itself has no line */
+  border: none;
 }
 
 /* Table Cells - Base Styling */
@@ -673,8 +673,8 @@
 /* Dark Mode Table Styles */
 .dark .ProseMirror table {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
-  border: var(--table-border-width, 1px) var(--table-border-style, solid)
-    var(--table-border-color, #334155);
+  /* No separate dark border on table; cells drive borders */
+  border: none;
 }
 
 .dark .ProseMirror td,

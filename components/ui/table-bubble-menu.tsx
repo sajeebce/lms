@@ -132,37 +132,13 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
 
     console.log("Updating table border attributes:", updatedAttrs);
 
-    // Update table attributes and force re-render by touching a cell
+    // Update table node attributes
+    // Plugin will automatically sync DOM styles
     editor
       .chain()
       .focus()
-      .command(({ tr, state }) => {
-        // Update table node attributes
+      .command(({ tr }) => {
         tr.setNodeMarkup(tableInfo.pos, undefined, updatedAttrs);
-
-        // Force table re-render by finding first cell and updating it
-        // This ensures the table DOM is properly reconstructed with new border styles
-        let firstCellPos: number | null = null;
-        let firstCellNode: any = null;
-
-        tableInfo.node.descendants((node, pos) => {
-          if (
-            !firstCellPos &&
-            (node.type.name === "tableCell" || node.type.name === "tableHeader")
-          ) {
-            firstCellPos = tableInfo.pos + pos + 1;
-            firstCellNode = node;
-            return false; // Stop iteration
-          }
-        });
-
-        // Touch the first cell to trigger table re-render
-        if (firstCellPos !== null && firstCellNode) {
-          tr.setNodeMarkup(firstCellPos, undefined, {
-            ...firstCellNode.attrs,
-          });
-        }
-
         return true;
       })
       .run();
