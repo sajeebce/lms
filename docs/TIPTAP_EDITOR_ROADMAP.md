@@ -758,26 +758,29 @@ TextAlign.extend({
 
 **Goal:** Features that Sun Editor does NOT have
 
-### **5.1 Audio Recording** (~200 lines)
+### **5.1 Audio Recording** (~200 lines) ✅ **COMPLETE**
 
-**Current:** Not implemented  
+**Current:** ✅ Fully implemented
 **Target:** Record audio button (for pronunciation questions)
 
 **Implementation:**
 
-- 🔲 Add microphone button to toolbar
-- 🔲 Use **MediaRecorder API** (browser native)
-- 🔲 Record audio and upload to storage
-- 🔲 Insert audio player in editor
-- 🔲 Waveform visualization (optional)
+- ✅ Add microphone button to toolbar
+- ✅ Use **MediaRecorder API** (browser native)
+- ✅ Record audio and upload to storage
+- ✅ Insert audio player in editor
+- ✅ Waveform visualization (simple timer-based, no external library)
 
-**Files to modify:**
+**Files modified:**
 
-- `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`
-- Create `components/ui/audio-recorder-dialog.tsx`
+- ✅ `components/ui/rich-text-editor.tsx` - Added Audio extension and toolbar button
+- ✅ `components/ui/audio-recorder-dialog.tsx` - Created audio recorder dialog
+- ✅ `lib/storage/storage-service.ts` - Added uploadQuestionAudio method
+- ✅ `app/api/files/upload/route.ts` - Added question_audio case
+- ✅ `components/ui/editor-styles.css` - Added audio player styles
 
-**Code Impact:** +200 lines  
-**Bundle size:** +10 KB (waveform library - optional)
+**Code Impact:** +330 lines (actual)
+**Bundle size:** +0 KB (no external libraries, browser native MediaRecorder API)
 
 ---
 

@@ -21,7 +21,7 @@ import Link from "@tiptap/extension-link";
 import { FontFamily } from "@tiptap/extension-font-family";
 import Blockquote from "@tiptap/extension-blockquote";
 import HorizontalRule from "@tiptap/extension-horizontal-rule";
-import { Extension } from "@tiptap/core";
+import { Extension, Node } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
 import type { Level } from "@tiptap/extension-heading";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -57,6 +57,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   Trash2,
+  Mic,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import "./editor-styles.css";
@@ -82,6 +83,7 @@ import { LinkDialog } from "@/components/ui/link-dialog";
 import { FontFamilySelector } from "@/components/ui/font-family-selector";
 import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern table grid selector
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
+import { AudioRecorderDialog } from "@/components/ui/audio-recorder-dialog"; // Phase 5.1: Audio recording
 
 const lowlight = createLowlight(common);
 
@@ -1210,6 +1212,140 @@ const ResizableImage = Image.extend({
   },
 });
 
+// Phase 5.1: Custom Audio Node (NOT Extension - needs to be a Node to insert content)
+const Audio = Node.create({
+  name: "audio",
+
+  group: "block", // ✅ Block-level node (like image, not inline)
+
+  atom: true, // ✅ Atomic node (cannot be split)
+
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+    };
+  },
+
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("src"),
+        renderHTML: (attributes) => {
+          if (!attributes.src) return {};
+          return { src: attributes.src };
+        },
+      },
+      fileName: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-file-name"),
+        renderHTML: (attributes) => {
+          if (!attributes.fileName) return {};
+          return { "data-file-name": attributes.fileName };
+        },
+      },
+      duration: {
+        default: 0,
+        parseHTML: (element) => {
+          const duration = element.getAttribute("data-duration");
+          return duration ? parseInt(duration, 10) : 0;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.duration) return {};
+          return { "data-duration": attributes.duration };
+        },
+      },
+      fileSize: {
+        default: 0,
+        parseHTML: (element) => {
+          const size = element.getAttribute("data-file-size");
+          return size ? parseInt(size, 10) : 0;
+        },
+        renderHTML: (attributes) => {
+          if (!attributes.fileSize) return {};
+          return { "data-file-size": attributes.fileSize };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "div.audio-wrapper", // ✅ Parse the wrapper div
+        getAttrs: (element) => {
+          const audio = (element as HTMLElement).querySelector("audio");
+          if (!audio) return false;
+
+          return {
+            src: audio.getAttribute("src"),
+            fileName: (element as HTMLElement).getAttribute("data-file-name") || audio.getAttribute("data-file-name"),
+            duration: parseInt((element as HTMLElement).getAttribute("data-duration") || "0", 10),
+            fileSize: parseInt((element as HTMLElement).getAttribute("data-file-size") || "0", 10),
+          };
+        },
+      },
+      {
+        tag: "audio[src]", // ✅ Fallback: parse standalone audio tags
+        getAttrs: (element) => ({
+          src: (element as HTMLElement).getAttribute("src"),
+          fileName: (element as HTMLElement).getAttribute("data-file-name") || "Audio",
+          duration: parseInt((element as HTMLElement).getAttribute("data-duration") || "0", 10),
+          fileSize: parseInt((element as HTMLElement).getAttribute("data-file-size") || "0", 10),
+        }),
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const duration = HTMLAttributes.duration || 0;
+    const fileName = HTMLAttributes.fileName || "Audio";
+    const durationFormatted = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`;
+
+    return [
+      "div",
+      {
+        class: "audio-wrapper",
+        // ✅ Store metadata on wrapper for parseHTML
+        "data-file-name": fileName,
+        "data-duration": duration.toString(),
+        "data-file-size": (HTMLAttributes.fileSize || 0).toString(),
+      },
+      [
+        "audio",
+        {
+          src: HTMLAttributes.src,
+          controls: "true",
+          preload: "metadata",
+        },
+      ],
+      [
+        "div",
+        { class: "audio-info" },
+        `🎙️ ${fileName} • ${durationFormatted}`,
+      ],
+    ];
+  },
+
+  addCommands() {
+    return {
+      setAudio:
+        (options: {
+          src: string;
+          fileName: string;
+          duration: number;
+          fileSize: number;
+        }) =>
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: options,
+          });
+        },
+    };
+  },
+});
+
 // Phase 3.1: Custom Blockquote Extension with Styles and Colors
 const CustomBlockquote = Blockquote.extend({
   addAttributes() {
@@ -1597,6 +1733,9 @@ export default function RichTextEditor({
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpenInNewTab, setLinkOpenInNewTab] = useState(true);
 
+  // Phase 5.1: Audio Recorder Dialog state
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+
   // Phase 3.2: Horizontal Rule state
   const [hrStyle, setHrStyle] = useState("solid");
   const [hrThickness, setHrThickness] = useState("medium");
@@ -1896,6 +2035,8 @@ export default function RichTextEditor({
       FontFamily.configure({
         types: ["textStyle"],
       }),
+      // Phase 5.1: Audio Recording
+      Audio,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -3572,6 +3713,24 @@ export default function RichTextEditor({
 
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
+          {/* Phase 5.1: Audio Recording */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAudioRecorder(true)}
+                title="Record Audio"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Record Audio</TooltipContent>
+          </Tooltip>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
           {/* Undo/Redo */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -3652,6 +3811,22 @@ export default function RichTextEditor({
           initialAlignment={editingImageData?.textAlign || "center"}
           initialBorder={editingImageData?.border || "none"}
           initialBorderColor={editingImageData?.borderColor || "#d1d5db"}
+        />
+
+        {/* Phase 5.1: Audio Recorder Dialog */}
+        <AudioRecorderDialog
+          open={showAudioRecorder}
+          onClose={() => setShowAudioRecorder(false)}
+          onInsert={(audioUrl, fileName, duration, fileSize) => {
+            if (editor) {
+              editor
+                .chain()
+                .focus()
+                .setAudio({ src: audioUrl, fileName, duration, fileSize })
+                .run();
+            }
+          }}
+          questionId="temp"
         />
       </div>
     </TooltipProvider>

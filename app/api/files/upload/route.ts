@@ -96,6 +96,23 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case 'question_audio': {
+        const durationStr = formData.get('duration')
+        const audioDuration = durationStr ? parseInt(durationStr as string, 10) : 0
+        console.log('[API Upload] Audio duration received:', { durationStr, audioDuration })
+        const audioMetadata = {
+          author: author || undefined,
+          description: description || undefined,
+          duration: audioDuration,
+        }
+        const result = await storageService.uploadQuestionAudio(entityId, fileToUpload, audioMetadata)
+        url = result.url
+        id = result.id
+        // Store duration for response
+        optimizationInfo = { duration: audioDuration }
+        break
+      }
+
       // Add more cases as needed
       default:
         return NextResponse.json(

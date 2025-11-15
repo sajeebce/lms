@@ -349,3 +349,47 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+
+/* Phase 5.1: Audio Player Styles (Global for student view) */
+.audio-wrapper {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.audio-wrapper:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.dark .audio-wrapper {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+}
+
+.dark .audio-wrapper:hover {
+  border-color: #475569;
+}
+
+.audio-wrapper audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.audio-wrapper .audio-info {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+  font-weight: 500;
+}
+
+.dark .audio-wrapper .audio-info {
+  color: #94a3b8;
+}

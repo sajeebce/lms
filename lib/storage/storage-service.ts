@@ -347,6 +347,78 @@ export class StorageService {
   }
 
   /**
+   * Upload question audio (with database tracking)
+   */
+  async uploadQuestionAudio(
+    questionId: string,
+    file: File,
+    options?: {
+      author?: string
+      description?: string
+      duration?: number
+    }
+  ): Promise<{ url: string; id: string }> {
+    try {
+      console.log('[StorageService] uploadQuestionAudio called:', {
+        questionId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        options,
+      })
+
+      const storage = await this.getStorageAdapter()
+      const tenantId = await getTenantId()
+      console.log('[StorageService] TenantId:', tenantId)
+
+      const extension = file.name.split('.').pop()
+      const timestamp = Date.now()
+      const key = await this.generateKey('questions', `audio/${questionId}/${timestamp}.${extension}`)
+      console.log('[StorageService] Generated key:', key)
+
+      // ✅ Upload file
+      console.log('[StorageService] Starting audio upload...')
+      const result = await storage.upload({
+        key,
+        file,
+        contentType: file.type,
+        metadata: {
+          questionId,
+          duration: options?.duration?.toString() || '0',
+          uploadedAt: new Date().toISOString(),
+        },
+        isPublic: false, // Question audio is private
+      })
+      console.log('[StorageService] Audio uploaded successfully:', result)
+
+      // ✅ Save to database with metadata
+      console.log('[StorageService] Saving to database...')
+      const uploadedFile = await prisma.uploadedFile.create({
+        data: {
+          tenantId,
+          key,
+          url: result.url,
+          fileName: file.name,
+          fileSize: result.size,
+          mimeType: file.type,
+          category: 'question_audio',
+          entityType: 'question',
+          entityId: questionId,
+          isPublic: false,
+          author: options?.author,
+          description: options?.description,
+        },
+      })
+      console.log('[StorageService] Database record created:', uploadedFile.id)
+
+      return { url: result.url, id: uploadedFile.id }
+    } catch (error) {
+      console.error('[StorageService] uploadQuestionAudio failed:', error)
+      throw error
+    }
+  }
+
+  /**
    * Delete question files (with database cleanup)
    */
   async deleteQuestionFiles(questionId: string): Promise<void> {
