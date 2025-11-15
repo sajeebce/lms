@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mathematics from "@tiptap/extension-mathematics";
 import Image from "@tiptap/extension-image";
@@ -25,8 +25,10 @@ import { Extension, Node } from "@tiptap/core";
 import { mergeAttributes } from "@tiptap/core";
 import type { Level } from "@tiptap/extension-heading";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { NodeViewWrapper, NodeViewContent } from "@tiptap/react";
 import { common, createLowlight } from "lowlight";
 import { Button } from "@/components/ui/button";
+import { CustomAudioPlayer } from "@/components/ui/custom-audio-player";
 import "katex/dist/katex.min.css"; // ✅ KaTeX CSS for math rendering
 import {
   Bold,
@@ -1212,6 +1214,22 @@ const ResizableImage = Image.extend({
   },
 });
 
+// ✅ Phase 5.1: Audio NodeView Component
+const AudioNodeView = (props: any) => {
+  const { node } = props;
+  const { src, fileName, allowDownload } = node.attrs;
+
+  return (
+    <NodeViewWrapper className="audio-wrapper">
+      <CustomAudioPlayer
+        src={src}
+        fileName={fileName || "audio.webm"}
+        allowDownload={allowDownload !== false}
+      />
+    </NodeViewWrapper>
+  );
+};
+
 // Phase 5.1: Custom Audio Node (NOT Extension - needs to be a Node to insert content)
 const Audio = Node.create({
   name: "audio",
@@ -1266,64 +1284,50 @@ const Audio = Node.create({
           return { "data-file-size": attributes.fileSize };
         },
       },
+      allowDownload: {
+        default: true,
+        parseHTML: (element) => {
+          const allow = element.getAttribute("data-allow-download");
+          return allow === "false" ? false : true;
+        },
+        renderHTML: (attributes) => {
+          return { "data-allow-download": attributes.allowDownload ? "true" : "false" };
+        },
+      },
     };
   },
 
   parseHTML() {
     return [
       {
-        tag: "div.audio-wrapper", // ✅ Parse the wrapper div
+        tag: "div.audio-wrapper",
         getAttrs: (element) => {
-          const audio = (element as HTMLElement).querySelector("audio");
-          if (!audio) return false;
-
+          const allowDownloadStr = (element as HTMLElement).getAttribute("data-allow-download");
           return {
-            src: audio.getAttribute("src"),
-            fileName: (element as HTMLElement).getAttribute("data-file-name") || audio.getAttribute("data-file-name"),
+            src: (element as HTMLElement).getAttribute("data-src"),
+            fileName: (element as HTMLElement).getAttribute("data-file-name"),
             duration: parseInt((element as HTMLElement).getAttribute("data-duration") || "0", 10),
             fileSize: parseInt((element as HTMLElement).getAttribute("data-file-size") || "0", 10),
+            allowDownload: allowDownloadStr === "false" ? false : true,
           };
         },
-      },
-      {
-        tag: "audio[src]", // ✅ Fallback: parse standalone audio tags
-        getAttrs: (element) => ({
-          src: (element as HTMLElement).getAttribute("src"),
-          fileName: (element as HTMLElement).getAttribute("data-file-name") || "Audio",
-          duration: parseInt((element as HTMLElement).getAttribute("data-duration") || "0", 10),
-          fileSize: parseInt((element as HTMLElement).getAttribute("data-file-size") || "0", 10),
-        }),
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    const duration = HTMLAttributes.duration || 0;
-    const fileName = HTMLAttributes.fileName || "Audio";
-    const durationFormatted = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`;
+    const allowDownload = HTMLAttributes.allowDownload !== false;
 
     return [
       "div",
       {
         class: "audio-wrapper",
-        // ✅ Store metadata on wrapper for parseHTML
-        "data-file-name": fileName,
-        "data-duration": duration.toString(),
+        "data-src": HTMLAttributes.src,
+        "data-file-name": HTMLAttributes.fileName || "Audio",
+        "data-duration": (HTMLAttributes.duration || 0).toString(),
         "data-file-size": (HTMLAttributes.fileSize || 0).toString(),
+        "data-allow-download": allowDownload ? "true" : "false",
       },
-      [
-        "audio",
-        {
-          src: HTMLAttributes.src,
-          controls: "true",
-          preload: "metadata",
-        },
-      ],
-      [
-        "div",
-        { class: "audio-info" },
-        `🎙️ ${fileName} • ${durationFormatted}`,
-      ],
     ];
   },
 
@@ -1335,14 +1339,22 @@ const Audio = Node.create({
           fileName: string;
           duration: number;
           fileSize: number;
+          allowDownload?: boolean;
         }) =>
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: options,
+            attrs: {
+              ...options,
+              allowDownload: options.allowDownload !== false, // Default true
+            },
           });
         },
     };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(AudioNodeView);
   },
 });
 
@@ -3817,12 +3829,12 @@ export default function RichTextEditor({
         <AudioRecorderDialog
           open={showAudioRecorder}
           onClose={() => setShowAudioRecorder(false)}
-          onInsert={(audioUrl, fileName, duration, fileSize) => {
+          onInsert={(audioUrl, fileName, duration, fileSize, allowDownload) => {
             if (editor) {
               editor
                 .chain()
                 .focus()
-                .setAudio({ src: audioUrl, fileName, duration, fileSize })
+                .setAudio({ src: audioUrl, fileName, duration, fileSize, allowDownload })
                 .run();
             }
           }}

@@ -763,15 +763,3 @@
   border-radius: 8px;
   outline: none;
 }
-
-.ProseMirror .audio-wrapper .audio-info {
-  margin-top: 0.75rem;
-  font-size: 0.875rem;
-  color: #64748b;
-  text-align: center;
-  font-weight: 500;
-}
-
-.dark .ProseMirror .audio-wrapper .audio-info {
-  color: #94a3b8;
-}

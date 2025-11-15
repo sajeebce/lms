@@ -9,13 +9,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Mic, Square, Play, Pause, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface AudioRecorderDialogProps {
   open: boolean;
   onClose: () => void;
-  onInsert: (audioUrl: string, fileName: string, duration: number, fileSize: number) => void;
+  onInsert: (audioUrl: string, fileName: string, duration: number, fileSize: number, allowDownload: boolean) => void;
   questionId?: string;
 }
 
@@ -32,6 +34,7 @@ export function AudioRecorderDialog({
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [allowDownload, setAllowDownload] = useState(true); // ✅ Download permission checkbox
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -179,7 +182,7 @@ export function AudioRecorderDialog({
         toast.success("Audio uploaded successfully");
         // Use duration from response (fallback to local duration)
         const audioDuration = data.optimization?.duration || duration;
-        onInsert(data.url, data.fileName, audioDuration, data.fileSize);
+        onInsert(data.url, data.fileName, audioDuration, data.fileSize, allowDownload);
         handleClose();
       } else {
         toast.error(data.error || "Upload failed");
@@ -246,7 +249,6 @@ export function AudioRecorderDialog({
                 {!isRecording ? (
                   <Button
                     onClick={startRecording}
-                    className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
                   >
                     <Mic className="h-4 w-4 mr-2" />
                     Start Recording
@@ -297,6 +299,21 @@ export function AudioRecorderDialog({
                 </div>
               </div>
 
+              {/* Download Permission Checkbox */}
+              <div className="flex items-center space-x-2 justify-center py-2">
+                <Checkbox
+                  id="allow-download"
+                  checked={allowDownload}
+                  onCheckedChange={(checked) => setAllowDownload(checked === true)}
+                />
+                <Label
+                  htmlFor="allow-download"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Allow students to download this audio
+                </Label>
+              </div>
+
               {/* Playback Buttons */}
               <div className="flex gap-2 justify-center">
                 <Button onClick={togglePlayback} variant="outline">
@@ -319,7 +336,6 @@ export function AudioRecorderDialog({
                 <Button
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {uploading ? "Uploading..." : "Insert Audio"}
