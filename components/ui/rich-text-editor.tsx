@@ -2651,6 +2651,7 @@ export default function RichTextEditor({
     { label: "Square bullet", value: "square", preview: "■" },
     { label: "Checklist", value: "check", preview: "✓" },
     { label: "Accent dot", value: "accent", preview: "•" },
+    { label: "Cross (don't)", value: "cross", preview: "✕" },
   ];
 
   const currentBulletListStyle =

@@ -284,6 +284,43 @@
   color: #022c22;
 }
 
+/* Cross bullets for “don’t do this” style lists */
+.ProseMirror ul[data-bullet-style="cross"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-bullet-style="cross"] > li {
+  position: relative;
+  /* indent scales with text size */
+  padding-left: 1.75em;
+  margin: 0.15em 0;
+}
+
+.ProseMirror ul[data-bullet-style="cross"] > li::before {
+  content: "\2715";
+  position: absolute;
+  left: 0;
+  /* Center the chip vertically relative to the text line for all font sizes */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 999px;
+  font-size: 0.7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f97373, #ef4444);
+  color: #111827;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45);
+}
+
+.dark .ProseMirror ul[data-bullet-style="cross"] > li::before {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fee2e2;
+}
+
 /* Accent dot bullets */
 .ProseMirror ul[data-bullet-style="accent"] {
   list-style: none;
