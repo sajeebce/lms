@@ -259,8 +259,9 @@
   content: "\2713";
   position: absolute;
   left: 0;
-  /* position & size scale with current font-size */
-  top: 0.12em;
+  /* Center the chip vertically relative to the text line for all font sizes */
+  top: 50%;
+  transform: translateY(-50%);
   width: 1.2em;
   height: 1.2em;
   border-radius: 999px;
@@ -295,7 +296,9 @@
   content: "";
   position: absolute;
   left: 0.35em;
-  top: 0.45em;
+  /* Center the accent dot vertically relative to the text line */
+  top: 50%;
+  transform: translateY(-50%);
   /* size scales with text size */
   width: 0.4em;
   height: 0.4em;
