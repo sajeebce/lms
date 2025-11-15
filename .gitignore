@@ -63,3 +63,12 @@ VERIFICATION_CHECKLIST.md
 
 # Temporary files
 nul
+
+# Storage files (uploaded files, should not be in git)
+/storage/
+
+# Database files (local development only)
+/prisma/prisma/dev.db
+/prisma/prisma/dev.db-journal
+*.db
+*.db-journal
