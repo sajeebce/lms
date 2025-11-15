@@ -1,7 +1,11 @@
 ﻿"use client";
 
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
+import { useReducer } from "react";
 import StarterKit from "@tiptap/starter-kit";
+import BulletList from "@tiptap/extension-bullet-list";
+import OrderedList from "@tiptap/extension-ordered-list";
+import ListItem from "@tiptap/extension-list-item";
 import Mathematics from "@tiptap/extension-mathematics";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -36,6 +40,7 @@ import {
   Underline as UnderlineIcon,
   List,
   ListOrdered,
+  ChevronDown,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -1607,6 +1612,74 @@ const CustomIndent = Extension.create({
   },
 });
 
+// Custom list item to sync bullet/number size & color with text
+const CustomListItem = ListItem.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-font-size") || null,
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) return {};
+          return {
+            "data-font-size": attributes.fontSize,
+            style: `font-size: ${attributes.fontSize}`,
+          };
+        },
+      },
+      textColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-text-color") || null,
+        renderHTML: (attributes) => {
+          if (!attributes.textColor) return {};
+          return {
+            "data-text-color": attributes.textColor,
+            style: `color: ${attributes.textColor}`,
+          };
+        },
+      },
+    };
+  },
+});
+
+// Phase 1: Custom Bullet & Ordered List with styles
+const CustomBulletList = BulletList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      bulletStyle: {
+        default: "disc",
+        parseHTML: (element) =>
+          element.getAttribute("data-bullet-style") || "disc",
+        renderHTML: (attributes) => {
+          return {
+            "data-bullet-style": attributes.bulletStyle || "disc",
+          };
+        },
+      },
+    };
+  },
+});
+
+const CustomOrderedList = OrderedList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      numStyle: {
+        default: "decimal",
+        parseHTML: (element) =>
+          element.getAttribute("data-num-style") || "decimal",
+        renderHTML: (attributes) => {
+          return {
+            "data-num-style": attributes.numStyle || "decimal",
+          };
+        },
+      },
+    };
+  },
+});
+
 // Phase 3.7: Line Height controls for paragraphs and headings
 const LineHeight = Extension.create({
   name: "lineHeight",
@@ -1767,6 +1840,10 @@ export default function RichTextEditor({
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
 
+  // Fix: Force re-render when editor selection/active state changes
+  // This ensures toolbar buttons show active state immediately on click
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+
   // Phase 3.2: Horizontal Rule state
   const [hrStyle, setHrStyle] = useState("solid");
   const [hrThickness, setHrThickness] = useState("medium");
@@ -1816,6 +1893,9 @@ export default function RichTextEditor({
         underline: false, // Avoid duplicate underline extension
         blockquote: false, // Disable default blockquote (we use custom)
         horizontalRule: false, // Disable default horizontal rule (we use custom)
+        bulletList: false, // Disable default bullet list (we use custom)
+        orderedList: false, // Disable default ordered list (we use custom)
+        listItem: false, // Disable default list item (we use custom)
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
@@ -1823,6 +1903,9 @@ export default function RichTextEditor({
       CustomBlockquote, // Phase 3.1: Custom blockquote with styles
       CustomHorizontalRule, // Phase 3.2: Custom horizontal rule with styles
       CustomIndent, // Phase 3.3: Custom indent/outdent for paragraphs and headings
+      CustomListItem, // Custom list item so bullets/numbers follow text size & color
+      CustomBulletList, // Phase 1: Custom bullet list styles
+      CustomOrderedList, // Phase 1: Custom ordered list styles
       LineHeight, // Phase 3.7: Line height controls
       TextDirection, // Phase 3.8: RTL/LTR text direction controls
       HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
@@ -2117,6 +2200,16 @@ export default function RichTextEditor({
     content: value,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+    },
+    onSelectionUpdate: () => {
+      // Force React re-render when selection changes
+      forceUpdate();
+    },
+    onTransaction: () => {
+      // Force React re-render on every transaction (including storedMarks changes
+      // when the document itself doesn't change). This makes B/I/U immediately
+      // reflect their active state even in an empty editor.
+      forceUpdate();
     },
   });
 
@@ -2464,6 +2557,54 @@ export default function RichTextEditor({
     { label: "2.0x", value: "2" },
   ];
 
+  const bulletListStyleOptions = [
+    { label: "Solid bullet", value: "disc", preview: "•" },
+    { label: "Hollow bullet", value: "circle", preview: "○" },
+    { label: "Square bullet", value: "square", preview: "■" },
+    { label: "Checklist", value: "check", preview: "✓" },
+    { label: "Accent dot", value: "accent", preview: "•" },
+  ];
+
+  const currentBulletListStyle =
+    editor.getAttributes("bulletList")?.bulletStyle || "disc";
+
+  const applyBulletListStyle = (style: string) => {
+    if (!editor) return;
+
+    const isActive = editor.isActive("bulletList");
+    const chain = editor.chain().focus();
+
+    if (!isActive) {
+      chain.toggleBulletList();
+    }
+
+    chain.updateAttributes("bulletList", { bulletStyle: style }).run();
+  };
+
+  const orderedListStyleOptions = [
+    { label: "1. 2. 3.", value: "decimal", preview: "1." },
+    { label: "a. b. c.", value: "lower-alpha", preview: "a." },
+    { label: "A. B. C.", value: "upper-alpha", preview: "A." },
+    { label: "i. ii. iii.", value: "lower-roman", preview: "i." },
+    { label: "I. II. III.", value: "upper-roman", preview: "I." },
+  ];
+
+  const currentOrderedListStyle =
+    editor.getAttributes("orderedList")?.numStyle || "decimal";
+
+  const applyOrderedListStyle = (style: string) => {
+    if (!editor) return;
+
+    const isActive = editor.isActive("orderedList");
+    const chain = editor.chain().focus();
+
+    if (!isActive) {
+      chain.toggleOrderedList();
+    }
+
+    chain.updateAttributes("orderedList", { numStyle: style }).run();
+  };
+
   const currentLineHeight =
     editor.getAttributes("heading")?.lineHeight ||
     editor.getAttributes("paragraph")?.lineHeight ||
@@ -2568,7 +2709,10 @@ export default function RichTextEditor({
                 size="sm"
                 onClick={() => editor.chain().focus().toggleBold().run()}
                 className={
-                  editor.isActive("bold")
+                  editor.isActive("bold") ||
+                  editor.state.storedMarks?.some(
+                    (mark) => mark.type.name === "bold"
+                  )
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
@@ -2587,7 +2731,10 @@ export default function RichTextEditor({
                 size="sm"
                 onClick={() => editor.chain().focus().toggleItalic().run()}
                 className={
-                  editor.isActive("italic")
+                  editor.isActive("italic") ||
+                  editor.state.storedMarks?.some(
+                    (mark) => mark.type.name === "italic"
+                  )
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
@@ -2606,7 +2753,10 @@ export default function RichTextEditor({
                 size="sm"
                 onClick={() => editor.chain().focus().toggleUnderline().run()}
                 className={
-                  editor.isActive("underline")
+                  editor.isActive("underline") ||
+                  editor.state.storedMarks?.some(
+                    (mark) => mark.type.name === "underline"
+                  )
                     ? "bg-slate-200 dark:bg-slate-700"
                     : ""
                 }
@@ -2653,9 +2803,22 @@ export default function RichTextEditor({
                       type="button"
                       className="w-6 h-6 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
                       style={{ backgroundColor: color }}
-                      onClick={() =>
-                        editor.chain().focus().setColor(color).run()
-                      }
+                      onClick={() => {
+                        if (!editor) return;
+
+                        const chain = editor.chain().focus().setColor(color);
+
+                        if (
+                          editor.isActive("bulletList") ||
+                          editor.isActive("orderedList")
+                        ) {
+                          chain.updateAttributes("listItem", {
+                            textColor: color,
+                          });
+                        }
+
+                        chain.run();
+                      }}
                     />
                   ))}
                 </div>
@@ -2664,7 +2827,22 @@ export default function RichTextEditor({
                   variant="outline"
                   size="sm"
                   className="w-full"
-                  onClick={() => editor.chain().focus().unsetColor().run()}
+                  onClick={() => {
+                    if (!editor) return;
+
+                    const chain = editor.chain().focus().unsetColor();
+
+                    if (
+                      editor.isActive("bulletList") ||
+                      editor.isActive("orderedList")
+                    ) {
+                      chain.updateAttributes("listItem", {
+                        textColor: null,
+                      });
+                    }
+
+                    chain.run();
+                  }}
                 >
                   Remove Color
                 </Button>
@@ -2740,13 +2918,25 @@ export default function RichTextEditor({
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() =>
-                      editor
+                    onClick={() => {
+                      if (!editor) return;
+
+                      const chain = editor
                         .chain()
                         .focus()
-                        .setMark("textStyle", { fontSize: size.value })
-                        .run()
-                    }
+                        .setMark("textStyle", { fontSize: size.value });
+
+                      if (
+                        editor.isActive("bulletList") ||
+                        editor.isActive("orderedList")
+                      ) {
+                        chain.updateAttributes("listItem", {
+                          fontSize: size.value,
+                        });
+                      }
+
+                      chain.run();
+                    }}
                   >
                     {size.label}
                   </Button>
@@ -2985,43 +3175,183 @@ export default function RichTextEditor({
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Lists */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={
-                  editor.isActive("bulletList")
-                    ? "bg-slate-200 dark:bg-slate-700"
-                    : ""
-                }
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Bullet List</TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-2">
+            {/* Bullet list group */}
+            <div className="flex items-center rounded-md border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40 overflow-hidden">
+              {/* Bullet list toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      editor.chain().focus().toggleBulletList().run()
+                    }
+                    className={
+                      editor.isActive("bulletList")
+                        ? "bg-slate-200 dark:bg-slate-700"
+                        : ""
+                    }
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Bullet list</TooltipContent>
+              </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={
-                  editor.isActive("orderedList")
-                    ? "bg-slate-200 dark:bg-slate-700"
-                    : ""
-                }
-              >
-                <ListOrdered className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Numbered List</TooltipContent>
-          </Tooltip>
+              {/* Bullet list style picker */}
+              <Popover>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`px-2 ${
+                          editor.isActive("bulletList")
+                            ? "bg-slate-100 dark:bg-slate-800"
+                            : ""
+                        }`}
+                      >
+                        <span className="mr-1 text-xs">
+                          {bulletListStyleOptions.find(
+                            (option) => option.value === currentBulletListStyle
+                          )?.preview || " b7"}
+                        </span>
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Bullet style</TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-56 p-2">
+                  <div className="flex flex-col gap-1">
+                    {bulletListStyleOptions.map((option) => {
+                      const isActiveStyle =
+                        currentBulletListStyle === option.value;
+
+                      return (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={`w-full justify-between ${
+                            isActiveStyle
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                              : ""
+                          }`}
+                          onClick={() => applyBulletListStyle(option.value)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="text-base leading-none">
+                              {option.preview}
+                            </span>
+                            <span className="text-xs">{option.label}</span>
+                          </span>
+                          {isActiveStyle && (
+                            <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                              Active
+                            </span>
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Ordered list group */}
+            <div className="flex items-center rounded-md border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-900/40 overflow-hidden">
+              {/* Ordered list toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      editor.chain().focus().toggleOrderedList().run()
+                    }
+                    className={
+                      editor.isActive("orderedList")
+                        ? "bg-slate-200 dark:bg-slate-700"
+                        : ""
+                    }
+                  >
+                    <ListOrdered className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Numbered list</TooltipContent>
+              </Tooltip>
+
+              {/* Ordered list style picker */}
+              <Popover>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`px-2 ${
+                          editor.isActive("orderedList")
+                            ? "bg-slate-100 dark:bg-slate-800"
+                            : ""
+                        }`}
+                      >
+                        <span className="mr-1 text-xs">
+                          {orderedListStyleOptions.find(
+                            (option) => option.value === currentOrderedListStyle
+                          )?.preview || "1."}
+                        </span>
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Numbering style</TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-56 p-2">
+                  <div className="flex flex-col gap-1">
+                    {orderedListStyleOptions.map((option) => {
+                      const isActiveStyle =
+                        currentOrderedListStyle === option.value;
+
+                      return (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={`w-full justify-between ${
+                            isActiveStyle
+                              ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                              : ""
+                          }`}
+                          onClick={() => applyOrderedListStyle(option.value)}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="text-base leading-none">
+                              {option.preview}
+                            </span>
+                            <span className="text-xs">{option.label}</span>
+                          </span>
+                          {isActiveStyle && (
+                            <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                              Active
+                            </span>
+                          )}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
 
           {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
           <Popover>

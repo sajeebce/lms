@@ -1872,3 +1872,150 @@ npm install emoji-picker-react  # For emoji picker
 **Document Version:** 1.0
 **Last Updated:** 2025-01-09
 **Author:** AI Assistant (Augment Agent)
+
+
+
+
+🧩 Phase 1 – Quick UX Upgrade (Dropdown-based Lists)
+1.1 Bullet List → Popover with “bullet style” options
+Current:
+
+Single button → toggleBulletList()
+Style: default browser disc •
+Plan:
+
+Button-ke compound control banabo:
+Click → normal toggleBulletList() (quick toggle, same as now)
+Small chevron / caret (↓) click → Popover open with options:
+● Standard (disc) – default
+○ Hollow (circle)
+■ Square
+✔︎ Checkmark-style bullet (pure CSS pseudo-element)
+Maybe 1–2 “themed” bullets (e.g. subtle colored dot to match your LMS accent color)
+Technically:
+TipTap bulletList extension-ke extend kore listStyleType / data-bullet attribute add:
+"disc" | "circle" | "square" | "check" | "accent"
+CSS e ul[data-bullet="check"] li::marker / ::before diye custom symbols.
+Benefit:
+
+Same ekta button theke multiple modern bullet styles – Google Docs er “Bulleted list options” er moto.
+1.2 Numbered List → Popover with numbering formats
+Current:
+
+Single button → toggleOrderedList()
+Format: normal 1. 2. 3.
+Plan:
+
+Ordered list button o popover-based hobe: Formats:
+1. 2. 3. (default)
+01. 02. 03. (padded)
+a. b. c. (lower-alpha)
+A. B. C. (upper-alpha)
+i. ii. iii. (lower-roman)
+I. II. III. (upper-roman)
+Technically:
+orderedList extension extend kore listStyleType / data-num-style attribute:
+"decimal" | "decimal-leading-zero" | "lower-alpha" | "upper-alpha" | "lower-roman" | "upper-roman"
+CSS counters ba <ol type="a"> + custom handling diye style handle.
+Benefit:
+
+Question / exam formatting er jonne very flexible – e.g. options a), b) or roman numerals easily.
+1.3 Indent/Outdent UX polish around Lists
+Already tomader editor-e CustomIndent ache (lists + paragraphs).
+List experience ke aro clear korte:
+
+Toolbar e Bullet / Number er sathe sathe Indent & Outdent icon-ke group kora:
+Visually bujha jabe: “ei 4 ta button ek group – list structure controls”
+Tooltips e shortcut show:
+Bullet: Ctrl + Shift + 8
+Numbered: Ctrl + Shift + 7
+Indent: maybe Tab
+Outdent: Shift + Tab
+Benefit:
+
+User instantly bujhte parbe nested list bananor path, closeness Notion / Google Docs er moto.
+✅ Phase 2 – Checklist / Task List (Modern Feature)
+Goal: Bullet list er ek smart variant – task list with checkboxes.
+
+UX Design:
+
+Toolbar e new button: Checklist (checkbox icon).
+Click korle:
+Current paragraph / selection ke task list e convert korbe.
+Each line er shamne clickable checkbox:
+Click → toggle “done”:
+Text e line-through + muted color
+Optional: little “✓ Done” pill on hover.
+Technical idea:
+
+Use TipTap er TaskList + TaskItem extensions:
+Or custom extension jeta <ul data-type="task"> + <li data-checked="true|false">.
+Command examples (conceptual):
+Benefit:
+
+Question writing, checklist, marking hints er jonne super modern feel – Notion style ✅.
+🧠 Phase 3 – Smart Numbering Features
+3.1 Restart / Continue Numbering
+Use-cases:
+
+Ekta list, then paragraph, tarpor abar list:
+Sometimes second list ke continue korte chai (4,5,6)
+Sometimes restart korte chai (1,2,3)
+UX:
+
+Ordered list popover e duita small option:
+“Restart numbering at 1”
+“Continue from previous list”
+Plus ekta numeric field:
+Start at: [ 1 ]
+Technical idea:
+
+orderedList node e start attribute use kora.
+“Continue from previous” option:
+Document e previous sibling ordered list er last index ber kore start set kora.
+Benefit:
+
+Professional exam / question paper formatting jonne highly useful.
+3.2 Level-based numbering style (multi-level outline)
+Advanced, but powerful:
+
+Level 1: 1.
+Level 2: a.
+Level 3: i.
+Plan:
+
+Indent depth (list nesting) detect kore CSS counters / attributes diye alada style:
+e.g. data-level="1|2|3" attribute on list; style mapping in CSS.
+Optional: settings e toggle “Use outline style numbering”.
+Benefit:
+
+Long theory question / notes er jonne outline-style list – Word/Google Docs feel.
+🎨 Phase 4 – Visual + Theming Enhancements
+Small but nice improvements to match tomader “gaming / dashboard” theme.
+
+4.1 Compact vs Comfortable list spacing
+Popover e quick toggle:
+“Compact” – tight line-height, small gap
+“Comfortable” – more vertical space
+Implementation: list node e data-density="compact|comfortable" + CSS.
+4.2 Accent strip / highlight for important lists
+Option: “Highlight list”
+Left side e subtle colored border + slightly tinted background.
+Ideal for:
+“Important points”, “Key takeaways” etc.
+4.3 Animate checkbox / bullet subtlely
+Checklist er checkbox tick korle:
+tiny scale/opacity animation (no heavy libs).
+Benefit:
+
+Editor feel korbe “alive” – consistent with tomader overall theme rules.
+🗂 Suggested Implementation Order
+Phase 1 – Dropdown-based bullet & number options
+Quick win, max user impact
+Only TipTap node attributes + CSS + small UI change
+Phase 2 – Checklist / task list
+Big perceived upgrade, very Notion-like
+Phase 3 – Smart numbering (restart/continue + styles)
+A bit more logic (counters / attributes)
+Phase 4 – Theming polish
+CSS + minor UI, jokhon base features stable.
