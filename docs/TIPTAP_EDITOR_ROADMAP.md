@@ -795,6 +795,13 @@ TextAlign.extend({
 - 🔲 Use **Fullscreen API** (browser native)
 - 🔲 Keyboard shortcut: F11 or Esc to exit
 
+future: 
+✨ Fullscreen animation (fade/slide transition)
+🎨 Custom fullscreen background color picker
+📱 Mobile-optimized fullscreen mode
+💾 Remember fullscreen preference in localStorage
+🔔 Show "Press Esc to exit" notification on enter
+
 **Files to modify:**
 
 - `app/(dashboard)/question-bank/questions/_components/math-editor.tsx`

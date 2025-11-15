@@ -1,5 +1,12 @@
 /* TipTap Editor Custom Styles */
 
+/* Fix: Remove top margin from first element in editor (Industry Standard) */
+/* This prevents unwanted gap at top when starting with heading/paragraph */
+/* Used by: Google Docs, Notion, Medium, Canvas LMS, Moodle */
+.ProseMirror > *:first-child {
+  margin-top: 0 !important;
+}
+
 /* Phase 3.6: Heading Styles */
 .ProseMirror h1 {
   font-size: 2em;

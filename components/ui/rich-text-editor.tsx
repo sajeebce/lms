@@ -60,6 +60,8 @@ import {
   SlidersHorizontal,
   Trash2,
   Mic,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import "katex/dist/katex.min.css";
 import "./editor-styles.css";
@@ -1291,7 +1293,9 @@ const Audio = Node.create({
           return allow === "false" ? false : true;
         },
         renderHTML: (attributes) => {
-          return { "data-allow-download": attributes.allowDownload ? "true" : "false" };
+          return {
+            "data-allow-download": attributes.allowDownload ? "true" : "false",
+          };
         },
       },
     };
@@ -1302,12 +1306,20 @@ const Audio = Node.create({
       {
         tag: "div.audio-wrapper",
         getAttrs: (element) => {
-          const allowDownloadStr = (element as HTMLElement).getAttribute("data-allow-download");
+          const allowDownloadStr = (element as HTMLElement).getAttribute(
+            "data-allow-download"
+          );
           return {
             src: (element as HTMLElement).getAttribute("data-src"),
             fileName: (element as HTMLElement).getAttribute("data-file-name"),
-            duration: parseInt((element as HTMLElement).getAttribute("data-duration") || "0", 10),
-            fileSize: parseInt((element as HTMLElement).getAttribute("data-file-size") || "0", 10),
+            duration: parseInt(
+              (element as HTMLElement).getAttribute("data-duration") || "0",
+              10
+            ),
+            fileSize: parseInt(
+              (element as HTMLElement).getAttribute("data-file-size") || "0",
+              10
+            ),
             allowDownload: allowDownloadStr === "false" ? false : true,
           };
         },
@@ -1748,6 +1760,13 @@ export default function RichTextEditor({
   // Phase 5.1: Audio Recorder Dialog state
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
 
+  // Phase 5.2: Fullscreen Mode state
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Phase 5.3: Word Count state
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+
   // Phase 3.2: Horizontal Rule state
   const [hrStyle, setHrStyle] = useState("solid");
   const [hrThickness, setHrThickness] = useState("medium");
@@ -1759,6 +1778,35 @@ export default function RichTextEditor({
       localStorage.setItem("tiptap-indent-guides", String(showIndentGuides));
     }
   }, [showIndentGuides, showIndentGuidesProp]);
+
+  // Phase 5.2: Fullscreen keyboard shortcuts (Escape to exit)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape key exits fullscreen
+      if (e.key === "Escape" && isFullscreen) {
+        e.preventDefault();
+        setIsFullscreen(false);
+      }
+      // F11 toggles fullscreen (optional)
+      if (e.key === "F11") {
+        e.preventDefault();
+        setIsFullscreen((prev) => !prev);
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener("keydown", handleKeyDown);
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isFullscreen]);
 
   const editor = useEditor({
     immediatelyRender: false, // ✅ Fix SSR hydration mismatch
@@ -1868,7 +1916,7 @@ export default function RichTextEditor({
         placeholder,
       }),
       // Phase 1: Text Color & Highlight
-      // Phase 3.5: Extended TextStyle with fontWeight support
+      // Phase 3.5: Extended TextStyle with fontWeight and fontSize support
       TextStyle.extend({
         addAttributes() {
           return {
@@ -1886,6 +1934,22 @@ export default function RichTextEditor({
                 // TipTap will merge this with other TextStyle attributes
                 return {
                   style: `font-weight: ${attributes.fontWeight}`,
+                };
+              },
+            },
+            fontSize: {
+              default: null,
+              parseHTML: (element) =>
+                element.style.fontSize ||
+                element.getAttribute("data-font-size"),
+              renderHTML: (attributes) => {
+                if (!attributes.fontSize) {
+                  return {};
+                }
+                // Return style as CSS property
+                // TipTap will merge this with other TextStyle attributes (fontWeight, color, etc.)
+                return {
+                  style: `font-size: ${attributes.fontSize}`,
                 };
               },
             },
@@ -2062,6 +2126,33 @@ export default function RichTextEditor({
       editor.commands.setContent(value);
     }
   }, [value, editor]);
+
+  // Phase 5.3: Word Count - Update live as user types
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateWordCount = () => {
+      const text = editor.getText();
+      // Count words (split by whitespace, filter empty strings)
+      const words = text
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word.length > 0);
+      setWordCount(words.length);
+      // Count characters (including whitespace)
+      setCharCount(text.length);
+    };
+
+    // Initial count
+    updateWordCount();
+
+    // Update on every transaction (typing, paste, etc.)
+    editor.on("update", updateWordCount);
+
+    return () => {
+      editor.off("update", updateWordCount);
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) {
@@ -2460,6 +2551,10 @@ export default function RichTextEditor({
       <div
         className={`border rounded-lg dark:border-slate-700 overflow-hidden ${
           !showIndentGuides ? "no-indent-guides" : ""
+        } ${
+          isFullscreen
+            ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none flex flex-col"
+            : ""
         }`}
       >
         {/* Toolbar */}
@@ -3773,14 +3868,60 @@ export default function RichTextEditor({
             </TooltipTrigger>
             <TooltipContent>Redo</TooltipContent>
           </Tooltip>
+
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
+
+          {/* Phase 5.2: Fullscreen Mode Toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFullscreen((prev) => !prev)}
+                className={
+                  isFullscreen
+                    ? "bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300"
+                    : ""
+                }
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen (F11)"}
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Editor Content */}
         <EditorContent
           editor={editor}
-          className="prose dark:prose-invert max-w-none p-4"
-          style={{ minHeight }}
+          className={`prose dark:prose-invert max-w-none p-4 ${
+            isFullscreen ? "flex-1 overflow-y-auto" : ""
+          }`}
+          style={isFullscreen ? { minHeight: "auto" } : { minHeight }}
         />
+
+        {/* Phase 5.3: Word Count Display */}
+        <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs text-slate-600 dark:text-slate-400 flex justify-end gap-4">
+          <span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {wordCount}
+            </span>{" "}
+            {wordCount === 1 ? "word" : "words"}
+          </span>
+          <span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {charCount}
+            </span>{" "}
+            {charCount === 1 ? "character" : "characters"}
+          </span>
+        </div>
 
         {/* Phase 4.2: Table Bubble Menu - Floating Toolbar */}
         {editor && <TableBubbleMenu editor={editor} />}
@@ -3834,7 +3975,13 @@ export default function RichTextEditor({
               editor
                 .chain()
                 .focus()
-                .setAudio({ src: audioUrl, fileName, duration, fileSize, allowDownload })
+                .setAudio({
+                  src: audioUrl,
+                  fileName,
+                  duration,
+                  fileSize,
+                  allowDownload,
+                })
                 .run();
             }
           }}
