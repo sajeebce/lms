@@ -229,6 +229,11 @@
   font-size: inherit;
 }
 
+/* When an ordered list item is fully bold, also bold the numeric marker */
+.ProseMirror ol li[data-marker-bold="true"]::marker {
+  font-weight: 700;
+}
+
 /* Bullet list styles */
 .ProseMirror ul[data-bullet-style="disc"] {
   list-style-type: disc;

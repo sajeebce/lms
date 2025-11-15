@@ -1639,6 +1639,17 @@ const CustomListItem = ListItem.extend({
           };
         },
       },
+      markerBold: {
+        default: false,
+        parseHTML: (element) =>
+          element.getAttribute("data-marker-bold") === "true",
+        renderHTML: (attributes) => {
+          if (!attributes.markerBold) return {};
+          return {
+            "data-marker-bold": "true",
+          };
+        },
+      },
     };
   },
 });
@@ -1677,6 +1688,82 @@ const CustomOrderedList = OrderedList.extend({
         },
       },
     };
+  },
+});
+
+// Sync ordered list marker boldness when the entire list item text is bold
+const ListItemMarkerBoldSync = Extension.create({
+  name: "listItemMarkerBoldSync",
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("listItemMarkerBoldSync"),
+        appendTransaction(transactions, _oldState, newState) {
+          // Only run when the document actually changed
+          if (!transactions.some((tr) => tr.docChanged)) {
+            return;
+          }
+
+          const boldMark = newState.schema.marks.bold;
+          const listItemType = newState.schema.nodes.listItem;
+
+          if (!boldMark || !listItemType) {
+            return;
+          }
+
+          let tr = null;
+
+          newState.doc.descendants((node, pos) => {
+            if (node.type !== listItemType) {
+              return;
+            }
+
+            let hasText = false;
+            let fullyBold = true;
+
+            node.descendants((child) => {
+              if (!child.isText) {
+                return;
+              }
+
+              const text = child.text || "";
+              if (text.trim().length === 0) {
+                return;
+              }
+
+              hasText = true;
+              const hasBold = child.marks.some(
+                (mark) => mark.type === boldMark
+              );
+              if (!hasBold) {
+                fullyBold = false;
+              }
+            });
+
+            const shouldMarkerBeBold = hasText && fullyBold;
+            const currentMarkerBold = !!node.attrs.markerBold;
+
+            if (shouldMarkerBeBold !== currentMarkerBold) {
+              if (!tr) {
+                tr = newState.tr;
+              }
+
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                markerBold: shouldMarkerBeBold,
+              });
+            }
+          });
+
+          if (tr && tr.docChanged) {
+            return tr;
+          }
+
+          return;
+        },
+      }),
+    ];
   },
 });
 
@@ -1906,6 +1993,7 @@ export default function RichTextEditor({
       CustomListItem, // Custom list item so bullets/numbers follow text size & color
       CustomBulletList, // Phase 1: Custom bullet list styles
       CustomOrderedList, // Phase 1: Custom ordered list styles
+      ListItemMarkerBoldSync, // Keep ordered list marker boldness in sync with full-line bold
       LineHeight, // Phase 3.7: Line height controls
       TextDirection, // Phase 3.8: RTL/LTR text direction controls
       HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
