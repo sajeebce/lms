@@ -1,11 +1,13 @@
 ﻿"use client";
 
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
+import type { Editor as TiptapEditor } from "@tiptap/core";
 import { useReducer } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import Mathematics from "@tiptap/extension-mathematics";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -40,6 +42,7 @@ import {
   Underline as UnderlineIcon,
   List,
   ListOrdered,
+  CheckSquare,
   ChevronDown,
   AlignLeft,
   AlignCenter,
@@ -1654,6 +1657,37 @@ const CustomListItem = ListItem.extend({
   },
 });
 
+// Custom task item so checkbox + text follow font size & color
+const CustomTaskItem = TaskItem.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fontSize: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-font-size") || null,
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) return {};
+          return {
+            "data-font-size": attributes.fontSize,
+            // Don't set inline style - let CSS handle it via data attribute
+          };
+        },
+      },
+      textColor: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-text-color") || null,
+        renderHTML: (attributes) => {
+          if (!attributes.textColor) return {};
+          return {
+            "data-text-color": attributes.textColor,
+            // Don't set inline style - let CSS handle it via data attribute
+          };
+        },
+      },
+    };
+  },
+});
+
 // Phase 1: Custom Bullet & Ordered List with styles
 const CustomBulletList = BulletList.extend({
   addAttributes() {
@@ -1766,6 +1800,132 @@ const ListItemMarkerBoldSync = Extension.create({
     ];
   },
 });
+
+// Keep task list checkbox size in sync with text font size
+const TaskItemFontSizeSync = Extension.create({
+  name: "taskItemFontSizeSync",
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("taskItemFontSizeSync"),
+        appendTransaction(transactions, _oldState, newState) {
+          // Only run when the document actually changed
+          if (!transactions.some((tr) => tr.docChanged)) {
+            return;
+          }
+
+          const textStyleMark = newState.schema.marks.textStyle;
+          const taskItemType = newState.schema.nodes.taskItem;
+
+          if (!textStyleMark || !taskItemType) {
+            return;
+          }
+
+          let tr = null;
+
+          newState.doc.descendants((node, pos) => {
+            if (node.type !== taskItemType) {
+              return;
+            }
+
+            let fontSizeFromText: string | null = null;
+
+            node.descendants((child) => {
+              if (!child.isText) {
+                return;
+              }
+
+              const text = child.text || "";
+              if (text.trim().length === 0) {
+                return;
+              }
+
+              const textStyle = child.marks.find(
+                (mark) => mark.type === textStyleMark
+              );
+
+              if (textStyle && typeof textStyle.attrs.fontSize === "string") {
+                fontSizeFromText = textStyle.attrs.fontSize;
+              }
+            });
+
+            const currentFontSize =
+              typeof node.attrs.fontSize === "string"
+                ? node.attrs.fontSize
+                : null;
+
+            // Only update when value actually changed
+            if (fontSizeFromText !== currentFontSize) {
+              if (!tr) {
+                tr = newState.tr;
+              }
+
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                fontSize: fontSizeFromText,
+              });
+            }
+          });
+
+          if (tr && tr.docChanged) {
+            return tr;
+          }
+
+          return;
+        },
+      }),
+    ];
+  },
+});
+
+function syncTaskItemFontSize(editor: TiptapEditor | null, fontSize: string) {
+  if (!editor) {
+    return;
+  }
+
+  const { state } = editor;
+  const { doc, selection, schema } = state;
+  const taskItemType = schema.nodes.taskItem;
+
+  if (!taskItemType) {
+    return;
+  }
+
+  const tr = state.tr;
+
+  if (selection.empty) {
+    const $from = selection.$from;
+
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const node = $from.node(depth);
+      if (node.type === taskItemType) {
+        const pos = $from.before(depth);
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          fontSize,
+        });
+        break;
+      }
+    }
+  } else {
+    const { from, to } = selection;
+
+    doc.nodesBetween(from, to, (node, pos) => {
+      if (node.type === taskItemType) {
+        // Update task item node attribute so checkbox follows text size
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          fontSize,
+        });
+      }
+    });
+  }
+
+  if (tr.docChanged) {
+    editor.view.dispatch(tr);
+  }
+}
 
 // Phase 3.7: Line Height controls for paragraphs and headings
 const LineHeight = Extension.create({
@@ -1993,7 +2153,12 @@ export default function RichTextEditor({
       CustomListItem, // Custom list item so bullets/numbers follow text size & color
       CustomBulletList, // Phase 1: Custom bullet list styles
       CustomOrderedList, // Phase 1: Custom ordered list styles
+      TaskList, // Phase 2: Task list with interactive checkboxes
+      CustomTaskItem.configure({
+        nested: true,
+      }),
       ListItemMarkerBoldSync, // Keep ordered list marker boldness in sync with full-line bold
+      TaskItemFontSizeSync, // Keep task list checkbox size in sync with font size
       LineHeight, // Phase 3.7: Line height controls
       TextDirection, // Phase 3.8: RTL/LTR text direction controls
       HeadingShortcuts, // Phase 3.6: Keyboard shortcuts for headings (Ctrl+Alt+1-6)
@@ -2897,14 +3062,13 @@ export default function RichTextEditor({
 
                         const chain = editor.chain().focus().setColor(color);
 
-                        if (
-                          editor.isActive("bulletList") ||
-                          editor.isActive("orderedList")
-                        ) {
-                          chain.updateAttributes("listItem", {
-                            textColor: color,
-                          });
-                        }
+                        // Sync text color to list bullets, numbers, and task checkboxes
+                        chain.updateAttributes("listItem", {
+                          textColor: color,
+                        });
+                        chain.updateAttributes("taskItem", {
+                          textColor: color,
+                        });
 
                         chain.run();
                       }}
@@ -2921,14 +3085,13 @@ export default function RichTextEditor({
 
                     const chain = editor.chain().focus().unsetColor();
 
-                    if (
-                      editor.isActive("bulletList") ||
-                      editor.isActive("orderedList")
-                    ) {
-                      chain.updateAttributes("listItem", {
-                        textColor: null,
-                      });
-                    }
+                    // Reset list + task item text color attributes
+                    chain.updateAttributes("listItem", {
+                      textColor: null,
+                    });
+                    chain.updateAttributes("taskItem", {
+                      textColor: null,
+                    });
 
                     chain.run();
                   }}
@@ -3015,16 +3178,15 @@ export default function RichTextEditor({
                         .focus()
                         .setMark("textStyle", { fontSize: size.value });
 
-                      if (
-                        editor.isActive("bulletList") ||
-                        editor.isActive("orderedList")
-                      ) {
-                        chain.updateAttributes("listItem", {
-                          fontSize: size.value,
-                        });
-                      }
+                      // Sync font size to list bullets and numbers
+                      chain.updateAttributes("listItem", {
+                        fontSize: size.value,
+                      });
 
                       chain.run();
+
+                      // Ensure checklist items use the same font size for their checkbox
+                      syncTaskItemFontSize(editor, size.value);
                     }}
                   >
                     {size.label}
@@ -3440,6 +3602,26 @@ export default function RichTextEditor({
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* Task list / checklist */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => editor.chain().focus().toggleTaskList().run()}
+                  className={
+                    editor.isActive("taskList")
+                      ? "bg-slate-200 dark:bg-slate-700"
+                      : ""
+                  }
+                >
+                  <CheckSquare className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Checklist</TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Phase 3.1: Blockquote with Styles and Preset Themes */}

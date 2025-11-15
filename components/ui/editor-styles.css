@@ -376,6 +376,144 @@
   margin-top: 0.15rem;
 }
 
+/* Phase 2: Task list / checklist styles */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.25rem 0;
+}
+
+/* Layout: checkbox + content in one row (TipTap recommended pattern) */
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.2em 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.2em;
+  cursor: pointer;
+}
+
+/* Default checkbox size (1rem base) */
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 0.35rem;
+  border: 1.5px solid rgba(148, 163, 184, 0.9);
+  background: radial-gradient(circle at 30% 30%, #f9fafb, #e5e7eb);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.35);
+  cursor: pointer;
+  margin: 0;
+  accent-color: #22c55e;
+}
+
+/* Scale checkbox size based on data-font-size attribute.
+   The font size mark uses pixel values: 12px, 16px, 20px, 24px.
+   We map those to visually proportional checkbox sizes. */
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="12px"]
+  > label
+  input[type="checkbox"] {
+  /* Small */
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* 16px = default "Normal" size → base 1.05rem already used above */
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="20px"]
+  > label
+  input[type="checkbox"] {
+  /* Large */
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="24px"]
+  > label
+  input[type="checkbox"] {
+  /* Huge */
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.dark .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  border-color: rgba(148, 163, 184, 0.9);
+  background: radial-gradient(circle at 30% 30%, #020617, #0f172a);
+  box-shadow: 0 0 0 1px rgba(30, 64, 175, 0.6);
+}
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-checked="true"]
+  > label
+  input[type="checkbox"] {
+  background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
+  border-color: #16a34a;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  padding-top: 0.05rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  position: relative;
+  color: #94a3b8;
+}
+
+.dark .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #64748b;
+}
+
+/* Centered strike-through line that follows font size */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background-color: currentColor;
+  pointer-events: none;
+}
+
+/* Optional hover pill for done tasks (right after text) */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div::after {
+  content: "\2713 Done";
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  background: linear-gradient(
+    to right,
+    rgba(34, 197, 94, 0.12),
+    rgba(52, 211, 153, 0.18)
+  );
+  color: #16a34a;
+  opacity: 0;
+  transform: translateY(1px);
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.12s ease-out;
+}
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-checked="true"]
+  > div:hover::after {
+  opacity: 1;
+}
+
 /* Phase 3.4: Modern Link Styles - Beautiful & Secure */
 .ProseMirror a {
   position: relative;
