@@ -3042,13 +3042,6 @@ export default function RichTextEditor({
             ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none"
             : ""
         }`}
-        style={
-          isFullscreen
-            ? {}
-            : {
-                height: `${editorHeight + 200}px`, // body height + toolbar (~100-150px) + footer (~40px) + buffer
-              }
-        }
       >
         {/* Toolbar - Fixed at top */}
         <div className="flex-shrink-0 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
@@ -4699,9 +4692,17 @@ export default function RichTextEditor({
         {/* Editor Content - Scrollable Body */}
         <div
           onClick={() => editor?.chain().focus().run()}
-          className={`cursor-text relative flex-1 overflow-y-auto ${
-            isFullscreen ? "" : ""
+          className={`cursor-text relative overflow-y-auto ${
+            isFullscreen ? "flex-1" : ""
           }`}
+          style={
+            isFullscreen
+              ? {}
+              : {
+                  height: `${editorHeight}px`,
+                  minHeight: "150px",
+                }
+          }
         >
           <EditorContent
             editor={editor}
