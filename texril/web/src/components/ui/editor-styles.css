@@ -1,0 +1,1084 @@
+/* TipTap Editor Custom Styles */
+
+/* Fix: Remove top margin from first element in editor (Industry Standard) */
+/* This prevents unwanted gap at top when starting with heading/paragraph */
+/* Used by: Google Docs, Notion, Medium, Canvas LMS, Moodle */
+.ProseMirror > *:first-child {
+  margin-top: 0 !important;
+}
+
+/* Phase 3.6: Heading Styles */
+.ProseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.625rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h4 {
+  font-size: 1.125em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h5 {
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h6 {
+  font-size: 0.875em;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: #64748b;
+}
+
+.dark .ProseMirror h6 {
+  color: #94a3b8;
+}
+
+/* Phase 3.5: Font Family Support - Bangla + English */
+.ProseMirror [style*="font-family"] {
+  font-feature-settings: "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Bangla font rendering optimization */
+.ProseMirror [style*="--font-hind-siliguri"],
+.ProseMirror [style*="--font-noto-serif-bengali"] {
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "calt" 1, "kern" 1;
+}
+
+/* Font weight support - ensure inline styles are applied */
+.ProseMirror span[style*="font-weight"] {
+  /* Font weight is applied via inline style - do not override */
+}
+
+/* REMOVED: Invalid CSS - attr() doesn't work with font-weight
+   Font weight is now applied via inline style only */
+
+/* Phase 3.3: Indent Styles - Beautiful Visual Feedback */
+.ProseMirror [data-indent] {
+  position: relative;
+  transition: padding-left 0.2s ease-out, background-color 0.2s ease-out;
+}
+
+/* Visual indent guide lines */
+.ProseMirror [data-indent="1"]::before,
+.ProseMirror [data-indent="2"]::before,
+.ProseMirror [data-indent="3"]::before,
+.ProseMirror [data-indent="4"]::before,
+.ProseMirror [data-indent="5"]::before,
+.ProseMirror [data-indent="6"]::before,
+.ProseMirror [data-indent="7"]::before,
+.ProseMirror [data-indent="8"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #3b82f6 20%,
+    #8b5cf6 50%,
+    #ec4899 80%,
+    transparent 100%
+  );
+  opacity: 0.3;
+  transition: opacity 0.2s ease-out;
+}
+
+.ProseMirror [data-indent]:hover::before {
+  opacity: 0.6;
+}
+
+/* Different colors for different indent levels */
+.ProseMirror [data-indent="1"]::before {
+  left: 10px;
+  background: linear-gradient(to bottom, transparent, #3b82f6, transparent);
+}
+
+.ProseMirror [data-indent="2"]::before {
+  left: 50px;
+  background: linear-gradient(to bottom, transparent, #8b5cf6, transparent);
+}
+
+.ProseMirror [data-indent="3"]::before {
+  left: 90px;
+  background: linear-gradient(to bottom, transparent, #ec4899, transparent);
+}
+
+.ProseMirror [data-indent="4"]::before {
+  left: 130px;
+  background: linear-gradient(to bottom, transparent, #f59e0b, transparent);
+}
+
+.ProseMirror [data-indent="5"]::before {
+  left: 170px;
+  background: linear-gradient(to bottom, transparent, #10b981, transparent);
+}
+
+.ProseMirror [data-indent="6"]::before {
+  left: 210px;
+  background: linear-gradient(to bottom, transparent, #06b6d4, transparent);
+}
+
+.ProseMirror [data-indent="7"]::before {
+  left: 250px;
+  background: linear-gradient(to bottom, transparent, #6366f1, transparent);
+}
+
+.ProseMirror [data-indent="8"]::before {
+  left: 290px;
+  background: linear-gradient(to bottom, transparent, #ef4444, transparent);
+}
+
+/* Subtle background for indented content */
+.ProseMirror [data-indent]:hover {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.05),
+    transparent 50%
+  );
+}
+
+.dark .ProseMirror [data-indent]:hover {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.1),
+    transparent 50%
+  );
+}
+
+/* Smooth animation when indent changes */
+@keyframes indent-pulse {
+  0% {
+    transform: translateX(-5px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ProseMirror [data-indent] {
+  animation: indent-pulse 0.3s ease-out;
+}
+
+/* Phase 3.3: Clean Mode - Disable All Indent Decorations */
+.no-indent-guides .ProseMirror [data-indent]::before {
+  display: none !important;
+}
+
+.no-indent-guides .ProseMirror [data-indent]:hover {
+  background: none !important;
+}
+
+.no-indent-guides .ProseMirror [data-indent] {
+  animation: none !important;
+}
+
+/* Phase 1: Modern list styles for Bullet & Ordered lists */
+
+.ProseMirror ul {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+  /* Inherit text styling so bullets feel linked to content */
+  color: inherit;
+  font-size: inherit;
+}
+
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+  /* Inherit text styling so numbers feel linked to content */
+  color: inherit;
+  font-size: inherit;
+}
+
+/* When an ordered list item is fully bold, also bold the numeric marker */
+.ProseMirror ol li[data-marker-bold="true"]::marker {
+  font-weight: 700;
+}
+
+/* Bullet list styles */
+.ProseMirror ul[data-bullet-style="disc"] {
+  list-style-type: disc;
+}
+
+.ProseMirror ul[data-bullet-style="circle"] {
+  list-style-type: circle;
+}
+
+.ProseMirror ul[data-bullet-style="square"] {
+  list-style-type: square;
+}
+
+/* Checklist bullets with accent chip */
+.ProseMirror ul[data-bullet-style="check"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-bullet-style="check"] > li {
+  position: relative;
+  /* indent scales with text size */
+  padding-left: 1.75em;
+  margin: 0.15em 0;
+}
+
+.ProseMirror ul[data-bullet-style="check"] > li::before {
+  content: "\2713";
+  position: absolute;
+  left: 0;
+  /* Center the chip vertically relative to the text line for all font sizes */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 999px;
+  font-size: 0.7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  color: #0f172a;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+}
+
+.dark .ProseMirror ul[data-bullet-style="check"] > li::before {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #022c22;
+}
+
+/* Cross bullets for “don’t do this” style lists */
+.ProseMirror ul[data-bullet-style="cross"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-bullet-style="cross"] > li {
+  position: relative;
+  /* indent scales with text size */
+  padding-left: 1.75em;
+  margin: 0.15em 0;
+}
+
+.ProseMirror ul[data-bullet-style="cross"] > li::before {
+  content: "\2715";
+  position: absolute;
+  left: 0;
+  /* Center the chip vertically relative to the text line for all font sizes */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 999px;
+  font-size: 0.7em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f97373, #ef4444);
+  color: #111827;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45);
+}
+
+.dark .ProseMirror ul[data-bullet-style="cross"] > li::before {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fee2e2;
+}
+
+/* Accent dot bullets */
+.ProseMirror ul[data-bullet-style="accent"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-bullet-style="accent"] > li {
+  position: relative;
+  /* indent scales with text size */
+  padding-left: 1.5em;
+  margin: 0.15em 0;
+}
+
+.ProseMirror ul[data-bullet-style="accent"] > li::before {
+  content: "";
+  position: absolute;
+  left: 0.35em;
+  /* Center the accent dot vertically relative to the text line */
+  top: 50%;
+  transform: translateY(-50%);
+  /* size scales with text size */
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #a855f7, #6366f1);
+  box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.65);
+}
+
+/* Ordered list styles */
+.ProseMirror ol[data-num-style="decimal"] {
+  list-style-type: decimal;
+}
+
+.ProseMirror ol[data-num-style="lower-alpha"] {
+  list-style-type: lower-alpha;
+}
+
+.ProseMirror ol[data-num-style="upper-alpha"] {
+  list-style-type: upper-alpha;
+}
+
+.ProseMirror ol[data-num-style="lower-roman"] {
+  list-style-type: lower-roman;
+}
+
+.ProseMirror ol[data-num-style="upper-roman"] {
+  list-style-type: upper-roman;
+}
+
+/* Nested list spacing */
+.ProseMirror li > ul,
+.ProseMirror li > ol {
+  margin-top: 0.15rem;
+}
+
+/* Phase 2: Task list / checklist styles */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.25rem 0;
+}
+
+/* Layout: checkbox + content in one row (TipTap recommended pattern)
+   Align vertically centered so checkbox base feels visually aligned
+   with the first text line across font sizes. */
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2em 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0;
+  cursor: pointer;
+}
+
+/* Default checkbox size (1rem base) */
+.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 0.35rem;
+  border: 1.5px solid rgba(148, 163, 184, 0.9);
+  background: radial-gradient(circle at 30% 30%, #f9fafb, #e5e7eb);
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.35);
+  cursor: pointer;
+  margin: 0;
+  accent-color: #22c55e;
+}
+
+/* Scale checkbox size based on data-font-size attribute.
+   The font size mark uses pixel values: 12px, 16px, 20px, 24px.
+   We map those to visually proportional checkbox sizes. */
+/* Small checkbox when font size is 12px (from node attr OR inline span style) */
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="12px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 12px"]) > label input[type="checkbox"] {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* 16px = default "Normal" size → base 1.05rem already used above */
+
+/* Large checkbox when font size is 20px (attr or inline) */
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="20px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 20px"]) > label input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Huge checkbox when font size is 24px (attr or inline) */
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-font-size="24px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 24px"]) > label input[type="checkbox"] {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.dark .ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+  border-color: rgba(148, 163, 184, 0.9);
+  background: radial-gradient(circle at 30% 30%, #020617, #0f172a);
+  box-shadow: 0 0 0 1px rgba(30, 64, 175, 0.6);
+}
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-checked="true"]
+  > label
+  input[type="checkbox"] {
+  background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
+  border-color: #16a34a;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  padding-top: 0;
+}
+
+/* Make task list paragraph inline so the ✓ Done chip stays on the same line
+   and the strike-through line passes through the text instead of below it. */
+.ProseMirror ul[data-type="taskList"] li > div p {
+  display: inline;
+  margin: 0;
+}
+
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  position: relative;
+  color: #94a3b8;
+}
+
+.dark .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #64748b;
+}
+
+/* Text-only strike-through for completed tasks (follows text width) */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div p {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-decoration-skip-ink: auto;
+}
+
+/* Optional hover pill for done tasks (right after text) */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div::after {
+  content: "\2713 Done";
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  background: linear-gradient(
+    to right,
+    rgba(34, 197, 94, 0.12),
+    rgba(52, 211, 153, 0.18)
+  );
+  color: #16a34a;
+  opacity: 0;
+  transform: translateY(1px);
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.12s ease-out;
+}
+
+.ProseMirror
+  ul[data-type="taskList"]
+  li[data-checked="true"]
+  > div:hover::after {
+  opacity: 1;
+}
+
+/* Phase 3.4: Modern Link Styles - Beautiful & Secure */
+.ProseMirror a {
+  position: relative;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  background: linear-gradient(to right, #3b82f6 0%, #06b6d4 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: all 0.3s ease-out;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
+}
+
+/* External link indicator */
+.ProseMirror a[target="_blank"]::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 3px;
+  font-size: 0.75em;
+  opacity: 0.6;
+  transition: all 0.2s ease-out;
+}
+
+.ProseMirror a[target="_blank"]:hover::after {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+/* Dark mode link styles */
+.dark .ProseMirror a {
+  color: #60a5fa;
+  background: linear-gradient(to right, #3b82f6 0%, #06b6d4 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.dark .ProseMirror a:hover {
+  color: #93c5fd;
+  background-size: 100% 2px;
+}
+
+.dark .ProseMirror a[target="_blank"]::after {
+  opacity: 0.5;
+}
+
+.dark .ProseMirror a[target="_blank"]:hover::after {
+  opacity: 0.9;
+}
+
+/* Link selection/focus state */
+.ProseMirror a.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 3px;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .ProseMirror a.ProseMirror-selectednode {
+  outline-color: #60a5fa;
+  background-color: rgba(96, 165, 250, 0.1);
+}
+
+/* Mailto and Tel links - different color */
+.ProseMirror a[href^="mailto:"] {
+  color: #7c3aed;
+  background: linear-gradient(to right, #7c3aed 0%, #a855f7 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.ProseMirror a[href^="mailto:"]:hover {
+  color: #6d28d9;
+  background-size: 100% 2px;
+}
+
+.ProseMirror a[href^="tel:"] {
+  color: #059669;
+  background: linear-gradient(to right, #059669 0%, #10b981 100%);
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+}
+
+.ProseMirror a[href^="tel:"]:hover {
+  color: #047857;
+  background-size: 100% 2px;
+}
+
+.dark .ProseMirror a[href^="mailto:"] {
+  color: #a78bfa;
+}
+
+.dark .ProseMirror a[href^="mailto:"]:hover {
+  color: #c4b5fd;
+}
+
+.dark .ProseMirror a[href^="tel:"] {
+  color: #34d399;
+}
+
+.dark .ProseMirror a[href^="tel:"]:hover {
+  color: #6ee7b7;
+}
+
+/* Code Block Styles */
+.ProseMirror pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror pre code {
+  background: none;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+/* Dark mode code blocks */
+.dark .ProseMirror pre {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+/* Table Styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+  /* No border on table element - cells will create all borders */
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  min-width: 1em;
+  /* All cells get full border */
+  border-width: var(--table-border-width, 1px);
+  border-style: var(--table-border-style, solid);
+  border-color: var(--table-border-color, #e2e8f0);
+  padding: 0.5rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror table th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f1f5f9;
+}
+
+.dark .ProseMirror table td,
+.dark .ProseMirror table th {
+  border-color: var(--table-border-color, #475569);
+}
+
+.dark .ProseMirror table th {
+  background-color: #1e293b;
+}
+
+/* Hide table selection outline (dotted border) */
+.ProseMirror table.ProseMirror-selectednode {
+  outline: none !important;
+}
+
+.ProseMirror table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(139, 92, 246, 0.1);
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #8b5cf6;
+  pointer-events: none;
+}
+
+/* Highlight Styles */
+.ProseMirror mark {
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+}
+
+/* Subscript & Superscript */
+.ProseMirror sub {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+
+.ProseMirror sup {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+/* Math Inline Styles */
+.ProseMirror .math-inline {
+  display: inline-block;
+  padding: 0.125rem 0.25rem;
+  margin: 0 0.125rem;
+  background: #f1f5f9;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.dark .ProseMirror .math-inline {
+  background: #1e293b;
+}
+
+/* Focus styles */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ========================================
+   Phase 3.2: Horizontal Rule Styles
+   ======================================== */
+
+/* Base HR Styles */
+.ProseMirror hr {
+  border: none;
+  margin: 2rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror hr:hover {
+  opacity: 0.8;
+}
+
+/* Thickness Variants */
+.ProseMirror hr.hr-thickness-thin {
+  height: 1px;
+}
+
+.ProseMirror hr.hr-thickness-medium {
+  height: 2px;
+}
+
+.ProseMirror hr.hr-thickness-thick {
+  height: 4px;
+}
+
+/* Style 1: Solid */
+.ProseMirror hr.hr-solid {
+  background: var(--hr-color, #e5e7eb);
+}
+
+.dark .ProseMirror hr.hr-solid {
+  background: var(--hr-color, #374151);
+}
+
+/* Style 2: Dashed */
+.ProseMirror hr.hr-dashed {
+  background: transparent;
+  border-top: 2px dashed var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-dashed {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 3: Dotted */
+.ProseMirror hr.hr-dotted {
+  background: transparent;
+  border-top: 2px dotted var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-dotted {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 4: Double */
+.ProseMirror hr.hr-double {
+  background: transparent;
+  border-top: 3px double var(--hr-color, #e5e7eb);
+  height: 0;
+}
+
+.dark .ProseMirror hr.hr-double {
+  border-top-color: var(--hr-color, #374151);
+}
+
+/* Style 5: Gradient */
+.ProseMirror hr.hr-gradient {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hr-color, #e5e7eb),
+    transparent
+  );
+  height: 2px;
+}
+
+.dark .ProseMirror hr.hr-gradient {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hr-color, #374151),
+    transparent
+  );
+}
+
+/* Style 6: Decorative (with center ornament) */
+.ProseMirror hr.hr-decorative {
+  position: relative;
+  background: var(--hr-color, #e5e7eb);
+  height: 1px;
+}
+
+.ProseMirror hr.hr-decorative::before {
+  content: "✦";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  color: var(--hr-color, #e5e7eb);
+  padding: 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dark .ProseMirror hr.hr-decorative {
+  background: var(--hr-color, #374151);
+}
+
+.dark .ProseMirror hr.hr-decorative::before {
+  background: #0f172a;
+  color: var(--hr-color, #374151);
+}
+
+/* ========================================
+   PHASE 4: MODERN TABLE STYLING
+   ======================================== */
+
+/* Table Container */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  --table-border-radius: 0px;
+  border-radius: var(--table-border-radius, 0px);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --table-border-width: 2px;
+  --table-border-style: solid;
+  --table-border-color: #e2e8f0;
+  /* Outer border uses cell borders only; table itself has no line */
+  border: none;
+}
+
+/* Table Cells - Base Styling */
+.ProseMirror td,
+.ProseMirror th {
+  min-width: 1em;
+  border-width: var(--table-border-width, 1px);
+  border-style: var(--table-border-style, solid);
+  border-color: var(--table-border-color, #e2e8f0);
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Header Cells - Bold & Gradient Background */
+.ProseMirror th {
+  font-weight: 600;
+  text-align: left;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #1e293b;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+/* Hover Effect on Cells */
+.ProseMirror td:not([data-background-color]):hover,
+.ProseMirror th:not([data-background-color]):hover {
+  background-color: #f8fafc;
+  cursor: pointer;
+}
+
+/* Hover effect for cells with custom background - slight brightness increase */
+.ProseMirror td[data-background-color]:hover,
+.ProseMirror th[data-background-color]:hover {
+  filter: brightness(1.05);
+  cursor: pointer;
+}
+
+/* Selected Cell */
+.ProseMirror .selectedCell {
+  /* Keep the table's own border style; just add a soft highlight */
+  background-color: #dbeafe !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Phase 4.2: Cell Background Color Support */
+.ProseMirror td[data-background-color],
+.ProseMirror th[data-background-color] {
+  /* Background color is applied via inline style */
+  /* This ensures it works with the backgroundColor attribute */
+}
+
+/* Zebra Striping - Alternating Row Colors */
+/* Only apply if cell doesn't have custom background */
+.ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
+  background-color: #f9fafb;
+}
+
+.ProseMirror tbody tr:hover td:not([data-background-color]) {
+  background-color: #f1f5f9;
+}
+
+/* Column Resize Handle */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ProseMirror td:hover .column-resize-handle,
+.ProseMirror th:hover .column-resize-handle {
+  opacity: 1;
+}
+
+/* Dark Mode Table Styles */
+.dark .ProseMirror table {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  /* No separate dark border on table; cells drive borders */
+  border: none;
+}
+
+.dark .ProseMirror td,
+.dark .ProseMirror th {
+  border-color: var(--table-border-color, #334155);
+}
+
+.dark .ProseMirror th {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #f1f5f9;
+  border-bottom-color: #475569;
+}
+
+.dark .ProseMirror td:not([data-background-color]):hover,
+.dark .ProseMirror th:not([data-background-color]):hover {
+  background-color: #1e293b;
+}
+
+.dark .ProseMirror td[data-background-color]:hover,
+.dark .ProseMirror th[data-background-color]:hover {
+  filter: brightness(1.15);
+}
+
+.dark .ProseMirror .selectedCell {
+  /* Preserve custom table borders in dark mode as well */
+  background-color: #1e3a8a !important;
+}
+
+.dark .ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
+  background-color: #0f172a;
+}
+
+.dark .ProseMirror tbody tr:hover td:not([data-background-color]) {
+  background-color: #1e293b;
+}
+
+.table-resize-indicator {
+  position: absolute;
+  z-index: 1050;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.dark .table-resize-indicator {
+  background: rgba(15, 23, 42, 0.95);
+  color: #fff;
+}
+
+/* Phase 5.1: Audio Player Styles */
+.ProseMirror .audio-wrapper {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.ProseMirror .audio-wrapper:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.dark .ProseMirror .audio-wrapper {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-color: #334155;
+}
+
+.dark .ProseMirror .audio-wrapper:hover {
+  border-color: #475569;
+}
+
+.ProseMirror .audio-wrapper audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  outline: none;
+}
