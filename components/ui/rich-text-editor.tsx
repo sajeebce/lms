@@ -2691,6 +2691,7 @@ export default function RichTextEditor({
   // Resize handlers
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsResizing(true);
     resizeStartY.current = e.clientY;
     resizeStartHeight.current = editorHeight;
@@ -3034,16 +3035,16 @@ export default function RichTextEditor({
   return (
     <TooltipProvider delayDuration={300}>
       <div
-        className={`border rounded-lg dark:border-slate-700 overflow-hidden ${
+        className={`border rounded-lg dark:border-slate-700 overflow-hidden flex flex-col ${
           !showIndentGuides ? "no-indent-guides" : ""
         } ${
           isFullscreen
-            ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none flex flex-col"
+            ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none"
             : ""
         }`}
       >
-        {/* Toolbar */}
-        <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
+        {/* Toolbar - Sticky */}
+        <div className="sticky top-0 z-10 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -4688,44 +4689,56 @@ export default function RichTextEditor({
           </Tooltip>
         </div>
 
-        {/* Editor Content */}
+        {/* Editor Content - Scrollable Body */}
         <div
           onClick={() => editor?.chain().focus().run()}
-          className={`cursor-text relative ${isFullscreen ? "flex-1" : ""}`}
+          className={`cursor-text relative overflow-y-auto ${
+            isFullscreen ? "flex-1" : ""
+          }`}
           style={
             isFullscreen
               ? {}
               : {
                   height: `${editorHeight}px`,
                   minHeight: "100px",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
+                  maxHeight: `${editorHeight}px`,
                 }
           }
         >
-          <div
-            className="overflow-y-auto flex-1"
-            style={{
-              maxHeight: isFullscreen ? "auto" : `${editorHeight}px`,
-            }}
-          >
-            <EditorContent
-              editor={editor}
-              className="prose dark:prose-invert max-w-none p-4"
-            />
+          <EditorContent
+            editor={editor}
+            className="prose dark:prose-invert max-w-none p-4"
+          />
+        </div>
+
+        {/* Footer Section - Fixed at bottom */}
+        <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between">
+          {/* Word Count Display - Left side */}
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex gap-4">
+            <span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {wordCount}
+              </span>{" "}
+              {wordCount === 1 ? "word" : "words"}
+            </span>
+            <span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {charCount}
+              </span>{" "}
+              {charCount === 1 ? "character" : "characters"}
+            </span>
           </div>
 
-          {/* Resize Handle */}
+          {/* Resize Handle - Right side, same line */}
           {!isFullscreen && (
             <div
               onMouseDown={handleResizeStart}
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize group"
-              style={{ touchAction: "none" }}
+              className="w-5 h-5 cursor-nwse-resize group flex items-center justify-center select-none flex-shrink-0"
+              style={{ touchAction: "none", userSelect: "none" }}
             >
               {/* Classic diagonal dots pattern - like textarea resize grip */}
               <svg
-                className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors"
+                className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors pointer-events-none"
                 viewBox="0 0 16 16"
                 fill="currentColor"
               >
@@ -4739,22 +4752,6 @@ export default function RichTextEditor({
               </svg>
             </div>
           )}
-        </div>
-
-        {/* Phase 5.3: Word Count Display */}
-        <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs text-slate-600 dark:text-slate-400 flex justify-end gap-4">
-          <span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              {wordCount}
-            </span>{" "}
-            {wordCount === 1 ? "word" : "words"}
-          </span>
-          <span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              {charCount}
-            </span>{" "}
-            {charCount === 1 ? "character" : "characters"}
-          </span>
         </div>
 
         {/* Phase 4.2: Table Bubble Menu - Floating Toolbar */}
