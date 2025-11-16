@@ -1,0 +1,39 @@
+{
+  "name": "texril",
+  "version": "1.0.0",
+  "description": "Texril - Advanced Rich Text Editor with TipTap, embeddable as SaaS product",
+  "private": true,
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "start": "npm run start --workspace=web",
+    "lint": "npm run lint --workspace=web",
+    "install-all": "npm install && npm install --workspace=web",
+    "clean": "npm run clean --workspace=web && rm -rf node_modules"
+  },
+  "keywords": [
+    "rich-text-editor",
+    "tiptap",
+    "wysiwyg",
+    "editor",
+    "nextjs",
+    "react",
+    "saas",
+    "embeddable"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sajeebce/lms.git",
+    "directory": "texril"
+  }
+}
+
