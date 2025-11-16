@@ -470,6 +470,14 @@
   padding-top: 0;
 }
 
+/* Make task list paragraph inline so the ✓ Done chip stays on the same line
+   and the strike-through line passes through the text instead of below it. */
+.ProseMirror ul[data-type="taskList"] li > div p {
+  display: inline;
+  margin: 0;
+}
+
+
 .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
   position: relative;
   color: #94a3b8;
@@ -479,16 +487,12 @@
   color: #64748b;
 }
 
-/* Centered strike-through line that follows font size */
-.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background-color: currentColor;
-  pointer-events: none;
+/* Text-only strike-through for completed tasks (follows text width) */
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div p {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-decoration-skip-ink: auto;
 }
 
 /* Optional hover pill for done tasks (right after text) */

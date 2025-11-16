@@ -2124,6 +2124,14 @@ export default function RichTextEditor({
   const [hrThickness, setHrThickness] = useState("medium");
   const [hrColor, setHrColor] = useState("#e5e7eb");
 
+  // Text color popover state (used for palette + custom color before apply)
+  const [pendingTextColor, setPendingTextColor] = useState("#000000");
+
+  // Highlight popover state (used for palette + custom color before apply)
+  const [pendingHighlightColor, setPendingHighlightColor] = useState(
+    highlightColors[0] || "#FEF3C7",
+  );
+
   // Phase 3.3: Save indent guides preference to localStorage
   useEffect(() => {
     if (showIndentGuidesProp === undefined && typeof window !== "undefined") {
@@ -2845,18 +2853,32 @@ export default function RichTextEditor({
     { label: "Checklist", value: "check", preview: "✓" },
     { label: "Accent dot", value: "accent", preview: "•" },
     { label: "Cross (don't)", value: "cross", preview: "✕" },
+    { label: "Checkbox", value: "task", preview: "☑" },
   ];
 
-  const currentBulletListStyle =
-    editor.getAttributes("bulletList")?.bulletStyle || "disc";
+  const isTaskListActive = editor.isActive("taskList");
+
+  const currentBulletListStyle = isTaskListActive
+    ? "task"
+    : editor.getAttributes("bulletList")?.bulletStyle || "disc";
 
   const applyBulletListStyle = (style: string) => {
     if (!editor) return;
 
-    const isActive = editor.isActive("bulletList");
     const chain = editor.chain().focus();
 
-    if (!isActive) {
+    if (style === "task") {
+      chain.toggleTaskList().run();
+      return;
+    }
+
+    if (editor.isActive("taskList")) {
+      chain.toggleTaskList();
+    }
+
+    const isBulletActive = editor.isActive("bulletList");
+
+    if (!isBulletActive) {
       chain.toggleBulletList();
     }
 
@@ -3075,7 +3097,7 @@ export default function RichTextEditor({
               </TooltipTrigger>
               <TooltipContent>Text Color</TooltipContent>
             </Tooltip>
-            <PopoverContent className="w-64">
+            <PopoverContent className="w-80">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Text Color</Label>
                 <div className="grid grid-cols-8 gap-2">
@@ -3086,46 +3108,100 @@ export default function RichTextEditor({
                       className="w-6 h-6 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
                       style={{ backgroundColor: color }}
                       onClick={() => {
-                        if (!editor) return;
-
-                        const chain = editor.chain().focus().setColor(color);
-
-                        // Sync text color to list bullets, numbers, and task checkboxes
-                        chain.updateAttributes("listItem", {
-                          textColor: color,
-                        });
-                        chain.updateAttributes("taskItem", {
-                          textColor: color,
-                        });
-
-                        chain.run();
+                        setPendingTextColor(color);
                       }}
                     />
                   ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    if (!editor) return;
+	                <div className="mt-2 space-y-3">
+	                  <Label className="text-xs font-medium">Custom Color</Label>
+	                  <div className="flex items-center gap-3">
+	                    <input
+	                      type="color"
+	                      value={pendingTextColor}
+	                      onChange={(e) => setPendingTextColor(e.target.value)}
+	                      className="w-10 h-8 md:w-12 md:h-10 rounded-md border cursor-pointer border-slate-300 dark:border-slate-600"
+	                    />
+	                    <input
+	                      type="text"
+	                      value={pendingTextColor}
+	                      onChange={(e) => setPendingTextColor(e.target.value)}
+	                      className="flex-1 px-2 py-2 text-sm border rounded-md font-mono dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+	                      placeholder="#000000"
+	                    />
+	                  </div>
+	                  <p className="text-xs text-slate-500 dark:text-slate-400">
+	                    Click color box or enter hex code
+	                  </p>
+	                  <div className="space-y-1">
+	                    <Label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+	                      Preview
+	                    </Label>
+	                    <div className="mt-1 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900/40">
+	                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+	                        Aa
+	                      </span>
+	                      <span
+	                        className="ml-2 flex-1 text-right font-medium"
+	                        style={{ color: pendingTextColor }}
+	                      >
+	                        Preview text
+	                      </span>
+	                    </div>
+	                  </div>
+	                </div>
 
-                    const chain = editor.chain().focus().unsetColor();
+                <div className="mt-3 flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (!editor) return;
 
-                    // Reset list + task item text color attributes
-                    chain.updateAttributes("listItem", {
-                      textColor: null,
-                    });
-                    chain.updateAttributes("taskItem", {
-                      textColor: null,
-                    });
+                      const color = pendingTextColor || "#000000";
 
-                    chain.run();
-                  }}
-                >
-                  Remove Color
-                </Button>
+                      const chain = editor.chain().focus().setColor(color);
+
+                      // Sync text color to list bullets, numbers, and task checkboxes
+                      chain.updateAttributes("listItem", {
+                        textColor: color,
+                      });
+                      chain.updateAttributes("taskItem", {
+                        textColor: color,
+                      });
+
+                      chain.run();
+                    }}
+                  >
+                    Apply Color
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (!editor) return;
+
+                      const chain = editor.chain().focus().unsetColor();
+
+                      // Reset list + task item text color attributes
+                      chain.updateAttributes("listItem", {
+                        textColor: null,
+                      });
+                      chain.updateAttributes("taskItem", {
+                        textColor: null,
+                      });
+
+                      chain.run();
+
+                      setPendingTextColor("#000000");
+                    }}
+                  >
+                    Remove Color
+                  </Button>
+                </div>
               </div>
             </PopoverContent>
           </Popover>
@@ -3147,7 +3223,7 @@ export default function RichTextEditor({
               </TooltipTrigger>
               <TooltipContent>Highlight</TooltipContent>
             </Tooltip>
-            <PopoverContent className="w-64">
+            <PopoverContent className="w-80">
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Highlight</Label>
                 <div className="grid grid-cols-6 gap-2">
@@ -3157,21 +3233,82 @@ export default function RichTextEditor({
                       type="button"
                       className="w-8 h-8 rounded border-2 border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
                       style={{ backgroundColor: color }}
-                      onClick={() =>
-                        editor.chain().focus().toggleHighlight({ color }).run()
-                      }
+                      onClick={() => {
+                        setPendingHighlightColor(color);
+                      }}
                     />
                   ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => editor.chain().focus().unsetHighlight().run()}
-                >
-                  Remove Highlight
-                </Button>
+
+                <div className="mt-2 space-y-3">
+                  <Label className="text-xs font-medium">Custom Highlight</Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={pendingHighlightColor}
+                      onChange={(e) => setPendingHighlightColor(e.target.value)}
+                      className="w-10 h-8 md:w-12 md:h-10 rounded-md border cursor-pointer border-slate-300 dark:border-slate-600"
+                    />
+                    <input
+                      type="text"
+                      value={pendingHighlightColor}
+                      onChange={(e) => setPendingHighlightColor(e.target.value)}
+                      className="flex-1 px-2 py-2 text-sm border rounded-md font-mono dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      placeholder="#FEF3C7"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Click color box or enter hex code
+                  </p>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      Preview
+                    </Label>
+                    <div
+                      className="mt-1 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900/40"
+                      style={{ backgroundColor: pendingHighlightColor }}
+                    >
+                      <span className="text-[11px] text-slate-700 dark:text-slate-100">
+                        Aa
+                      </span>
+                      <span className="ml-2 flex-1 text-right font-medium text-slate-800 dark:text-slate-50">
+                        Highlight preview
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (!editor) return;
+
+                      const color =
+                        pendingHighlightColor || highlightColors[0] || "#FEF3C7";
+
+                      editor.chain().focus().setHighlight({ color }).run();
+                    }}
+                  >
+                    Apply Highlight
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (!editor) return;
+
+                      editor.chain().focus().unsetHighlight().run();
+                      setPendingHighlightColor(highlightColors[0] || "#FEF3C7");
+                    }}
+                  >
+                    Remove Highlight
+                  </Button>
+                </div>
               </div>
             </PopoverContent>
           </Popover>
@@ -3541,6 +3678,9 @@ export default function RichTextEditor({
                   </div>
                 </PopoverContent>
               </Popover>
+
+
+
             </div>
 
             {/* Ordered list group */}
@@ -3631,25 +3771,6 @@ export default function RichTextEditor({
               </Popover>
             </div>
 
-            {/* Task list / checklist */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor.chain().focus().toggleTaskList().run()}
-                  className={
-                    editor.isActive("taskList")
-                      ? "bg-slate-200 dark:bg-slate-700"
-                      : ""
-                  }
-                >
-                  <CheckSquare className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Checklist</TooltipContent>
-            </Tooltip>
           </div>
 
           {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
