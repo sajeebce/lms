@@ -2128,9 +2128,11 @@ export default function RichTextEditor({
   const [pendingTextColor, setPendingTextColor] = useState("#000000");
 
   // Highlight popover state (used for palette + custom color before apply)
-  const [pendingHighlightColor, setPendingHighlightColor] = useState(
-    highlightColors[0] || "#FEF3C7",
-  );
+  // Note: we can't reference `highlightColors` here because it's declared later
+  // in the component body (would cause a runtime "Temporal Dead Zone" error).
+  // So we use the default literal and only reference `highlightColors` inside
+  // event handlers defined after the presets.
+  const [pendingHighlightColor, setPendingHighlightColor] = useState("#FEF3C7");
 
   // Phase 3.3: Save indent guides preference to localStorage
   useEffect(() => {
