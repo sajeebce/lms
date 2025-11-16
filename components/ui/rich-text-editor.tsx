@@ -3042,9 +3042,16 @@ export default function RichTextEditor({
             ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none"
             : ""
         }`}
+        style={
+          isFullscreen
+            ? {}
+            : {
+                height: `${editorHeight + 200}px`, // body height + toolbar (~100-150px) + footer (~40px) + buffer
+              }
+        }
       >
-        {/* Toolbar - Sticky */}
-        <div className="sticky top-0 z-10 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
+        {/* Toolbar - Fixed at top */}
+        <div className="flex-shrink-0 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -4692,18 +4699,9 @@ export default function RichTextEditor({
         {/* Editor Content - Scrollable Body */}
         <div
           onClick={() => editor?.chain().focus().run()}
-          className={`cursor-text relative overflow-y-auto ${
-            isFullscreen ? "flex-1" : ""
+          className={`cursor-text relative flex-1 overflow-y-auto ${
+            isFullscreen ? "" : ""
           }`}
-          style={
-            isFullscreen
-              ? {}
-              : {
-                  height: `${editorHeight}px`,
-                  minHeight: "100px",
-                  maxHeight: `${editorHeight}px`,
-                }
-          }
         >
           <EditorContent
             editor={editor}
@@ -4712,7 +4710,7 @@ export default function RichTextEditor({
         </div>
 
         {/* Footer Section - Fixed at bottom */}
-        <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between">
+        <div className="flex-shrink-0 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between">
           {/* Word Count Display - Left side */}
           <div className="text-xs text-slate-600 dark:text-slate-400 flex gap-4">
             <span>
