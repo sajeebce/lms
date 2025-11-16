@@ -2115,6 +2115,14 @@ export default function RichTextEditor({
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
 
+  // Resize functionality state
+  const [editorHeight, setEditorHeight] = useState<number>(
+    parseInt(minHeight) || 200
+  );
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartY = useRef(0);
+  const resizeStartHeight = useRef(0);
+
   // Fix: Force re-render when editor selection/active state changes
   // This ensures toolbar buttons show active state immediately on click
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -2680,6 +2688,36 @@ export default function RichTextEditor({
     };
   }, [editor]);
 
+  // Resize handlers
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStartY.current = e.clientY;
+    resizeStartHeight.current = editorHeight;
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizeStartY.current;
+      const newHeight = Math.max(100, resizeStartHeight.current + deltaY);
+      setEditorHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
   if (!editor) {
     return null;
   }
@@ -3115,43 +3153,43 @@ export default function RichTextEditor({
                     />
                   ))}
                 </div>
-	                <div className="mt-2 space-y-3">
-	                  <Label className="text-xs font-medium">Custom Color</Label>
-	                  <div className="flex items-center gap-3">
-	                    <input
-	                      type="color"
-	                      value={pendingTextColor}
-	                      onChange={(e) => setPendingTextColor(e.target.value)}
-	                      className="w-10 h-8 md:w-12 md:h-10 rounded-md border cursor-pointer border-slate-300 dark:border-slate-600"
-	                    />
-	                    <input
-	                      type="text"
-	                      value={pendingTextColor}
-	                      onChange={(e) => setPendingTextColor(e.target.value)}
-	                      className="flex-1 px-2 py-2 text-sm border rounded-md font-mono dark:bg-slate-800 border-slate-300 dark:border-slate-600"
-	                      placeholder="#000000"
-	                    />
-	                  </div>
-	                  <p className="text-xs text-slate-500 dark:text-slate-400">
-	                    Click color box or enter hex code
-	                  </p>
-	                  <div className="space-y-1">
-	                    <Label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-	                      Preview
-	                    </Label>
-	                    <div className="mt-1 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900/40">
-	                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
-	                        Aa
-	                      </span>
-	                      <span
-	                        className="ml-2 flex-1 text-right font-medium"
-	                        style={{ color: pendingTextColor }}
-	                      >
-	                        Preview text
-	                      </span>
-	                    </div>
-	                  </div>
-	                </div>
+                <div className="mt-2 space-y-3">
+                  <Label className="text-xs font-medium">Custom Color</Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={pendingTextColor}
+                      onChange={(e) => setPendingTextColor(e.target.value)}
+                      className="w-10 h-8 md:w-12 md:h-10 rounded-md border cursor-pointer border-slate-300 dark:border-slate-600"
+                    />
+                    <input
+                      type="text"
+                      value={pendingTextColor}
+                      onChange={(e) => setPendingTextColor(e.target.value)}
+                      className="flex-1 px-2 py-2 text-sm border rounded-md font-mono dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      placeholder="#000000"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Click color box or enter hex code
+                  </p>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      Preview
+                    </Label>
+                    <div className="mt-1 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-900/40">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Aa
+                      </span>
+                      <span
+                        className="ml-2 flex-1 text-right font-medium"
+                        style={{ color: pendingTextColor }}
+                      >
+                        Preview text
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-3 flex flex-col gap-2">
                   <Button
@@ -3243,7 +3281,9 @@ export default function RichTextEditor({
                 </div>
 
                 <div className="mt-2 space-y-3">
-                  <Label className="text-xs font-medium">Custom Highlight</Label>
+                  <Label className="text-xs font-medium">
+                    Custom Highlight
+                  </Label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -3289,7 +3329,9 @@ export default function RichTextEditor({
                       if (!editor) return;
 
                       const color =
-                        pendingHighlightColor || highlightColors[0] || "#FEF3C7";
+                        pendingHighlightColor ||
+                        highlightColors[0] ||
+                        "#FEF3C7";
 
                       editor.chain().focus().setHighlight({ color }).run();
                     }}
@@ -3680,9 +3722,6 @@ export default function RichTextEditor({
                   </div>
                 </PopoverContent>
               </Popover>
-
-
-
             </div>
 
             {/* Ordered list group */}
@@ -3772,7 +3811,6 @@ export default function RichTextEditor({
                 </PopoverContent>
               </Popover>
             </div>
-
           </div>
 
           {/* Phase 3.1: Blockquote with Styles and Preset Themes */}
@@ -4651,13 +4689,57 @@ export default function RichTextEditor({
         </div>
 
         {/* Editor Content */}
-        <EditorContent
-          editor={editor}
-          className={`prose dark:prose-invert max-w-none p-4 ${
-            isFullscreen ? "flex-1 overflow-y-auto" : ""
-          }`}
-          style={isFullscreen ? { minHeight: "auto" } : { minHeight }}
-        />
+        <div
+          onClick={() => editor?.chain().focus().run()}
+          className={`cursor-text relative ${isFullscreen ? "flex-1" : ""}`}
+          style={
+            isFullscreen
+              ? {}
+              : {
+                  height: `${editorHeight}px`,
+                  minHeight: "100px",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                }
+          }
+        >
+          <div
+            className="overflow-y-auto flex-1"
+            style={{
+              maxHeight: isFullscreen ? "auto" : `${editorHeight}px`,
+            }}
+          >
+            <EditorContent
+              editor={editor}
+              className="prose dark:prose-invert max-w-none p-4"
+            />
+          </div>
+
+          {/* Resize Handle */}
+          {!isFullscreen && (
+            <div
+              onMouseDown={handleResizeStart}
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize group"
+              style={{ touchAction: "none" }}
+            >
+              {/* Classic diagonal dots pattern - like textarea resize grip */}
+              <svg
+                className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                {/* Diagonal dots pattern */}
+                <circle cx="13" cy="13" r="1.5" />
+                <circle cx="9" cy="13" r="1.5" />
+                <circle cx="13" cy="9" r="1.5" />
+                <circle cx="5" cy="13" r="1.5" />
+                <circle cx="9" cy="9" r="1.5" />
+                <circle cx="13" cy="5" r="1.5" />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {/* Phase 5.3: Word Count Display */}
         <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs text-slate-600 dark:text-slate-400 flex justify-end gap-4">
