@@ -383,17 +383,19 @@
   margin: 0.25rem 0;
 }
 
-/* Layout: checkbox + content in one row (TipTap recommended pattern) */
+/* Layout: checkbox + content in one row (TipTap recommended pattern)
+   Align vertically centered so checkbox base feels visually aligned
+   with the first text line across font sizes. */
 .ProseMirror ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   margin: 0.2em 0;
 }
 
 .ProseMirror ul[data-type="taskList"] li > label {
   flex: 0 0 auto;
-  margin-top: 0.2em;
+  margin-top: 0;
   cursor: pointer;
 }
 
@@ -413,34 +415,37 @@
 /* Scale checkbox size based on data-font-size attribute.
    The font size mark uses pixel values: 12px, 16px, 20px, 24px.
    We map those to visually proportional checkbox sizes. */
+/* Small checkbox when font size is 12px (from node attr OR inline span style) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="12px"]
-  > label
-  input[type="checkbox"] {
-  /* Small */
+  li[data-font-size="12px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 12px"]) > label input[type="checkbox"] {
   width: 0.8rem;
   height: 0.8rem;
 }
 
 /* 16px = default "Normal" size → base 1.05rem already used above */
 
+/* Large checkbox when font size is 20px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="20px"]
-  > label
-  input[type="checkbox"] {
-  /* Large */
+  li[data-font-size="20px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 20px"]) > label input[type="checkbox"] {
   width: 1.25rem;
   height: 1.25rem;
 }
 
+/* Huge checkbox when font size is 24px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="24px"]
-  > label
-  input[type="checkbox"] {
-  /* Huge */
+  li[data-font-size="24px"] > label input[type="checkbox"],
+.ProseMirror
+  ul[data-type="taskList"]
+  li:has(span[style*="font-size: 24px"]) > label input[type="checkbox"] {
   width: 1.45rem;
   height: 1.45rem;
 }
@@ -462,7 +467,7 @@
 
 .ProseMirror ul[data-type="taskList"] li > div {
   flex: 1 1 auto;
-  padding-top: 0.05rem;
+  padding-top: 0;
 }
 
 .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {

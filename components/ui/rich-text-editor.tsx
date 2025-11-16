@@ -1817,6 +1817,7 @@ const TaskItemFontSizeSync = Extension.create({
 
           const textStyleMark = newState.schema.marks.textStyle;
           const taskItemType = newState.schema.nodes.taskItem;
+          const taskListType = newState.schema.nodes.taskList;
 
           if (!textStyleMark || !taskItemType) {
             return;
@@ -1824,49 +1825,76 @@ const TaskItemFontSizeSync = Extension.create({
 
           let tr = null;
 
-          newState.doc.descendants((node, pos) => {
-            if (node.type !== taskItemType) {
-              return;
-            }
-
-            let fontSizeFromText: string | null = null;
-
-            node.descendants((child) => {
-              if (!child.isText) {
+          // Walk the document with parent + index info so we can inherit font size
+          newState.doc.nodesBetween(
+            0,
+            newState.doc.content.size,
+            (node, pos, parent, index) => {
+              if (node.type !== taskItemType) {
                 return;
               }
 
-              const text = child.text || "";
-              if (text.trim().length === 0) {
-                return;
-              }
+              let fontSizeFromText: string | null = null;
 
-              const textStyle = child.marks.find(
-                (mark) => mark.type === textStyleMark
-              );
+              node.descendants((child) => {
+                if (!child.isText) {
+                  return;
+                }
 
-              if (textStyle && typeof textStyle.attrs.fontSize === "string") {
-                fontSizeFromText = textStyle.attrs.fontSize;
-              }
-            });
+                const text = child.text || "";
+                if (text.trim().length === 0) {
+                  return;
+                }
 
-            const currentFontSize =
-              typeof node.attrs.fontSize === "string"
-                ? node.attrs.fontSize
-                : null;
+                const textStyle = child.marks.find(
+                  (mark) => mark.type === textStyleMark
+                );
 
-            // Only update when value actually changed
-            if (fontSizeFromText !== currentFontSize) {
-              if (!tr) {
-                tr = newState.tr;
-              }
-
-              tr.setNodeMarkup(pos, undefined, {
-                ...node.attrs,
-                fontSize: fontSizeFromText,
+                if (textStyle && typeof textStyle.attrs.fontSize === "string") {
+                  fontSizeFromText = textStyle.attrs.fontSize;
+                }
               });
+
+              // If no explicit font size from text, try inheriting from previous task item sibling
+              let inheritedFontSize: string | null = null;
+
+              if (
+                !fontSizeFromText &&
+                parent &&
+                taskListType &&
+                parent.type === taskListType &&
+                typeof index === "number" &&
+                index > 0
+              ) {
+                const prevSibling = parent.child(index - 1);
+                if (
+                  prevSibling.type === taskItemType &&
+                  typeof prevSibling.attrs.fontSize === "string"
+                ) {
+                  inheritedFontSize = prevSibling.attrs.fontSize;
+                }
+              }
+
+              const targetFontSize = fontSizeFromText || inheritedFontSize;
+
+              const currentFontSize =
+                typeof node.attrs.fontSize === "string"
+                  ? node.attrs.fontSize
+                  : null;
+
+              // Only update when value actually changed
+              if (targetFontSize !== currentFontSize) {
+                if (!tr) {
+                  tr = newState.tr;
+                }
+
+                tr.setNodeMarkup(pos, undefined, {
+                  ...node.attrs,
+                  fontSize: targetFontSize,
+                });
+              }
             }
-          });
+          );
 
           if (tr && tr.docChanged) {
             return tr;
@@ -3176,17 +3204,17 @@ export default function RichTextEditor({
                       const chain = editor
                         .chain()
                         .focus()
-                        .setMark("textStyle", { fontSize: size.value });
-
-                      // Sync font size to list bullets and numbers
-                      chain.updateAttributes("listItem", {
-                        fontSize: size.value,
-                      });
+                        .setMark("textStyle", { fontSize: size.value })
+                        // Sync font size to list bullets and numbers
+                        .updateAttributes("listItem", {
+                          fontSize: size.value,
+                        })
+                        // Ensure checklist items use the same font size for their checkbox as text
+                        .updateAttributes("taskItem", {
+                          fontSize: size.value,
+                        });
 
                       chain.run();
-
-                      // Ensure checklist items use the same font size for their checkbox
-                      syncTaskItemFontSize(editor, size.value);
                     }}
                   >
                     {size.label}
