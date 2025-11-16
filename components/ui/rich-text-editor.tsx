@@ -2115,6 +2115,9 @@ export default function RichTextEditor({
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
 
+  // Active Tools Breadcrumb state
+  const [activeTools, setActiveTools] = useState<string[]>([]);
+
   // Resize functionality state
   const [editorHeight, setEditorHeight] = useState<number>(
     parseInt(minHeight) || 200
@@ -2543,6 +2546,134 @@ export default function RichTextEditor({
 
     return () => {
       editor.off("update", updateWordCount);
+    };
+  }, [editor]);
+
+  // Active Tools Breadcrumb - Show DOM hierarchy path (like DevTools)
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateActiveTools = () => {
+      const path: string[] = [];
+
+      // Get current cursor position
+      const { $from } = editor.state.selection;
+
+      // Traverse from root to current position (DOM hierarchy)
+      for (let depth = 0; depth <= $from.depth; depth++) {
+        const node = $from.node(depth);
+
+        // Skip document root
+        if (node.type.name === "doc") continue;
+
+        // Map node types to readable names
+        let nodeName = "";
+
+        switch (node.type.name) {
+          case "heading":
+            nodeName = `h${node.attrs.level}`;
+            break;
+          case "paragraph":
+            nodeName = "p";
+            break;
+          case "bulletList":
+            nodeName = "ul";
+            break;
+          case "orderedList":
+            nodeName = "ol";
+            break;
+          case "listItem":
+            nodeName = "li";
+            break;
+          case "table":
+            nodeName = "table";
+            break;
+          case "tableRow":
+            nodeName = "tr";
+            break;
+          case "tableCell":
+            nodeName = "td";
+            break;
+          case "tableHeader":
+            nodeName = "th";
+            break;
+          case "blockquote":
+            nodeName = "blockquote";
+            break;
+          case "codeBlock":
+            nodeName = "code";
+            break;
+          case "horizontalRule":
+            nodeName = "hr";
+            break;
+          case "hardBreak":
+            nodeName = "br";
+            break;
+          default:
+            // Use original name for custom nodes (math, image, etc.)
+            nodeName = node.type.name;
+        }
+
+        if (nodeName) {
+          path.push(nodeName);
+        }
+      }
+
+      // Add active marks (bold, italic, etc.) at the end
+      const marks = $from.marks();
+      marks.forEach((mark) => {
+        let markName = "";
+
+        switch (mark.type.name) {
+          case "bold":
+            markName = "strong";
+            break;
+          case "italic":
+            markName = "em";
+            break;
+          case "underline":
+            markName = "u";
+            break;
+          case "strike":
+            markName = "s";
+            break;
+          case "code":
+            markName = "code";
+            break;
+          case "link":
+            markName = "a";
+            break;
+          case "superscript":
+            markName = "sup";
+            break;
+          case "subscript":
+            markName = "sub";
+            break;
+          case "highlight":
+            markName = "mark";
+            break;
+          default:
+            markName = mark.type.name;
+        }
+
+        if (markName) {
+          path.push(markName);
+        }
+      });
+
+      setActiveTools(path);
+    };
+
+    // Initial update
+    updateActiveTools();
+
+    // Update on selection change and content update
+    editor.on("selectionUpdate", updateActiveTools);
+    editor.on("update", updateActiveTools);
+
+    return () => {
+      editor.off("selectionUpdate", updateActiveTools);
+      editor.off("update", updateActiveTools);
     };
   }, [editor]);
 
@@ -3043,7 +3174,7 @@ export default function RichTextEditor({
             : ""
         }`}
       >
-        {/* Toolbar - Fixed at top */}
+        {/* Main Toolbar - Fixed at top */}
         <div className="flex-shrink-0 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
           <Tooltip>
@@ -4689,6 +4820,13 @@ export default function RichTextEditor({
           </Tooltip>
         </div>
 
+        {/* Table Toolbar - Shows when table is selected */}
+        {editor && editor.isActive("table") && (
+          <div className="flex-shrink-0 border-b dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-2 flex flex-wrap gap-1 items-center">
+            <TableBubbleMenu editor={editor} />
+          </div>
+        )}
+
         {/* Editor Content - Scrollable Body */}
         <div
           onClick={() => editor?.chain().focus().run()}
@@ -4711,9 +4849,20 @@ export default function RichTextEditor({
         </div>
 
         {/* Footer Section - Fixed at bottom */}
-        <div className="flex-shrink-0 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between">
-          {/* Word Count Display - Left side */}
-          <div className="text-xs text-slate-600 dark:text-slate-400 flex gap-4">
+        <div className="flex-shrink-0 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between gap-4">
+          {/* Left: Active Tools Breadcrumb - DOM Hierarchy Path */}
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0 min-w-0">
+            {activeTools.length > 0 ? (
+              <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                {activeTools.join(" › ")}
+              </span>
+            ) : (
+              <span className="text-slate-500 dark:text-slate-500">body</span>
+            )}
+          </div>
+
+          {/* Center/Right: Word Count Display */}
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex gap-4 flex-shrink-0">
             <span>
               <span className="font-medium text-slate-700 dark:text-slate-300">
                 {wordCount}
@@ -4728,7 +4877,7 @@ export default function RichTextEditor({
             </span>
           </div>
 
-          {/* Resize Handle - Right side, same line */}
+          {/* Far Right: Resize Handle */}
           {!isFullscreen && (
             <div
               onMouseDown={handleResizeStart}
@@ -4752,9 +4901,6 @@ export default function RichTextEditor({
             </div>
           )}
         </div>
-
-        {/* Phase 4.2: Table Bubble Menu - Floating Toolbar */}
-        {editor && <TableBubbleMenu editor={editor} />}
 
         {/* MathLive Modal */}
         <MathLiveModal

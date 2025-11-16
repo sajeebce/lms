@@ -50,8 +50,6 @@ const PRESET_COLORS = [
 export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [borderStyleOpen, setBorderStyleOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
   const [customColor, setCustomColor] = useState("#ffffff");
   const [selectedCellsCount, setSelectedCellsCount] = useState(1);
   const [backgroundScope, setBackgroundScope] =
@@ -69,7 +67,6 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   const [cellAlignment, setCellAlignmentState] = useState<
     "left" | "center" | "right"
   >("left");
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const getResolvedPosition = (): ResolvedPos | null => {
     if (!editor) return null;
@@ -181,94 +178,60 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   useEffect(() => {
     if (!editor) return;
 
-    const updateVisibility = () => {
-      const isTableActive = editor.isActive("table");
-      setIsVisible(isTableActive);
+    const updateTableState = () => {
+      const { state } = editor;
+      const { selection } = state;
 
-      if (isTableActive) {
-        const { state, view } = editor;
-        const selection = state.selection;
-        const from =
-          "from" in selection
-            ? (selection as any).from
-            : selection.$from?.pos ??
-              (selection instanceof CellSelection
-                ? selection.$anchorCell.pos
-                : selection.$anchor?.pos) ??
-              0;
-        const tableNode = view.domAtPos(from);
-        let tableElement: HTMLElement | null = null;
+      if (selection instanceof CellSelection) {
+        setSelectedCellsCount(selection.ranges.length);
+      } else {
+        setSelectedCellsCount(1);
+      }
 
-        if (tableNode.node instanceof HTMLElement) {
-          tableElement = tableNode.node.closest("table");
-        } else if (tableNode.node instanceof Text) {
-          tableElement = tableNode.node.parentElement
-            ? tableNode.node.parentElement.closest("table")
-            : null;
-        }
+      const tableInfo = findTableNode();
+      if (tableInfo) {
+        const width =
+          parseInt((tableInfo.node.attrs.borderWidth as string) || "2", 10) ||
+          2;
+        const style = ((tableInfo.node.attrs.borderStyle as BorderStyle) ||
+          "solid") as BorderStyle;
+        const color = (tableInfo.node.attrs.borderColor as string) || "#cbd5e1";
+        const radius =
+          parseInt((tableInfo.node.attrs.borderRadius as string) || "0", 10) ||
+          0;
 
-        if (tableElement) {
-          const rect = tableElement.getBoundingClientRect();
-          setPosition({
-            top: rect.bottom + window.scrollY + 8, // 8px below table
-            left: rect.left + rect.width / 2 + window.scrollX,
-          });
-        }
+        setTableBorderWidth(width);
+        setTableBorderStyle(style);
+        setTableBorderColor(color);
+        setTableBorderRadius(radius);
 
-        if (selection instanceof CellSelection) {
-          setSelectedCellsCount(selection.ranges.length);
-        } else {
-          setSelectedCellsCount(1);
-        }
+        // Also update pending values
+        setPendingBorderWidth(width);
+        setPendingBorderStyle(style);
+        setPendingBorderColor(color);
+        setPendingBorderRadius(radius);
+      }
 
-        const tableInfo = findTableNode();
-        if (tableInfo) {
-          const width =
-            parseInt((tableInfo.node.attrs.borderWidth as string) || "2", 10) ||
-            2;
-          const style = ((tableInfo.node.attrs.borderStyle as BorderStyle) ||
-            "solid") as BorderStyle;
-          const color =
-            (tableInfo.node.attrs.borderColor as string) || "#cbd5e1";
-          const radius =
-            parseInt(
-              (tableInfo.node.attrs.borderRadius as string) || "0",
-              10
-            ) || 0;
-
-          setTableBorderWidth(width);
-          setTableBorderStyle(style);
-          setTableBorderColor(color);
-          setTableBorderRadius(radius);
-
-          // Also update pending values
-          setPendingBorderWidth(width);
-          setPendingBorderStyle(style);
-          setPendingBorderColor(color);
-          setPendingBorderRadius(radius);
-        }
-
-        const cellInfo = findFirstCellNode();
-        if (cellInfo) {
-          setCellAlignmentState(
-            ((cellInfo.node.attrs.textAlign as "left" | "center" | "right") ||
-              "left") ??
-              "left"
-          );
-        }
+      const cellInfo = findFirstCellNode();
+      if (cellInfo) {
+        setCellAlignmentState(
+          ((cellInfo.node.attrs.textAlign as "left" | "center" | "right") ||
+            "left") ??
+            "left"
+        );
       }
     };
 
-    editor.on("selectionUpdate", updateVisibility);
-    editor.on("transaction", updateVisibility);
+    editor.on("selectionUpdate", updateTableState);
+    editor.on("transaction", updateTableState);
 
     return () => {
-      editor.off("selectionUpdate", updateVisibility);
-      editor.off("transaction", updateVisibility);
+      editor.off("selectionUpdate", updateTableState);
+      editor.off("transaction", updateTableState);
     };
   }, [editor]);
 
-  if (!editor || !isVisible) return null;
+  if (!editor) return null;
 
   const applyRowBackground = (color: string, mode: "even" | "odd") => {
     const tableInfo = findTableNode();
@@ -437,15 +400,7 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="absolute z-50 flex items-center gap-1 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        transform: "translateX(-50%)",
-      }}
-    >
+    <>
       {/* Add Row Above */}
       <Button
         type="button"
@@ -850,6 +805,6 @@ export function TableBubbleMenu({ editor }: TableBubbleMenuProps) {
           </div>
         </PopoverContent>
       </Popover>
-    </div>
+    </>
   );
 }
