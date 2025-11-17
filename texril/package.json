@@ -12,7 +12,11 @@
     "start": "npm run start --workspace=web",
     "lint": "npm run lint --workspace=web",
     "install-all": "npm install && npm install --workspace=web",
-    "clean": "npm run clean --workspace=web && rm -rf node_modules"
+    "clean": "npm run clean --workspace=web && rm -rf node_modules",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed"
   },
   "keywords": [
     "rich-text-editor",
@@ -34,6 +38,15 @@
     "type": "git",
     "url": "https://github.com/sajeebce/lms.git",
     "directory": "texril"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "prisma": "^5.17.0",
+    "tsx": "^4.17.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }
-

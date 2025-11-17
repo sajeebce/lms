@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,45 +12,72 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  code: z.string().max(20, 'Code must be 20 characters or less').optional(),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
-  icon: z.string().max(50, 'Icon must be 50 characters or less').optional(),
-  color: z.string().max(20, 'Color must be 20 characters or less').optional(),
-  order: z.number().min(0).max(9999).optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-})
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  code: z.string().max(20, "Code must be 20 characters or less").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional(),
+  icon: z.string().max(50, "Icon must be 50 characters or less").optional(),
+  color: z.string().max(20, "Color must be 20 characters or less").optional(),
+  order: z.coerce.number().min(0).max(9999).optional(),
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+});
 
-type FormData = z.infer<typeof formSchema>
+type FormData = z.infer<typeof formSchema>;
 
 type SubjectFormProps = {
-  initialData?: Partial<FormData>
-  onSubmit: (data: FormData) => Promise<void>
-}
+  initialData?: Partial<FormData>;
+  suggestedOrder?: number;
+  onSubmit: (data: FormData) => Promise<{
+    success: boolean;
+    fieldError?: string;
+    error?: string;
+  }>;
+};
 
-export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps) {
+export default function SubjectForm({
+  initialData,
+  suggestedOrder,
+  onSubmit,
+}: SubjectFormProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: initialData?.name || '',
-      code: initialData?.code || '',
-      description: initialData?.description || '',
-      icon: initialData?.icon || '',
-      color: initialData?.color || '#6366f1',
-      order: initialData?.order || 0,
-      status: initialData?.status || 'ACTIVE',
+      name: initialData?.name || "",
+      code: initialData?.code || "",
+      description: initialData?.description || "",
+      icon: initialData?.icon || "",
+      color: initialData?.color || "#6366f1",
+      order: initialData?.order ?? suggestedOrder ?? undefined,
+      status: initialData?.status || "ACTIVE",
     },
-  })
+  });
 
   const handleSubmit = async (data: FormData) => {
-    await onSubmit(data)
-  }
+    // Clear previous order errors before submit
+    form.clearErrors("order");
+
+    const result = await onSubmit(data);
+
+    if (!result?.success) {
+      if (result?.fieldError) {
+        form.setError("order", {
+          type: "manual",
+          message: result.fieldError,
+        });
+      }
+    }
+  };
 
   return (
     <Form {...form}>
@@ -62,7 +89,9 @@ export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps)
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="dark:text-slate-200">Subject Name *</FormLabel>
+                <FormLabel className="dark:text-slate-200">
+                  Subject Name *
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="e.g., Mathematics"
@@ -85,7 +114,9 @@ export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps)
             name="code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="dark:text-slate-200">Subject Code</FormLabel>
+                <FormLabel className="dark:text-slate-200">
+                  Subject Code
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="e.g., MATH"
@@ -156,16 +187,29 @@ export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps)
                 <FormLabel className="dark:text-slate-200">Order</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
-                    min={0}
-                    max={9999}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
                     className="dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
                     {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      // Allow clearing the field completely for auto ordering
+                      if (raw === "") {
+                        field.onChange(undefined as any);
+                        return;
+                      }
+                      // Only allow digits
+                      if (!/^\d+$/.test(raw)) {
+                        return;
+                      }
+                      // Store as number; Zod will also coerce on submit
+                      field.onChange(Number(raw) as any);
+                    }}
                   />
                 </FormControl>
                 <FormDescription className="dark:text-slate-400">
-                  Display order (0-9999)
+                  Display order (1-9999). Leave blank for auto ordering.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -182,8 +226,8 @@ export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps)
                 <FormControl>
                   <SearchableDropdown
                     options={[
-                      { value: 'ACTIVE', label: 'Active' },
-                      { value: 'INACTIVE', label: 'Inactive' },
+                      { value: "ACTIVE", label: "Active" },
+                      { value: "INACTIVE", label: "Inactive" },
                     ]}
                     value={field.value}
                     onChange={field.onChange}
@@ -228,13 +272,13 @@ export default function SubjectForm({ initialData, onSubmit }: SubjectFormProps)
             className="w-full"
           >
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? "Saving..."
               : initialData
-              ? 'Update Subject'
-              : 'Create Subject'}
+              ? "Update Subject"
+              : "Create Subject"}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

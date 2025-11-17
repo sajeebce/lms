@@ -1,30 +1,38 @@
-'use server'
+"use server";
 
-import { requireRole, getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { z } from 'zod'
+import { requireRole, getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 // Zod schema for validation
 const topicSchema = z.object({
-  chapterId: z.string().min(1, 'Chapter is required'),
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  code: z.string().max(20, 'Code must be 20 characters or less').optional(),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  chapterId: z.string().min(1, "Chapter is required"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  code: z.string().max(20, "Code must be 20 characters or less").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional(),
   order: z.number().min(0).max(9999).optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-})
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+});
 
-type TopicInput = z.infer<typeof topicSchema>
+type TopicInput = z.infer<typeof topicSchema>;
 
 // Get topics with optional filters
-export async function getTopics(options: {
-  subjectId?: string
-  classId?: string
-  chapterId?: string
-  status?: 'ACTIVE' | 'INACTIVE'
-} = {}) {
-  const tenantId = await getTenantId()
+export async function getTopics(
+  options: {
+    subjectId?: string;
+    classId?: string;
+    chapterId?: string;
+    status?: "ACTIVE" | "INACTIVE";
+  } = {}
+) {
+  const tenantId = await getTenantId();
 
   const topics = await prisma.topic.findMany({
     where: {
@@ -72,20 +80,20 @@ export async function getTopics(options: {
       },
     },
     orderBy: [
-      { chapter: { subject: { name: 'asc' } } },
-      { chapter: { class: { order: 'asc' } } },
-      { chapter: { order: 'asc' } },
-      { order: 'asc' },
-      { name: 'asc' },
+      { chapter: { subject: { name: "asc" } } },
+      { chapter: { class: { order: "asc" } } },
+      { chapter: { order: "asc" } },
+      { order: "asc" },
+      { name: "asc" },
     ],
-  })
+  });
 
-  return topics
+  return topics;
 }
 
 // Get single topic by ID
 export async function getTopicById(id: string) {
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   const topic = await prisma.topic.findFirst({
     where: {
@@ -121,18 +129,18 @@ export async function getTopicById(id: string) {
         },
       },
     },
-  })
+  });
 
-  return topic
+  return topic;
 }
 
 // Create topic
 export async function createTopic(data: TopicInput) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Validate input
-  const validated = topicSchema.parse(data)
+  const validated = topicSchema.parse(data);
 
   // Check for duplicate topic name in same chapter
   const existing = await prisma.topic.findFirst({
@@ -141,17 +149,18 @@ export async function createTopic(data: TopicInput) {
       chapterId: validated.chapterId,
       name: validated.name,
     },
-  })
+  });
 
   if (existing) {
     return {
       success: false,
-      error: 'A topic with this name already exists in this chapter. Please use a different name.',
-    }
+      error:
+        "A topic with this name already exists in this chapter. Please use a different name.",
+    };
   }
 
   // Auto-increment order if not provided
-  let order = validated.order
+  let order = validated.order;
   if (order === undefined) {
     const lastTopic = await prisma.topic.findFirst({
       where: {
@@ -159,10 +168,26 @@ export async function createTopic(data: TopicInput) {
         chapterId: validated.chapterId,
       },
       orderBy: {
-        order: 'desc',
+        order: "desc",
       },
-    })
-    order = lastTopic ? lastTopic.order + 1 : 0
+    });
+    order = lastTopic ? lastTopic.order + 1 : 1;
+  }
+
+  // Enforce unique order within chapter
+  const existingOrder = await prisma.topic.findFirst({
+    where: {
+      tenantId,
+      chapterId: validated.chapterId,
+      order,
+    },
+  });
+
+  if (existingOrder) {
+    return {
+      success: false,
+      error: `Order ${order} is already used for another topic in this chapter. Please choose a different order number.`,
+    };
   }
 
   // Create topic
@@ -171,7 +196,7 @@ export async function createTopic(data: TopicInput) {
       ...validated,
       order,
       tenantId,
-      status: validated.status || 'ACTIVE',
+      status: validated.status || "ACTIVE",
     },
     include: {
       chapter: {
@@ -202,19 +227,19 @@ export async function createTopic(data: TopicInput) {
         },
       },
     },
-  })
+  });
 
-  revalidatePath('/question-bank/topics')
-  return { success: true, data: topic }
+  revalidatePath("/question-bank/topics");
+  return { success: true, data: topic };
 }
 
 // Update topic
 export async function updateTopic(id: string, data: TopicInput) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Validate input
-  const validated = topicSchema.parse(data)
+  const validated = topicSchema.parse(data);
 
   // Check if topic exists
   const topic = await prisma.topic.findFirst({
@@ -222,10 +247,10 @@ export async function updateTopic(id: string, data: TopicInput) {
       id,
       tenantId,
     },
-  })
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // Check for duplicate name (excluding current topic)
@@ -238,12 +263,34 @@ export async function updateTopic(id: string, data: TopicInput) {
         not: id,
       },
     },
-  })
+  });
 
   if (existing) {
     return {
       success: false,
-      error: 'A topic with this name already exists in this chapter. Please use a different name.',
+      error:
+        "A topic with this name already exists in this chapter. Please use a different name.",
+    };
+  }
+
+  // Check for duplicate order within chapter (excluding current topic)
+  if (validated.order !== undefined && validated.order !== topic.order) {
+    const orderExisting = await prisma.topic.findFirst({
+      where: {
+        tenantId,
+        chapterId: validated.chapterId,
+        order: validated.order,
+        id: {
+          not: id,
+        },
+      },
+    });
+
+    if (orderExisting) {
+      return {
+        success: false,
+        error: `Order ${validated.order} is already used for another topic in this chapter. Please choose a different order number.`,
+      };
     }
   }
 
@@ -283,16 +330,16 @@ export async function updateTopic(id: string, data: TopicInput) {
         },
       },
     },
-  })
+  });
 
-  revalidatePath('/question-bank/topics')
-  return { success: true, data: updatedTopic }
+  revalidatePath("/question-bank/topics");
+  return { success: true, data: updatedTopic };
 }
 
 // Delete topic
 export async function deleteTopic(id: string) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Check if topic exists
   const topic = await prisma.topic.findFirst({
@@ -307,10 +354,10 @@ export async function deleteTopic(id: string) {
         },
       },
     },
-  })
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // Prevent deletion if questions exist
@@ -318,15 +365,14 @@ export async function deleteTopic(id: string) {
     return {
       success: false,
       error: `Cannot delete topic. It has ${topic._count.questions} question(s) associated with it. Please delete or reassign the questions first.`,
-    }
+    };
   }
 
   // Delete topic
   await prisma.topic.delete({
     where: { id },
-  })
+  });
 
-  revalidatePath('/question-bank/topics')
-  return { success: true }
+  revalidatePath("/question-bank/topics");
+  return { success: true };
 }
-

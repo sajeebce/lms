@@ -14,9 +14,9 @@ npm run dev   # dev server চালু করার জন্য
 
 এরপর ব্রাউজারে গিয়ে:
 
-- `http://localhost:3000/embed?token=dev-token`
+- `http://localhost:3001/embed?token=dev-token`
 - অথবা context/id সহ:
-  - `http://localhost:3000/embed?token=dev-token&context=lesson&lesson_id=123`
+  - `http://localhost:3001/embed?token=dev-token&context=lesson&lesson_id=123`
 
 এখানে তোমার TipTap-based rich text editor লোড হবে, যেটা future-এ WordPress/LMS থেকে iframe দিয়ে embed হবে।
 
@@ -28,7 +28,7 @@ PowerShell থেকে (Windows):
 
 ```powershell
 Invoke-WebRequest `
-  -Uri 'http://localhost:3000/api/license/validate' `
+  -Uri 'http://localhost:3001/api/license/validate' `
   -Method POST `
   -ContentType 'application/json' `
   -Body '{"apiKey":"test-api-key","tenantId":"demo-tenant","domain":"localhost"}'
@@ -41,7 +41,7 @@ Invoke-WebRequest `
   "allowed": true,
   "message": "License valid (MVP stub)",
   "token": "<base64-url-token>",
-  "embedUrl": "http://localhost:3000/embed?token=...&context=lesson"
+  "embedUrl": "http://localhost:3001/embed?token=...&context=lesson"
 }
 ```
 
@@ -78,7 +78,7 @@ Admin panel এ:
 - নিচের field গুলো সেট করো:
   - **API Key:** `test-api-key` (এখন stub; পরে real key হবে)
   - **Tenant ID:** `demo-tenant` (payload এ যায়, future multi-tenant এর জন্য)
-  - **Texril Base URL:** `http://localhost:3000`
+  - **Texril Base URL:** `http://localhost:3001`
 
 > Production এ গেলে এখানে `https://app.texril.com` টাইপ URL থাকবে।
 
@@ -92,7 +92,7 @@ Admin panel এ:
 
 Frontend থেকে ওই page ভিজিট করলে plugin যা করবে:
 
-1. `http://localhost:3000/api/license/validate` এ JSON POST পাঠাবে:
+1. `http://localhost:3001/api/license/validate` এ JSON POST পাঠাবে:
    - `apiKey`, `tenantId`, `domain` সহ
 2. Response এ যদি:
    - `allowed: true` এবং একটা `embedUrl` পায় →

@@ -857,7 +857,7 @@ model Subject {
   chapters Chapter[]
 
   @@unique([tenantId, name])
-  @@unique([tenantId, code])
+  @@unique([tenantId, order])
   @@index([tenantId, status])
   @@map("subjects")
 }
@@ -887,6 +887,7 @@ model Chapter {
   topics  Topic[]
 
   @@unique([tenantId, subjectId, classId, name])
+  @@unique([tenantId, subjectId, classId, order])
   @@index([tenantId, subjectId, classId])
   @@map("chapters")
 }
@@ -914,6 +915,7 @@ model Topic {
   questions Question[]
 
   @@unique([tenantId, chapterId, name])
+  @@unique([tenantId, chapterId, order])
   @@index([tenantId, chapterId])
   @@map("topics")
 }

@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,128 +21,141 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Search, Edit, Trash, BookOpen } from 'lucide-react'
-import { toast } from 'sonner'
-import { deleteChapter } from '@/lib/actions/chapter.actions'
-import ChapterForm from './chapter-form'
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Search, Edit, Trash, BookOpen } from "lucide-react";
+import { toast } from "sonner";
+import { deleteChapter } from "@/lib/actions/chapter.actions";
+import ChapterForm from "./chapter-form";
 
 type Subject = {
-  id: string
-  name: string
-  icon: string | null
-  color: string | null
-}
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+};
 
 type Class = {
-  id: string
-  name: string
-  alias: string | null
-}
+  id: string;
+  name: string;
+  alias: string | null;
+};
 
 type Chapter = {
-  id: string
-  name: string
-  code: string | null
-  description: string | null
-  order: number
-  status: 'ACTIVE' | 'INACTIVE'
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+  order: number;
+  status: "ACTIVE" | "INACTIVE";
   subject: {
-    id: string
-    name: string
-    icon: string | null
-    color: string | null
-  }
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+  };
   class: {
-    id: string
-    name: string
-    alias: string | null
-  }
+    id: string;
+    name: string;
+    alias: string | null;
+  };
   _count: {
-    topics: number
-  }
-}
+    topics: number;
+  };
+};
 
 type Props = {
-  initialChapters: Chapter[]
-  subjects: Subject[]
-  classes: Class[]
-}
+  initialChapters: Chapter[];
+  subjects: Subject[];
+  classes: Class[];
+};
 
-export default function ChaptersClient({ initialChapters, subjects, classes }: Props) {
-  const [chapters, setChapters] = useState<Chapter[]>(initialChapters)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filterSubject, setFilterSubject] = useState('')
-  const [filterClass, setFilterClass] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+export default function ChaptersClient({
+  initialChapters,
+  subjects,
+  classes,
+}: Props) {
+  const [chapters, setChapters] = useState<Chapter[]>(initialChapters);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterSubject, setFilterSubject] = useState("");
+  const [filterClass, setFilterClass] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deletingChapter, setDeletingChapter] = useState<Chapter | null>(null)
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingChapter, setDeletingChapter] = useState<Chapter | null>(null);
 
   // Filter chapters
   const filteredChapters = chapters.filter((chapter) => {
     const matchesSearch =
-      searchQuery === '' ||
+      searchQuery === "" ||
       chapter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chapter.code?.toLowerCase().includes(searchQuery.toLowerCase())
+      chapter.code?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesSubject = filterSubject === '' || chapter.subject.id === filterSubject
-    const matchesClass = filterClass === '' || chapter.class.id === filterClass
-    const matchesStatus = filterStatus === '' || chapter.status === filterStatus
+    const matchesSubject =
+      filterSubject === "" || chapter.subject.id === filterSubject;
+    const matchesClass = filterClass === "" || chapter.class.id === filterClass;
+    const matchesStatus =
+      filterStatus === "" || chapter.status === filterStatus;
 
-    return matchesSearch && matchesSubject && matchesClass && matchesStatus
-  })
+    return matchesSearch && matchesSubject && matchesClass && matchesStatus;
+  });
 
   // Handle delete
   const confirmDelete = async () => {
-    if (!deletingChapter) return
+    if (!deletingChapter) return;
 
-    const result = await deleteChapter(deletingChapter.id)
+    const result = await deleteChapter(deletingChapter.id);
 
     if (result.success) {
-      setChapters((prev) => prev.filter((c) => c.id !== deletingChapter.id))
-      toast.success('Chapter deleted successfully')
+      setChapters((prev) => prev.filter((c) => c.id !== deletingChapter.id));
+      toast.success("Chapter deleted successfully");
     } else {
-      toast.error(result.error || 'Failed to delete chapter')
+      toast.error(result.error || "Failed to delete chapter");
     }
 
-    setDeleteDialogOpen(false)
-    setDeletingChapter(null)
-  }
+    setDeleteDialogOpen(false);
+    setDeletingChapter(null);
+  };
 
   // Handle form success
   const handleFormSuccess = (chapter: Chapter) => {
     if (editingChapter) {
       // Update existing
-      setChapters((prev) => prev.map((c) => (c.id === chapter.id ? chapter : c)))
-      toast.success('Chapter updated successfully')
+      setChapters((prev) =>
+        prev.map((c) => (c.id === chapter.id ? chapter : c))
+      );
+      toast.success("Chapter updated successfully");
     } else {
       // Add new
-      setChapters((prev) => [...prev, chapter])
-      toast.success('Chapter created successfully')
+      setChapters((prev) => [...prev, chapter]);
+      toast.success("Chapter created successfully");
     }
-    setAddDialogOpen(false)
-    setEditingChapter(null)
-  }
+    setAddDialogOpen(false);
+    setEditingChapter(null);
+  };
 
   // Get status badge
-  const getStatusBadge = (status: 'ACTIVE' | 'INACTIVE') => {
-    if (status === 'ACTIVE') {
+  const getStatusBadge = (status: "ACTIVE" | "INACTIVE") => {
+    if (status === "ACTIVE") {
       return (
         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
           ✅ Active
         </span>
-      )
+      );
     }
     return (
       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
         ⏸️ Inactive
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -161,10 +174,10 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
           <div>
             <SearchableDropdown
               options={[
-                { value: '', label: 'All Subjects' },
+                { value: "", label: "All Subjects" },
                 ...subjects.map((subject) => ({
                   value: subject.id,
-                  label: `${subject.icon || '📚'} ${subject.name}`,
+                  label: `${subject.icon || "📚"} ${subject.name}`,
                 })),
               ]}
               value={filterSubject}
@@ -176,10 +189,10 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
           <div>
             <SearchableDropdown
               options={[
-                { value: '', label: 'All Classes' },
+                { value: "", label: "All Classes" },
                 ...classes.map((cls) => ({
                   value: cls.id,
-                  label: `${cls.name}${cls.alias ? ` (${cls.alias})` : ''}`,
+                  label: `${cls.name}${cls.alias ? ` (${cls.alias})` : ""}`,
                 })),
               ]}
               value={filterClass}
@@ -191,9 +204,9 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
           <div>
             <SearchableDropdown
               options={[
-                { value: '', label: 'All Status' },
-                { value: 'ACTIVE', label: 'Active' },
-                { value: 'INACTIVE', label: 'Inactive' },
+                { value: "", label: "All Status" },
+                { value: "ACTIVE", label: "Active" },
+                { value: "INACTIVE", label: "Inactive" },
               ]}
               value={filterStatus}
               onChange={setFilterStatus}
@@ -212,8 +225,8 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
           </h2>
           <Button
             onClick={() => {
-              setEditingChapter(null)
-              setAddDialogOpen(true)
+              setEditingChapter(null);
+              setAddDialogOpen(true);
             }}
             className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
           >
@@ -224,13 +237,27 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
         <Table>
           <TableHeader className="bg-muted/50 dark:bg-slate-800/50">
             <TableRow className="hover:bg-transparent dark:hover:bg-transparent border-border dark:border-slate-700">
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Chapter</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Subject</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Class</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Code</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Status</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200">Topics</TableHead>
-              <TableHead className="font-semibold text-foreground dark:text-slate-200 text-right">Actions</TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Chapter
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Subject
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Class
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Code
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Status
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Topics
+              </TableHead>
+              <TableHead className="font-semibold text-foreground dark:text-slate-200 text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -245,21 +272,28 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
               </TableRow>
             ) : (
               filteredChapters.map((chapter) => (
-                <TableRow key={chapter.id} className="border-border dark:border-slate-700 hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                <TableRow
+                  key={chapter.id}
+                  className="border-border dark:border-slate-700 hover:bg-muted/50 dark:hover:bg-slate-800/50"
+                >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="text-2xl bg-slate-100 dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center">
                         📖
                       </div>
                       <div>
-                        <p className="font-medium text-foreground dark:text-slate-200">{chapter.name}</p>
-                        <p className="text-xs text-muted-foreground dark:text-slate-400">Order: {chapter.order}</p>
+                        <p className="font-medium text-foreground dark:text-slate-200">
+                          {chapter.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground dark:text-slate-400">
+                          Order: {chapter.order}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-foreground dark:text-slate-300">
-                      {chapter.subject.icon || '📚'} {chapter.subject.name}
+                      {chapter.subject.icon || "📚"} {chapter.subject.name}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -274,12 +308,14 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground dark:text-slate-400">
-                      {chapter.code || '-'}
+                      {chapter.code || "-"}
                     </span>
                   </TableCell>
                   <TableCell>{getStatusBadge(chapter.status)}</TableCell>
                   <TableCell>
-                    <span className="text-sm text-foreground dark:text-slate-300">{chapter._count.topics}</span>
+                    <span className="text-sm text-foreground dark:text-slate-300">
+                      {chapter._count.topics}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
@@ -287,8 +323,8 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setEditingChapter(chapter)
-                          setAddDialogOpen(true)
+                          setEditingChapter(chapter);
+                          setAddDialogOpen(true);
                         }}
                         className="dark:text-slate-300 dark:hover:bg-slate-700"
                       >
@@ -298,8 +334,8 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setDeletingChapter(chapter)
-                          setDeleteDialogOpen(true)
+                          setDeletingChapter(chapter);
+                          setDeleteDialogOpen(true);
                         }}
                         className="hover:bg-red-50 dark:hover:bg-red-950/30"
                       >
@@ -319,17 +355,18 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
         <DialogContent className="max-w-2xl dark:bg-slate-900 dark:border-slate-700">
           <DialogHeader>
             <DialogTitle className="dark:text-slate-100">
-              {editingChapter ? 'Edit Chapter' : 'Add Chapter'}
+              {editingChapter ? "Edit Chapter" : "Add Chapter"}
             </DialogTitle>
           </DialogHeader>
           <ChapterForm
             chapter={editingChapter}
             subjects={subjects}
             classes={classes}
+            chapters={chapters}
             onSuccess={handleFormSuccess}
             onCancel={() => {
-              setAddDialogOpen(false)
-              setEditingChapter(null)
+              setAddDialogOpen(false);
+              setEditingChapter(null);
             }}
           />
         </DialogContent>
@@ -339,9 +376,12 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-slate-100">Delete Chapter</AlertDialogTitle>
+            <AlertDialogTitle className="dark:text-slate-100">
+              Delete Chapter
+            </AlertDialogTitle>
             <AlertDialogDescription className="dark:text-slate-400">
-              Are you sure you want to delete &quot;{deletingChapter?.name}&quot;? This action cannot be undone.
+              Are you sure you want to delete &quot;{deletingChapter?.name}
+              &quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -358,6 +398,5 @@ export default function ChaptersClient({ initialChapters, subjects, classes }: P
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
-

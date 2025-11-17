@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,66 +13,100 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
-import { createTopic, updateTopic } from '@/lib/actions/topic.actions'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
+import { createTopic, updateTopic } from "@/lib/actions/topic.actions";
 
 const formSchema = z.object({
-  subjectId: z.string().min(1, 'Subject is required'),
-  classId: z.string().min(1, 'Class is required'),
-  chapterId: z.string().min(1, 'Chapter is required'),
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  code: z.string().max(20, 'Code must be 20 characters or less').optional(),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  subjectId: z.string().min(1, "Subject is required"),
+  classId: z.string().min(1, "Class is required"),
+  chapterId: z.string().min(1, "Chapter is required"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  code: z.string().max(20, "Code must be 20 characters or less").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional(),
   order: z.number().min(0).max(9999).optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']),
-})
+  status: z.enum(["ACTIVE", "INACTIVE"]),
+});
 
-type FormData = z.infer<typeof formSchema>
+type FormData = z.infer<typeof formSchema>;
 
-type Topic = Awaited<ReturnType<typeof import('@/lib/actions/topic.actions').getTopics>>[number]
-type Chapter = Awaited<ReturnType<typeof import('@/lib/actions/chapter.actions').getChapters>>[number]
-type Subject = Awaited<ReturnType<typeof import('@/lib/actions/subject.actions').getSubjects>>[number]
-type Class = Awaited<ReturnType<typeof import('@/lib/actions/class.actions').getClasses>>[number]
+type Topic = Awaited<
+  ReturnType<typeof import("@/lib/actions/topic.actions").getTopics>
+>[number];
+type Chapter = Awaited<
+  ReturnType<typeof import("@/lib/actions/chapter.actions").getChapters>
+>[number];
+type Subject = Awaited<
+  ReturnType<typeof import("@/lib/actions/subject.actions").getSubjects>
+>[number];
+type Class = Awaited<
+  ReturnType<typeof import("@/lib/actions/class.actions").getClasses>
+>[number];
 
 interface TopicFormProps {
-  topic?: Topic | null
-  chapters: Chapter[]
-  subjects: Subject[]
-  classes: Class[]
-  onSuccess: (topic: Topic) => void
-  onCancel: () => void
+  topic?: Topic | null;
+  topics: Topic[];
+  chapters: Chapter[];
+  subjects: Subject[];
+  classes: Class[];
+  onSuccess: (topic: Topic) => void;
+  onCancel: () => void;
 }
 
 export default function TopicForm({
   topic,
+  topics,
   chapters,
   subjects,
   classes,
   onSuccess,
   onCancel,
 }: TopicFormProps) {
-  const [availableClasses, setAvailableClasses] = useState<Class[]>(classes)
-  const [availableChapters, setAvailableChapters] = useState<Chapter[]>(chapters)
+  const [availableClasses, setAvailableClasses] = useState<Class[]>(classes);
+  const [availableChapters, setAvailableChapters] =
+    useState<Chapter[]>(chapters);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      subjectId: topic?.chapter.subject.id || '',
-      classId: topic?.chapter.class.id || '',
-      chapterId: topic?.chapter.id || '',
-      name: topic?.name || '',
-      code: topic?.code || '',
-      description: topic?.description || '',
-      order: topic?.order || 0,
-      status: topic?.status || 'ACTIVE',
+      subjectId: topic?.chapter.subject.id || "",
+      classId: topic?.chapter.class.id || "",
+      chapterId: topic?.chapter.id || "",
+      name: topic?.name || "",
+      code: topic?.code || "",
+      description: topic?.description || "",
+      order: topic?.order,
+      status: topic?.status || "ACTIVE",
     },
-  })
+  });
 
-  const selectedSubject = form.watch('subjectId')
-  const selectedClass = form.watch('classId')
+  const selectedSubject = form.watch("subjectId");
+  const selectedClass = form.watch("classId");
+  const selectedChapter = form.watch("chapterId");
+
+  // Auto-fill order for new topics based on existing topics in same chapter
+  useEffect(() => {
+    if (topic) return;
+    if (!selectedChapter) return;
+
+    const currentOrder = form.getValues("order");
+    if (currentOrder !== undefined && currentOrder !== null) return;
+
+    const maxOrder = topics
+      .filter((t) => t.chapter.id === selectedChapter)
+      .reduce((max, t) => (t.order > max ? t.order : max), 0);
+
+    const nextOrder = maxOrder > 0 ? maxOrder + 1 : 1;
+    form.setValue("order", nextOrder);
+  }, [topic, selectedChapter, topics, form]);
 
   // Cascading filter: Update available classes when subject changes
   useEffect(() => {
@@ -81,19 +115,22 @@ export default function TopicForm({
         chapters.some(
           (ch) => ch.subject.id === selectedSubject && ch.class.id === cls.id
         )
-      )
-      setAvailableClasses(filteredClasses)
+      );
+      setAvailableClasses(filteredClasses);
 
       // Reset class and chapter if current selection is not in filtered list
-      const currentClass = form.getValues('classId')
-      if (currentClass && !filteredClasses.some((cls) => cls.id === currentClass)) {
-        form.setValue('classId', '')
-        form.setValue('chapterId', '')
+      const currentClass = form.getValues("classId");
+      if (
+        currentClass &&
+        !filteredClasses.some((cls) => cls.id === currentClass)
+      ) {
+        form.setValue("classId", "");
+        form.setValue("chapterId", "");
       }
     } else {
-      setAvailableClasses(classes)
+      setAvailableClasses(classes);
     }
-  }, [selectedSubject, chapters, classes, form])
+  }, [selectedSubject, chapters, classes, form]);
 
   // Cascading filter: Update available chapters when subject or class changes
   useEffect(() => {
@@ -102,34 +139,37 @@ export default function TopicForm({
         (ch) =>
           (!selectedSubject || ch.subject.id === selectedSubject) &&
           (!selectedClass || ch.class.id === selectedClass)
-      )
-      setAvailableChapters(filteredChapters)
+      );
+      setAvailableChapters(filteredChapters);
 
       // Reset chapter if current selection is not in filtered list
-      const currentChapter = form.getValues('chapterId')
-      if (currentChapter && !filteredChapters.some((ch) => ch.id === currentChapter)) {
-        form.setValue('chapterId', '')
+      const currentChapter = form.getValues("chapterId");
+      if (
+        currentChapter &&
+        !filteredChapters.some((ch) => ch.id === currentChapter)
+      ) {
+        form.setValue("chapterId", "");
       }
     } else {
-      setAvailableChapters(chapters)
+      setAvailableChapters(chapters);
     }
-  }, [selectedSubject, selectedClass, chapters, form])
+  }, [selectedSubject, selectedClass, chapters, form]);
 
   const onSubmit = async (data: FormData) => {
-    const { subjectId, classId, ...topicData } = data
+    const { subjectId, classId, ...topicData } = data;
 
     const result = topic
       ? await updateTopic(topic.id, topicData)
-      : await createTopic(topicData)
+      : await createTopic(topicData);
 
     if (result.success && result.data) {
-      onSuccess(result.data)
+      onSuccess(result.data);
     } else {
-      form.setError('root', {
-        message: result.error || 'An error occurred',
-      })
+      form.setError("root", {
+        message: result.error || "An error occurred",
+      });
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -146,7 +186,7 @@ export default function TopicForm({
                   <SearchableDropdown
                     options={subjects.map((subject) => ({
                       value: subject.id,
-                      label: `${subject.icon || ''} ${subject.name}`,
+                      label: `${subject.icon || ""} ${subject.name}`,
                     }))}
                     value={field.value}
                     onChange={field.onChange}
@@ -177,8 +217,10 @@ export default function TopicForm({
                 </FormControl>
                 <FormDescription>
                   {selectedSubject
-                    ? `Classes with ${subjects.find((s) => s.id === selectedSubject)?.name} chapters`
-                    : 'Select subject first'}
+                    ? `Classes with ${
+                        subjects.find((s) => s.id === selectedSubject)?.name
+                      } chapters`
+                    : "Select subject first"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -205,7 +247,7 @@ export default function TopicForm({
                 <FormDescription>
                   {selectedSubject && selectedClass
                     ? `Chapters for selected filters`
-                    : 'Select subject and class first'}
+                    : "Select subject and class first"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -241,11 +283,7 @@ export default function TopicForm({
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="e.g., T1, T2"
-                    maxLength={20}
-                    {...field}
-                  />
+                  <Input placeholder="e.g., T1, T2" maxLength={20} {...field} />
                 </FormControl>
                 <FormDescription>Max 20 characters (optional)</FormDescription>
                 <FormMessage />
@@ -288,11 +326,21 @@ export default function TopicForm({
                     type="number"
                     min={0}
                     max={9999}
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        field.onChange(undefined);
+                        return;
+                      }
+                      const parsed = parseInt(value, 10);
+                      field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                    }}
                   />
                 </FormControl>
-                <FormDescription>Display order (0-9999)</FormDescription>
+                <FormDescription>
+                  Display order (1-9999). Leave blank for auto ordering.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -307,8 +355,8 @@ export default function TopicForm({
                 <FormControl>
                   <SearchableDropdown
                     options={[
-                      { value: 'ACTIVE', label: '✅ Active' },
-                      { value: 'INACTIVE', label: '⏸️ Inactive' },
+                      { value: "ACTIVE", label: "✅ Active" },
+                      { value: "INACTIVE", label: "⏸️ Inactive" },
                     ]}
                     value={field.value}
                     onChange={field.onChange}
@@ -339,14 +387,13 @@ export default function TopicForm({
             className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
           >
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? "Saving..."
               : topic
-              ? 'Update Topic'
-              : 'Create Topic'}
+              ? "Update Topic"
+              : "Create Topic"}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }
-

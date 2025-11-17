@@ -418,10 +418,14 @@
 /* Small checkbox when font size is 12px (from node attr OR inline span style) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="12px"] > label input[type="checkbox"],
+  li[data-font-size="12px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 12px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 12px"])
+  > label
+  input[type="checkbox"] {
   width: 0.8rem;
   height: 0.8rem;
 }
@@ -431,10 +435,14 @@
 /* Large checkbox when font size is 20px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="20px"] > label input[type="checkbox"],
+  li[data-font-size="20px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 20px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 20px"])
+  > label
+  input[type="checkbox"] {
   width: 1.25rem;
   height: 1.25rem;
 }
@@ -442,10 +450,14 @@
 /* Huge checkbox when font size is 24px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="24px"] > label input[type="checkbox"],
+  li[data-font-size="24px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 24px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 24px"])
+  > label
+  input[type="checkbox"] {
   width: 1.45rem;
   height: 1.45rem;
 }
@@ -476,7 +488,6 @@
   display: inline;
   margin: 0;
 }
-
 
 .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
   position: relative;
@@ -897,8 +908,10 @@
 /* Table Container */
 .ProseMirror table {
   border-collapse: collapse;
+  /* Phase 6.1: Keep fixed layout so column resizing stays stable */
   table-layout: fixed;
-  width: 100%;
+  /* Phase 6.1: Don't force 100% width if custom width is set */
+  /* width: 100%; - Removed, now controlled by inline style */
   margin: 1.5rem 0;
   overflow: hidden;
   --table-border-radius: 0px;
@@ -906,9 +919,14 @@
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --table-border-width: 2px;
   --table-border-style: solid;
-  --table-border-color: #e2e8f0;
+  --table-border-color: #000000;
   /* Outer border uses cell borders only; table itself has no line */
   border: none;
+}
+
+/* Phase 6.1: Default width for tables without custom width */
+.ProseMirror table:not([data-table-width]) {
+  width: 100%;
 }
 
 /* Table Cells - Base Styling */
@@ -948,11 +966,12 @@
   cursor: pointer;
 }
 
-/* Selected Cell */
+/* Selected Cell - highlight borders instead of pink background */
 .ProseMirror .selectedCell {
-  /* Keep the table's own border style; just add a soft highlight */
-  background-color: #dbeafe !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  /* Keep the cell background as-is; emphasize column/row edges */
+  background-color: transparent !important;
+  box-shadow: inset 1px 0 0 rgba(59, 130, 246, 0.7),
+    inset -1px 0 0 rgba(59, 130, 246, 0.7);
 }
 
 /* Phase 4.2: Cell Background Color Support */
@@ -972,22 +991,67 @@
   background-color: #f1f5f9;
 }
 
-/* Column Resize Handle */
+/* Column Resize Handle - Google Docs style: ← || → */
 .ProseMirror .column-resize-handle {
   position: absolute;
-  right: -2px;
+  right: -10px;
   top: 0;
   bottom: 0;
-  width: 4px;
-  background-color: #3b82f6;
+  width: 20px; /* wider hit area for easier grab */
+  background: transparent;
   cursor: col-resize;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  /* Instant appearance - no transition for snappy UX */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Twin vertical bars in center (||) - positioned absolutely */
+.ProseMirror .column-resize-handle::before {
+  content: "||";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  color: #1f2937;
+  letter-spacing: 1px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Left and right arrows: ← → spread on both sides */
+.ProseMirror .column-resize-handle::after {
+  content: "←\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0→";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1f2937;
+  white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Show handle when hovering over header or cell */
 .ProseMirror td:hover .column-resize-handle,
 .ProseMirror th:hover .column-resize-handle {
   opacity: 1;
+}
+
+/* Dark mode: lighter bars and arrows */
+.dark .ProseMirror .column-resize-handle::before {
+  color: #cbd5e1; /* light gray for bars */
+}
+
+.dark .ProseMirror .column-resize-handle::after {
+  color: #cbd5e1; /* light gray for arrows */
 }
 
 /* Dark Mode Table Styles */
@@ -1019,8 +1083,10 @@
 }
 
 .dark .ProseMirror .selectedCell {
-  /* Preserve custom table borders in dark mode as well */
-  background-color: #1e3a8a !important;
+  /* Dark mode: keep background neutral, highlight borders only */
+  background-color: transparent !important;
+  box-shadow: inset 1px 0 0 rgba(129, 212, 250, 0.9),
+    inset -1px 0 0 rgba(129, 212, 250, 0.9);
 }
 
 .dark .ProseMirror tbody tr:nth-child(even) td:not([data-background-color]) {
@@ -1049,6 +1115,25 @@
 .dark .table-resize-indicator {
   background: rgba(15, 23, 42, 0.95);
   color: #fff;
+}
+
+/* Phase 6.1: Whole-table resize handles (TinyMCE-style)
+   Handles are always visible when the table is selected; visibility is
+   controlled from React (we mount/unmount them based on selection).
+*/
+.table-resize-handle {
+  transition: all 0.2s ease;
+}
+
+.table-resize-handle:hover {
+  background: #2563eb !important;
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+}
+
+.table-resize-handle:active {
+  background: #1d4ed8 !important;
+  transform: scale(1.1);
 }
 
 /* Phase 5.1: Audio Player Styles */

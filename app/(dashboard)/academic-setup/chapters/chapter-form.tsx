@@ -1,9 +1,10 @@
-'use client'
+"use client";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,90 +13,137 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
-import { createChapter, updateChapter } from '@/lib/actions/chapter.actions'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
+import { createChapter, updateChapter } from "@/lib/actions/chapter.actions";
 
 const formSchema = z.object({
-  subjectId: z.string().min(1, 'Subject is required'),
-  classId: z.string().min(1, 'Class is required'),
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  code: z.string().max(20, 'Code must be 20 characters or less').optional(),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  subjectId: z.string().min(1, "Subject is required"),
+  classId: z.string().min(1, "Class is required"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(100, "Name must be 100 characters or less"),
+  code: z.string().max(20, "Code must be 20 characters or less").optional(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional(),
   order: z.number().min(0).max(9999).optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-})
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+});
 
-type FormData = z.infer<typeof formSchema>
+type FormData = z.infer<typeof formSchema>;
 
 type Subject = {
-  id: string
-  name: string
-  icon: string | null
-}
+  id: string;
+  name: string;
+  icon: string | null;
+};
 
 type Class = {
-  id: string
-  name: string
-  alias: string | null
-}
+  id: string;
+  name: string;
+  alias: string | null;
+};
 
 type Chapter = {
-  id: string
-  name: string
-  code: string | null
-  description: string | null
-  order: number
-  status: 'ACTIVE' | 'INACTIVE'
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+  order: number;
+  status: "ACTIVE" | "INACTIVE";
   subject: {
-    id: string
-    name: string
-    icon: string | null
-  }
+    id: string;
+    name: string;
+    icon: string | null;
+  };
   class: {
-    id: string
-    name: string
-    alias: string | null
-  }
-}
+    id: string;
+    name: string;
+    alias: string | null;
+  };
+};
 
 type Props = {
-  chapter: Chapter | null
-  subjects: Subject[]
-  classes: Class[]
-  onSuccess: (chapter: any) => void
-  onCancel: () => void
-}
+  chapter: Chapter | null;
+  subjects: Subject[];
+  classes: Class[];
+  chapters: Chapter[];
+  onSuccess: (chapter: any) => void;
+  onCancel: () => void;
+};
 
-export default function ChapterForm({ chapter, subjects, classes, onSuccess, onCancel }: Props) {
+export default function ChapterForm({
+  chapter,
+  subjects,
+  classes,
+  chapters,
+  onSuccess,
+  onCancel,
+}: Props) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      subjectId: chapter?.subject.id || '',
-      classId: chapter?.class.id || '',
-      name: chapter?.name || '',
-      code: chapter?.code || '',
-      description: chapter?.description || '',
-      order: chapter?.order || 0,
-      status: chapter?.status || 'ACTIVE',
+      subjectId: chapter?.subject.id || "",
+      classId: chapter?.class.id || "",
+      name: chapter?.name || "",
+      code: chapter?.code || "",
+      description: chapter?.description || "",
+      order: chapter?.order,
+      status: chapter?.status || "ACTIVE",
     },
-  })
+  });
+
+  const selectedSubjectId = form.watch("subjectId");
+  const selectedClassId = form.watch("classId");
+
+  // Auto-fill order for new chapters based on existing chapters in same subject + class
+  useEffect(() => {
+    if (chapter) return;
+    if (!selectedSubjectId || !selectedClassId) return;
+
+    const currentOrder = form.getValues("order");
+    if (currentOrder !== undefined && currentOrder !== null) return;
+
+    const maxOrder = chapters
+      .filter(
+        (c) =>
+          c.subject.id === selectedSubjectId && c.class.id === selectedClassId
+      )
+      .reduce((max, c) => (c.order > max ? c.order : max), 0);
+
+    const nextOrder = maxOrder > 0 ? maxOrder + 1 : 1;
+    form.setValue("order", nextOrder);
+  }, [chapter, selectedSubjectId, selectedClassId, chapters, form]);
 
   const onSubmit = async (data: FormData) => {
+    // Clear previous order errors before submit
+    form.clearErrors("order");
+
     const result = chapter
       ? await updateChapter(chapter.id, data)
-      : await createChapter(data)
+      : await createChapter(data);
 
     if (result.success) {
-      onSuccess(result.data)
+      onSuccess(result.data);
     } else {
-      form.setError('root', {
-        message: result.error || 'An error occurred',
-      })
+      // Check if it's an order duplicate error
+      if (result.error?.includes("already used for another chapter")) {
+        form.setError("order", {
+          type: "manual",
+          message: result.error,
+        });
+      } else {
+        form.setError("root", {
+          message: result.error || "An error occurred",
+        });
+      }
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -112,7 +160,7 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
                   <SearchableDropdown
                     options={subjects.map((subject) => ({
                       value: subject.id,
-                      label: `${subject.icon || '📚'} ${subject.name}`,
+                      label: `${subject.icon || "📚"} ${subject.name}`,
                     }))}
                     value={field.value}
                     onChange={field.onChange}
@@ -134,7 +182,7 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
                   <SearchableDropdown
                     options={classes.map((cls) => ({
                       value: cls.id,
-                      label: `${cls.name}${cls.alias ? ` (${cls.alias})` : ''}`,
+                      label: `${cls.name}${cls.alias ? ` (${cls.alias})` : ""}`,
                     }))}
                     value={field.value}
                     onChange={field.onChange}
@@ -175,11 +223,7 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
               <FormItem>
                 <FormLabel>Chapter Code</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="e.g., CH01"
-                    maxLength={20}
-                    {...field}
-                  />
+                  <Input placeholder="e.g., CH01" maxLength={20} {...field} />
                 </FormControl>
                 <FormDescription>Max 20 characters</FormDescription>
                 <FormMessage />
@@ -222,11 +266,21 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
                     type="number"
                     min={0}
                     max={9999}
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        field.onChange(undefined);
+                        return;
+                      }
+                      const parsed = parseInt(value, 10);
+                      field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                    }}
                   />
                 </FormControl>
-                <FormDescription>Display order (0-9999)</FormDescription>
+                <FormDescription>
+                  Display order (1-9999). Leave blank for auto ordering.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -241,10 +295,10 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
                 <FormControl>
                   <SearchableDropdown
                     options={[
-                      { value: 'ACTIVE', label: '✅ Active' },
-                      { value: 'INACTIVE', label: '⏸️ Inactive' },
+                      { value: "ACTIVE", label: "✅ Active" },
+                      { value: "INACTIVE", label: "⏸️ Inactive" },
                     ]}
-                    value={field.value || 'ACTIVE'}
+                    value={field.value || "ACTIVE"}
                     onChange={field.onChange}
                     placeholder="Select status"
                   />
@@ -279,14 +333,13 @@ export default function ChapterForm({ chapter, subjects, classes, onSuccess, onC
             className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
           >
             {form.formState.isSubmitting
-              ? 'Saving...'
+              ? "Saving..."
               : chapter
-              ? 'Update Chapter'
-              : 'Create Chapter'}
+              ? "Update Chapter"
+              : "Create Chapter"}
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }
-

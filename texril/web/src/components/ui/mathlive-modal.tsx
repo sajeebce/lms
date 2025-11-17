@@ -320,7 +320,9 @@ export default function MathLiveModal({
         <div className="space-y-6">
           {/* MathLive Editor */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium"></Label>
+            <Label className="text-sm font-medium">
+              Visual Equation Editor
+            </Label>
             {loadError ? (
               <div className="w-full border rounded-lg p-4 text-center space-y-2">
                 <p className="text-sm text-red-600 dark:text-red-400">
@@ -394,12 +396,51 @@ export default function MathLiveModal({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleTemplateClick(template.latex)}
-                        className="justify-start text-left h-auto py-2"
+                        className="justify-center text-center h-auto !p-0 overflow-hidden"
+                        aria-label={template.label}
                       >
-                        <span className="text-xs font-medium">
-                          {template.label}
-                        </span>
+                        {mathLiveLoaded && !loadError ? (
+                          <div
+                            className="relative w-full h-full px-2 py-3"
+                            style={{ minHeight: "32px" }}
+                          >
+                            {/* Invisible click overlay - captures ALL clicks */}
+                            <div
+                              className="absolute inset-0 cursor-pointer z-10"
+                              onClick={() =>
+                                handleTemplateClick(template.latex)
+                              }
+                              aria-hidden="true"
+                            />
+
+                            {/* Math preview - visual only */}
+                            <div className="relative z-0 flex items-center justify-center h-full">
+                              <math-field
+                                read-only
+                                style={{
+                                  fontSize: "18px",
+                                  pointerEvents: "none",
+                                  border: "none",
+                                  background: "transparent",
+                                  padding: "0",
+                                  display: "inline-block",
+                                }}
+                              >
+                                {template.latex}
+                              </math-field>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="w-full h-full flex items-center justify-center cursor-pointer px-2 py-3"
+                            style={{ minHeight: "32px" }}
+                            onClick={() => handleTemplateClick(template.latex)}
+                          >
+                            <span className="text-xs font-medium">
+                              {template.label}
+                            </span>
+                          </div>
+                        )}
                       </Button>
                     ))}
                   </div>
@@ -417,7 +458,6 @@ export default function MathLiveModal({
               type="button"
               onClick={handleInsert}
               disabled={!latex.trim()}
-              className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
             >
               Insert Math
             </Button>

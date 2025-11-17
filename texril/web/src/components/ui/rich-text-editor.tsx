@@ -19,7 +19,7 @@ import { Highlight } from "@tiptap/extension-highlight";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
-import { Table } from "@tiptap/extension-table";
+import { Table, TableView } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -92,10 +92,13 @@ import {
   type ImageProperties,
 } from "@/components/ui/image-properties-dialog";
 import { LinkDialog } from "@/components/ui/link-dialog";
+import { InsertHTMLModal } from "@/components/ui/insert-html-modal";
+import { HTMLBlock } from "@/components/editor/html-block-extension";
 import { FontFamilySelector } from "@/components/ui/font-family-selector";
 import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern table grid selector
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
 import { AudioRecorderDialog } from "@/components/ui/audio-recorder-dialog"; // Phase 5.1: Audio recording
+import { toast } from "sonner"; // Toast notifications
 
 const lowlight = createLowlight(common);
 
@@ -2108,12 +2111,29 @@ export default function RichTextEditor({
   // Phase 5.1: Audio Recorder Dialog state
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
 
+  // Insert HTML Dialog state
+  const [showInsertHTML, setShowInsertHTML] = useState(false);
+  const [htmlEditMode, setHtmlEditMode] = useState(false);
+  const [htmlEditContent, setHtmlEditContent] = useState("");
+  const [htmlEditId, setHtmlEditId] = useState<string | null>(null);
+
   // Phase 5.2: Fullscreen Mode state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Phase 5.3: Word Count state
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
+
+  // Active Tools Breadcrumb state
+  const [activeTools, setActiveTools] = useState<string[]>([]);
+
+  // Resize functionality state
+  const [editorHeight, setEditorHeight] = useState<number>(
+    parseInt(minHeight) || 200
+  );
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeStartY = useRef(0);
+  const resizeStartHeight = useRef(0);
 
   // Fix: Force re-render when editor selection/active state changes
   // This ensures toolbar buttons show active state immediately on click
@@ -2343,6 +2363,7 @@ export default function RichTextEditor({
         defaultLanguage: "javascript",
       }),
       // Phase 4: Tables - Modern & Beautiful with custom borders
+      // Phase 6.1: Added width/height attributes for whole-table resize
       Table.extend({
         addAttributes() {
           return {
@@ -2351,19 +2372,6 @@ export default function RichTextEditor({
               default: "1px",
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-width") || "1px",
-              renderHTML: (attributes) => {
-                return {
-                  style: `--table-border-width: ${
-                    attributes.borderWidth || "1px"
-                  }; --table-border-style: ${
-                    attributes.borderStyle || "solid"
-                  }; --table-border-color: ${
-                    attributes.borderColor || "#e2e8f0"
-                  }; --table-border-radius: ${
-                    attributes.borderRadius || "0px"
-                  };`,
-                };
-              },
             },
             borderStyle: {
               default: "solid",
@@ -2372,16 +2380,27 @@ export default function RichTextEditor({
                 "solid",
             },
             borderColor: {
-              default: "#e2e8f0",
+              default: "#000000",
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-color") ||
-                "#e2e8f0",
+                "#000000",
             },
             borderRadius: {
               default: "0px",
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-radius") ||
                 "0px",
+            },
+            // Height can be persisted on the table node; width is driven entirely
+            // by ProseMirror's column widths (colwidth) so that the built-in
+            // columnResizing plugin remains the single source of truth for
+            // horizontal sizing.
+            tableHeight: {
+              default: null,
+              parseHTML: (element) =>
+                element.getAttribute("data-table-height") ||
+                element.style.height ||
+                null,
             },
           };
         },
@@ -2487,6 +2506,8 @@ export default function RichTextEditor({
       }),
       // Phase 5.1: Audio Recording
       Audio,
+      // Custom HTML Block - Preserves inline styles
+      HTMLBlock,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -2538,6 +2559,134 @@ export default function RichTextEditor({
     };
   }, [editor]);
 
+  // Active Tools Breadcrumb - Show DOM hierarchy path (like DevTools)
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateActiveTools = () => {
+      const path: string[] = [];
+
+      // Get current cursor position
+      const { $from } = editor.state.selection;
+
+      // Traverse from root to current position (DOM hierarchy)
+      for (let depth = 0; depth <= $from.depth; depth++) {
+        const node = $from.node(depth);
+
+        // Skip document root
+        if (node.type.name === "doc") continue;
+
+        // Map node types to readable names
+        let nodeName = "";
+
+        switch (node.type.name) {
+          case "heading":
+            nodeName = `h${node.attrs.level}`;
+            break;
+          case "paragraph":
+            nodeName = "p";
+            break;
+          case "bulletList":
+            nodeName = "ul";
+            break;
+          case "orderedList":
+            nodeName = "ol";
+            break;
+          case "listItem":
+            nodeName = "li";
+            break;
+          case "table":
+            nodeName = "table";
+            break;
+          case "tableRow":
+            nodeName = "tr";
+            break;
+          case "tableCell":
+            nodeName = "td";
+            break;
+          case "tableHeader":
+            nodeName = "th";
+            break;
+          case "blockquote":
+            nodeName = "blockquote";
+            break;
+          case "codeBlock":
+            nodeName = "code";
+            break;
+          case "horizontalRule":
+            nodeName = "hr";
+            break;
+          case "hardBreak":
+            nodeName = "br";
+            break;
+          default:
+            // Use original name for custom nodes (math, image, etc.)
+            nodeName = node.type.name;
+        }
+
+        if (nodeName) {
+          path.push(nodeName);
+        }
+      }
+
+      // Add active marks (bold, italic, etc.) at the end
+      const marks = $from.marks();
+      marks.forEach((mark) => {
+        let markName = "";
+
+        switch (mark.type.name) {
+          case "bold":
+            markName = "strong";
+            break;
+          case "italic":
+            markName = "em";
+            break;
+          case "underline":
+            markName = "u";
+            break;
+          case "strike":
+            markName = "s";
+            break;
+          case "code":
+            markName = "code";
+            break;
+          case "link":
+            markName = "a";
+            break;
+          case "superscript":
+            markName = "sup";
+            break;
+          case "subscript":
+            markName = "sub";
+            break;
+          case "highlight":
+            markName = "mark";
+            break;
+          default:
+            markName = mark.type.name;
+        }
+
+        if (markName) {
+          path.push(markName);
+        }
+      });
+
+      setActiveTools(path);
+    };
+
+    // Initial update
+    updateActiveTools();
+
+    // Update on selection change and content update
+    editor.on("selectionUpdate", updateActiveTools);
+    editor.on("update", updateActiveTools);
+
+    return () => {
+      editor.off("selectionUpdate", updateActiveTools);
+      editor.off("update", updateActiveTools);
+    };
+  }, [editor]);
+
   useEffect(() => {
     if (!editor) {
       wasMathLiveOpen.current = showMathLive;
@@ -2585,10 +2734,11 @@ export default function RichTextEditor({
         if (node.type.name !== "table") return;
         const domNode = view.nodeDOM(pos) as HTMLElement | null;
         if (!domNode) return;
-        const width = (node.attrs.borderWidth as string) || "2px";
-        const style = (node.attrs.borderStyle as string) || "solid";
-        const color = (node.attrs.borderColor as string) || "#cbd5e1";
-        const radius = (node.attrs.borderRadius as string) || "0px";
+        const borderWidth = (node.attrs.borderWidth as string) || "2px";
+        const borderStyle = (node.attrs.borderStyle as string) || "solid";
+        const borderColor = (node.attrs.borderColor as string) || "#000000";
+        const borderRadius = (node.attrs.borderRadius as string) || "0px";
+        const tableHeight = (node.attrs.tableHeight as string | null) || null;
 
         // Find the actual <table> element inside the node view wrapper
         const tableElement =
@@ -2602,10 +2752,22 @@ export default function RichTextEditor({
         // We do NOT set per-cell inline border styles anymore so that operations
         // like column resizing, which may re-render cells, don't "lose" the
         // border styling.
-        tableElement.style.setProperty("--table-border-width", width);
-        tableElement.style.setProperty("--table-border-style", style);
-        tableElement.style.setProperty("--table-border-color", color);
-        tableElement.style.setProperty("--table-border-radius", radius);
+        tableElement.style.setProperty("--table-border-width", borderWidth);
+        tableElement.style.setProperty("--table-border-style", borderStyle);
+        tableElement.style.setProperty("--table-border-color", borderColor);
+        tableElement.style.setProperty("--table-border-radius", borderRadius);
+
+        // Apply persisted table height from node attrs. Width is controlled by
+        // ProseMirror's column widths (colwidth) and the built-in
+        // columnResizing plugin so that there is a single source of truth for
+        // horizontal sizing.
+        if (tableHeight) {
+          tableElement.style.height = tableHeight;
+          tableElement.setAttribute("data-table-height", tableHeight);
+        } else {
+          tableElement.style.removeProperty("height");
+          tableElement.removeAttribute("data-table-height");
+        }
       });
     };
 
@@ -2617,6 +2779,7 @@ export default function RichTextEditor({
     };
   }, [editor]);
 
+  // Phase 4: Column resize indicator (existing)
   useEffect(() => {
     if (!editor) return;
     let indicator: HTMLDivElement | null = null;
@@ -2677,6 +2840,390 @@ export default function RichTextEditor({
     return () => {
       document.removeEventListener("mousedown", handleMouseDown);
       cleanup();
+    };
+  }, [editor]);
+
+  // Phase 6.1: Whole-table resize handles (TinyMCE-style corner drag)
+  useEffect(() => {
+    if (!editor) return;
+
+    let resizeHandles: HTMLDivElement[] = [];
+    let sizeBadge: HTMLDivElement | null = null;
+    let currentTable: HTMLTableElement | null = null;
+    let currentTablePos: number | null = null;
+    let isResizing = false;
+
+    const cleanup = () => {
+      resizeHandles.forEach((handle) => handle.remove());
+      resizeHandles = [];
+      if (sizeBadge) {
+        sizeBadge.remove();
+        sizeBadge = null;
+      }
+      currentTable = null;
+      currentTablePos = null;
+    };
+
+    const createResizeHandles = (table: HTMLTableElement, pos: number) => {
+      cleanup();
+      currentTable = table;
+      currentTablePos = pos;
+
+      // Create 4 corner handles (NW, NE, SW, SE)
+      const positions = [
+        { name: "nw", cursor: "nwse-resize", top: "-6px", left: "-6px" },
+        { name: "ne", cursor: "nesw-resize", top: "-6px", right: "-6px" },
+        { name: "sw", cursor: "nesw-resize", bottom: "-6px", left: "-6px" },
+        { name: "se", cursor: "nwse-resize", bottom: "-6px", right: "-6px" },
+      ];
+
+      positions.forEach((pos) => {
+        const handle = document.createElement("div");
+        handle.className = `table-resize-handle table-resize-handle-${pos.name}`;
+        handle.style.position = "absolute";
+        handle.style.width = "12px";
+        handle.style.height = "12px";
+        handle.style.borderRadius = "50%";
+        handle.style.background = "#3b82f6";
+        handle.style.border = "2px solid white";
+        handle.style.cursor = pos.cursor;
+        handle.style.zIndex = "100";
+        handle.style.boxShadow = "0 1px 3px rgba(15, 23, 42, 0.35)";
+        handle.style.pointerEvents = "auto";
+
+        if (pos.top) handle.style.top = pos.top;
+        if (pos.bottom) handle.style.bottom = pos.bottom;
+        if (pos.left) handle.style.left = pos.left;
+        if (pos.right) handle.style.right = pos.right;
+
+        handle.addEventListener("mousedown", (e) =>
+          handleResizeStart(e, pos.name as "nw" | "ne" | "sw" | "se")
+        );
+
+        resizeHandles.push(handle);
+      });
+
+      // Create size badge
+      sizeBadge = document.createElement("div");
+      sizeBadge.style.position = "absolute";
+      sizeBadge.style.top = "-36px";
+      sizeBadge.style.left = "50%";
+      sizeBadge.style.transform = "translateX(-50%)";
+      sizeBadge.style.padding = "4px 10px";
+      sizeBadge.style.borderRadius = "999px";
+      sizeBadge.style.background = "rgba(15, 23, 42, 0.85)";
+      sizeBadge.style.color = "white";
+      sizeBadge.style.fontSize = "12px";
+      sizeBadge.style.fontWeight = "600";
+      sizeBadge.style.display = "none";
+      sizeBadge.style.pointerEvents = "none";
+      sizeBadge.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.25)";
+      sizeBadge.style.zIndex = "101";
+
+      // Append handles directly to the <table> element so they track its size
+      const wrapper = table as HTMLElement;
+      wrapper.style.position = wrapper.style.position || "relative";
+      resizeHandles.forEach((handle) => wrapper.appendChild(handle));
+      wrapper.appendChild(sizeBadge);
+    };
+
+    const handleResizeStart = (
+      e: MouseEvent,
+      corner: "nw" | "ne" | "sw" | "se"
+    ) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!currentTable || currentTablePos === null) return;
+
+      isResizing = true;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startWidth = currentTable.offsetWidth;
+      const startHeight = currentTable.offsetHeight;
+
+      if (sizeBadge) {
+        sizeBadge.style.display = "inline-flex";
+        sizeBadge.textContent = `${startWidth}px × ${startHeight}px`;
+      }
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        if (!currentTable || !sizeBadge) return;
+
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+
+        let newWidth = startWidth;
+        let newHeight = startHeight;
+
+        // Calculate new dimensions based on corner
+        if (corner === "se") {
+          newWidth = startWidth + deltaX;
+          newHeight = startHeight + deltaY;
+        } else if (corner === "sw") {
+          newWidth = startWidth - deltaX;
+          newHeight = startHeight + deltaY;
+        } else if (corner === "ne") {
+          newWidth = startWidth + deltaX;
+          newHeight = startHeight - deltaY;
+        } else if (corner === "nw") {
+          newWidth = startWidth - deltaX;
+          newHeight = startHeight - deltaY;
+        }
+
+        // Apply constraints
+        newWidth = Math.max(200, Math.min(newWidth, 2000));
+        newHeight = Math.max(100, Math.min(newHeight, 2000));
+
+        // Apply to table
+        currentTable.style.width = `${newWidth}px`;
+        currentTable.style.height = `${newHeight}px`;
+
+        // Update badge
+        sizeBadge.textContent = `${Math.round(newWidth)}px × ${Math.round(
+          newHeight
+        )}px`;
+      };
+
+      const onMouseUp = () => {
+        isResizing = false;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+
+        if (sizeBadge) {
+          sizeBadge.style.display = "none";
+        }
+
+        // Save to TipTap node attributes + synchronize column widths with the
+        // DOM so that subsequent column resizing uses the "new" table width as
+        // its baseline instead of snapping back to the previous width.
+        if (currentTable) {
+          const newHeight = `${currentTable.offsetHeight}px`;
+
+          // Find the current table position dynamically (it may have changed)
+          let foundPos: number | null = null;
+          editor.state.doc.descendants((node, pos) => {
+            if (node.type.name === "table") {
+              const domNode = editor.view.nodeDOM(pos) as HTMLElement | null;
+              const tableElement =
+                domNode instanceof HTMLTableElement
+                  ? domNode
+                  : (domNode?.querySelector(
+                      "table"
+                    ) as HTMLTableElement | null);
+
+              if (tableElement === currentTable) {
+                foundPos = pos;
+                return false; // Stop searching
+              }
+            }
+            return true;
+          });
+
+          if (foundPos !== null) {
+            editor.commands.command(({ tr, state, dispatch }) => {
+              const tableNode: any = state.doc.nodeAt(foundPos!);
+
+              if (tableNode && tableNode.type.name === "table" && dispatch) {
+                // 1) Recompute column widths based on the DOM after the
+                // whole-table resize. We look at the first table row's DOM
+                // cells, measure their rendered widths, and write those values
+                // into the colwidth attributes. This keeps ProseMirror's
+                // columnResizing plugin perfectly in sync with what the user
+                // sees after dragging the corner handle.
+                const firstRowInfo: { node: any; offset: number } | null =
+                  (() => {
+                    let info: { node: any; offset: number } | null = null;
+                    tableNode.forEach((row: any, offset: number) => {
+                      if (!info && row.type && row.type.name === "tableRow") {
+                        info = { node: row, offset };
+                      }
+                    });
+                    return info;
+                  })();
+
+                if (firstRowInfo && currentTable) {
+                  const { node: firstRow, offset: firstRowOffset } =
+                    firstRowInfo;
+
+                  const domFirstRow = currentTable.querySelector("tr");
+                  if (domFirstRow) {
+                    const domCells = Array.from(
+                      domFirstRow.children
+                    ) as HTMLTableCellElement[];
+
+                    const rowStartPos = foundPos! + 1 + firstRowOffset;
+                    let domCellIndex = 0;
+
+                    firstRow.forEach((cell: any, cellOffset: number) => {
+                      const colspan =
+                        (cell.attrs?.colspan as number | undefined) || 1;
+                      const domCell = domCells[domCellIndex] as
+                        | HTMLTableCellElement
+                        | undefined;
+                      domCellIndex += 1;
+
+                      let totalCellWidth: number | null = null;
+
+                      if (domCell) {
+                        const rect = domCell.getBoundingClientRect();
+                        if (rect.width && isFinite(rect.width)) {
+                          totalCellWidth = rect.width;
+                        }
+                      }
+
+                      // Fallbacks if, for some reason, the DOM measurement
+                      // isn't available.
+                      if (totalCellWidth == null) {
+                        const existing = cell.attrs?.colwidth as
+                          | number[]
+                          | undefined;
+                        if (
+                          Array.isArray(existing) &&
+                          existing.length === colspan
+                        ) {
+                          totalCellWidth = existing.reduce(
+                            (sum: number, w: number) => sum + w,
+                            0
+                          );
+                        } else {
+                          totalCellWidth = colspan * 50; // safe minimum
+                        }
+                      }
+
+                      const perColWidth = Math.max(
+                        25,
+                        Math.round(totalCellWidth / colspan)
+                      );
+                      const cellWidths = Array(colspan).fill(perColWidth);
+
+                      const cellPos = rowStartPos + 1 + cellOffset;
+                      tr.setNodeMarkup(cellPos, undefined, {
+                        ...cell.attrs,
+                        colwidth: cellWidths,
+                      });
+                    });
+                  }
+                }
+
+                // 2) Persist the updated table height on the node so vertical
+                // resizing survives re-renders. Horizontal sizing comes from
+                // colwidth/columnResizing only.
+                tr.setNodeMarkup(foundPos!, undefined, {
+                  ...tableNode.attrs,
+                  tableHeight: newHeight,
+                });
+
+                dispatch(tr);
+              }
+              return true;
+            });
+          }
+        }
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    };
+
+    const updateHandles = () => {
+      const { state, view } = editor;
+      const { selection } = state;
+
+      // Check if cursor is inside a table
+      let tableNode = null;
+      let tablePos = null;
+
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === "table") {
+          const nodeStart = pos;
+          const nodeEnd = pos + node.nodeSize;
+          if (selection.from >= nodeStart && selection.to <= nodeEnd) {
+            tableNode = node;
+            tablePos = pos;
+            return false; // Stop searching
+          }
+        }
+      });
+
+      if (tableNode && tablePos !== null) {
+        const domNode = view.nodeDOM(tablePos) as HTMLElement | null;
+        const tableElement =
+          domNode instanceof HTMLTableElement
+            ? domNode
+            : (domNode?.querySelector("table") as HTMLTableElement | null);
+
+        if (tableElement && tableElement !== currentTable) {
+          createResizeHandles(tableElement, tablePos);
+        }
+      } else {
+        cleanup();
+      }
+    };
+
+    // Update handles on selection change
+    editor.on("selectionUpdate", updateHandles);
+    editor.on("transaction", updateHandles);
+
+    // Initial update
+    updateHandles();
+
+    return () => {
+      editor.off("selectionUpdate", updateHandles);
+      editor.off("transaction", updateHandles);
+      cleanup();
+    };
+  }, [editor]);
+
+  // Resize handlers
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    resizeStartY.current = e.clientY;
+    resizeStartHeight.current = editorHeight;
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizeStartY.current;
+      const newHeight = Math.max(100, resizeStartHeight.current + deltaY);
+      setEditorHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  // HTML Block editing: per-editor callback (no global window state)
+  useEffect(() => {
+    if (!editor) return;
+
+    (editor as any).__onHtmlBlockEdit = (data: {
+      html: string;
+      id: string;
+    }) => {
+      setHtmlEditMode(true);
+      setHtmlEditContent(data.html);
+      setHtmlEditId(data.id);
+      setShowInsertHTML(true);
+    };
+
+    return () => {
+      if ((editor as any).__onHtmlBlockEdit) {
+        (editor as any).__onHtmlBlockEdit = undefined;
+      }
     };
   }, [editor]);
 
@@ -2803,6 +3350,95 @@ export default function RichTextEditor({
   const handleMathLiveInsert = (latex: string) => {
     insertMathNode(latex);
     setShowMathLive(false);
+  };
+
+  const handleHTMLInsert = (html: string) => {
+    if (!editor) return;
+
+    if (htmlEditMode && htmlEditId) {
+      // Edit mode: Find and update existing HTML block by ID
+      console.log("🔍 HTML Edit Mode - ID:", htmlEditId);
+      console.log("🔍 HTML Edit Mode - New HTML:", html.substring(0, 100));
+
+      // Find node by ID using doc.descendants (same pattern as Table)
+      editor
+        .chain()
+        .focus()
+        .command(({ tr, state }) => {
+          let found = false;
+
+          // Search for the HTML block with matching ID
+          state.doc.descendants((node, pos) => {
+            // Debug: Log all htmlBlock nodes
+            if (node.type.name === "htmlBlock") {
+              console.log(
+                "🔍 Found htmlBlock at pos:",
+                pos,
+                "with ID:",
+                node.attrs.id
+              );
+            }
+
+            if (
+              node.type.name === "htmlBlock" &&
+              node.attrs.id === htmlEditId
+            ) {
+              console.log("✅ Found matching HTML block at position:", pos);
+
+              // Update node attributes using setNodeMarkup
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                html: html,
+              });
+
+              found = true;
+              return false; // Stop searching
+            }
+          });
+
+          if (!found) {
+            console.error("❌ HTML block not found with ID:", htmlEditId);
+            toast.error("HTML block no longer exists");
+          } else {
+            console.log("✅ HTML block updated successfully");
+            toast.success("HTML updated successfully");
+          }
+
+          return found;
+        })
+        .run();
+
+      // Reset edit mode state
+      setHtmlEditMode(false);
+      setHtmlEditContent("");
+      setHtmlEditId(null);
+    } else {
+      // Insert mode: Insert new HTML block with unique ID
+      const newId = `html-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      console.log("🆕 Inserting new HTML block with ID:", newId);
+
+      const inserted = editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "htmlBlock",
+          attrs: {
+            html: html,
+            id: newId, // ✅ Provide ID when creating
+          },
+        })
+        .run();
+
+      if (inserted) {
+        toast.success("HTML inserted successfully");
+      } else {
+        toast.error("Failed to insert HTML block");
+      }
+    }
+
+    setShowInsertHTML(false);
   };
 
   // Color presets
@@ -2996,17 +3632,16 @@ export default function RichTextEditor({
   return (
     <TooltipProvider delayDuration={300}>
       <div
-        className={`border rounded-lg dark:border-slate-700 flex flex-col ${
+        className={`border rounded-lg dark:border-slate-700 overflow-hidden flex flex-col ${
           !showIndentGuides ? "no-indent-guides" : ""
         } ${
           isFullscreen
             ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 rounded-none border-none"
             : ""
         }`}
-        style={!isFullscreen ? { maxHeight: "600px" } : undefined}
       >
-        {/* Toolbar - Sticky at top */}
-        <div className="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1 overflow-x-auto flex-shrink-0">
+        {/* Main Toolbar - Fixed at top */}
+        <div className="flex-shrink-0 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -4571,6 +5206,22 @@ export default function RichTextEditor({
             <TooltipContent>Insert Image</TooltipContent>
           </Tooltip>
 
+          {/* Insert HTML - Sanitized */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() => setShowInsertHTML(true)}
+              >
+                <Code className="h-4 w-4 mr-1" />
+                HTML
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert HTML Code (Sanitized)</TooltipContent>
+          </Tooltip>
+
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Phase 5.1: Audio Recording */}
@@ -4651,41 +5302,86 @@ export default function RichTextEditor({
           </Tooltip>
         </div>
 
-        {/* Scrollable Content Area (Table Menu + Editor Content) */}
-        <div
-          className={`flex-1 overflow-y-auto ${
-            !isFullscreen ? "relative" : ""
-          }`}
-        >
-          {/* Phase 4.2: Table Bubble Menu - Sticky below toolbar */}
-          {editor && (
-            <div className="sticky top-0 z-10 bg-white dark:bg-slate-950">
-              <TableBubbleMenu editor={editor} />
-            </div>
-          )}
+        {/* Table Toolbar - Shows when table is selected */}
+        {editor && editor.isActive("table") && (
+          <div className="flex-shrink-0 border-b dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-2 flex flex-wrap gap-1 items-center">
+            <TableBubbleMenu editor={editor} />
+          </div>
+        )}
 
-          {/* Editor Content */}
+        {/* Editor Content - Scrollable Body */}
+        <div
+          onClick={() => editor?.chain().focus().run()}
+          className={`cursor-text relative overflow-y-auto ${
+            isFullscreen ? "flex-1" : ""
+          }`}
+          style={
+            isFullscreen
+              ? {}
+              : {
+                  height: `${editorHeight}px`,
+                  minHeight: "150px",
+                }
+          }
+        >
           <EditorContent
             editor={editor}
             className="prose dark:prose-invert max-w-none p-4"
-            style={!isFullscreen ? { minHeight } : undefined}
           />
         </div>
 
-        {/* Phase 5.3: Word Count Display - Sticky at bottom */}
-        <div className="border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-xs text-slate-600 dark:text-slate-400 flex justify-end gap-4 flex-shrink-0">
-          <span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              {wordCount}
-            </span>{" "}
-            {wordCount === 1 ? "word" : "words"}
-          </span>
-          <span>
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              {charCount}
-            </span>{" "}
-            {charCount === 1 ? "character" : "characters"}
-          </span>
+        {/* Footer Section - Fixed at bottom */}
+        <div className="flex-shrink-0 border-t dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 flex items-center justify-between gap-4">
+          {/* Left: Active Tools Breadcrumb - DOM Hierarchy Path */}
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex-shrink-0 min-w-0">
+            {activeTools.length > 0 ? (
+              <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                {activeTools.join(" › ")}
+              </span>
+            ) : (
+              <span className="text-slate-500 dark:text-slate-500">body</span>
+            )}
+          </div>
+
+          {/* Center/Right: Word Count Display */}
+          <div className="text-xs text-slate-600 dark:text-slate-400 flex gap-4 flex-shrink-0">
+            <span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {wordCount}
+              </span>{" "}
+              {wordCount === 1 ? "word" : "words"}
+            </span>
+            <span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {charCount}
+              </span>{" "}
+              {charCount === 1 ? "character" : "characters"}
+            </span>
+          </div>
+
+          {/* Far Right: Resize Handle */}
+          {!isFullscreen && (
+            <div
+              onMouseDown={handleResizeStart}
+              className="w-5 h-5 cursor-nwse-resize group flex items-center justify-center select-none flex-shrink-0"
+              style={{ touchAction: "none", userSelect: "none" }}
+            >
+              {/* Classic diagonal dots pattern - like textarea resize grip */}
+              <svg
+                className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400 transition-colors pointer-events-none"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                {/* Diagonal dots pattern */}
+                <circle cx="13" cy="13" r="1.5" />
+                <circle cx="9" cy="13" r="1.5" />
+                <circle cx="13" cy="9" r="1.5" />
+                <circle cx="5" cy="13" r="1.5" />
+                <circle cx="9" cy="9" r="1.5" />
+                <circle cx="13" cy="5" r="1.5" />
+              </svg>
+            </div>
+          )}
         </div>
 
         {/* MathLive Modal */}
@@ -4693,6 +5389,21 @@ export default function RichTextEditor({
           open={showMathLive}
           onClose={() => setShowMathLive(false)}
           onInsert={handleMathLiveInsert}
+        />
+
+        {/* Insert HTML Modal - Sanitized */}
+        <InsertHTMLModal
+          open={showInsertHTML}
+          onClose={() => {
+            setShowInsertHTML(false);
+            // Reset edit mode when closing
+            setHtmlEditMode(false);
+            setHtmlEditContent("");
+            setHtmlEditId(null);
+          }}
+          onInsert={handleHTMLInsert}
+          initialHtml={htmlEditContent}
+          isEditMode={htmlEditMode}
         />
 
         {/* Phase 3.4: Link Dialog - Modern & Secure */}
