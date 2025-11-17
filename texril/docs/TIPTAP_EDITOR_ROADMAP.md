@@ -434,20 +434,23 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 **Why This Approach Works (vs. Previous Failed Attempts):**
 
 1. **Dual Output Strategy:**
+
    ```typescript
    renderHTML: (attributes) => {
      return {
-       "data-line-height": attributes.lineHeight,  // For CSS targeting
-       style: `line-height: ${attributes.lineHeight}`,  // Inline style (higher specificity)
+       "data-line-height": attributes.lineHeight, // For CSS targeting
+       style: `line-height: ${attributes.lineHeight}`, // Inline style (higher specificity)
      };
-   }
+   };
    ```
+
    - Previous attempts used ONLY inline style OR ONLY data attribute
    - This approach uses BOTH for maximum compatibility
    - Inline style ensures immediate visual effect
    - Data attribute allows CSS customization if needed
 
 2. **Custom Command with `tr.setNodeMarkup()`:**
+
    ```typescript
    .command(({ tr, state, dispatch }) => {
      state.doc.nodesBetween(from, to, (node, pos) => {
@@ -457,6 +460,7 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
      });
    })
    ```
+
    - Previous attempts used `setMark()` or `updateAttributes()` which caused conflicts
    - `setNodeMarkup()` directly modifies node attributes without triggering extension conflicts
    - Works on node level (paragraph/heading) instead of mark level (textStyle)
@@ -468,7 +472,7 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
      if (dataValue) return dataValue;
      const styleValue = element.style.lineHeight;
      return styleValue || null;
-   }
+   };
    ```
    - Reads from data attribute first (preferred)
    - Falls back to inline style if data attribute missing
@@ -477,11 +481,13 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 **Why Previous Attempts Failed:**
 
 1. **❌ Attempt 1: TextStyle.extend() with lineHeight attribute**
+
    - **Problem:** TextStyle is a MARK (inline), but line-height is a BLOCK property
    - **Error:** `String.repeat()` error during compilation (internal TipTap conflict)
    - **Lesson:** Don't use marks for block-level CSS properties
 
 2. **❌ Attempt 2: Custom extension with ONLY data attribute**
+
    - **Problem:** CSS specificity issues - default heading styles overrode data attribute styles
    - **Error:** Server compilation hung (CSS selector complexity)
    - **Lesson:** Data attributes alone aren't enough for immediate visual feedback
@@ -495,6 +501,7 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 **Bundle size:** +2 KB
 
 **User Experience:**
+
 - Click "Line" button → Dropdown opens
 - Select "1.5x" → Text line spacing increases immediately
 - Button shows "1.5x" with gradient background
@@ -520,47 +527,55 @@ ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 **Technical Details:**
 
 **TextDirection Extension:**
+
 ```typescript
 const TextDirection = Extension.create({
   name: "textDirection",
   addGlobalAttributes() {
-    return [{
-      types: ["paragraph", "heading"],
-      attributes: {
-        dir: {
-          parseHTML: (element) => element.getAttribute("dir") || null,
-          renderHTML: (attributes) => ({
-            dir: attributes.dir,
-            style: `direction: ${attributes.dir}`,
-          }),
+    return [
+      {
+        types: ["paragraph", "heading"],
+        attributes: {
+          dir: {
+            parseHTML: (element) => element.getAttribute("dir") || null,
+            renderHTML: (attributes) => ({
+              dir: attributes.dir,
+              style: `direction: ${attributes.dir}`,
+            }),
+          },
         },
       },
-    }];
+    ];
   },
   addCommands() {
     return {
-      setTextDirection: (direction) => ({ tr, state, dispatch }) => {
-        // ✅ Preserves textAlign attribute
-        const nextAttrs = { ...node.attrs };
-        nextAttrs.dir = direction;
-        tr.setNodeMarkup(pos, undefined, nextAttrs);
-      },
+      setTextDirection:
+        (direction) =>
+        ({ tr, state, dispatch }) => {
+          // ✅ Preserves textAlign attribute
+          const nextAttrs = { ...node.attrs };
+          nextAttrs.dir = direction;
+          tr.setNodeMarkup(pos, undefined, nextAttrs);
+        },
     };
   },
 });
 ```
 
 **Extended TextAlign:**
+
 ```typescript
 TextAlign.extend({
   addCommands() {
     return {
-      setTextAlign: (alignment) => ({ tr, state, dispatch }) => {
-        // ✅ Preserves dir attribute
-        const nextAttrs = { ...node.attrs };
-        nextAttrs.textAlign = alignment;
-        tr.setNodeMarkup(pos, undefined, nextAttrs);
-      },
+      setTextAlign:
+        (alignment) =>
+        ({ tr, state, dispatch }) => {
+          // ✅ Preserves dir attribute
+          const nextAttrs = { ...node.attrs };
+          nextAttrs.textAlign = alignment;
+          tr.setNodeMarkup(pos, undefined, nextAttrs);
+        },
     };
   },
 }).configure({
@@ -569,6 +584,7 @@ TextAlign.extend({
 ```
 
 **UI Behavior:**
+
 - LTR/RTL buttons toggle direction with visual active state
 - Alignment buttons show dynamic icons based on current direction
 - Tooltips update to show "Align Start (Left)" vs "Align Start (Right)"
@@ -747,10 +763,259 @@ TextAlign.extend({
 
 **Future Enhancements (Optional - Not Planned):**
 
-- 🔲 Table border styling controls (width, color, style)
 - 🔲 Cell alignment controls (left/center/right per cell)
 - 🔲 Table templates/presets
-- 🔲 Advanced column resizing with visual feedback
+
+**Implemented Enhancements:**
+
+- ✅ **Table border styling controls** - Default black border (#000000), customizable via Table Toolbar
+- ✅ **Column resize with visual feedback** - Google Docs style `← || →` handle with instant appearance
+- ✅ **Column resize indicator** - Shows width (e.g., "150px") while dragging
+
+---
+
+## 📐 PHASE 6: TABLE ROW RESIZE (FUTURE - NOT IMPLEMENTED YET)
+
+**Goal:** Google Docs style row height adjustment
+
+### **6.1 Row Resize Handles** (~300 lines)
+
+**Current:** ❌ Not implemented
+**Target:** Individual row height adjustment with visual handles
+
+**Design (Google Docs Style):**
+
+```
+Row 1 content
+─────────────
+  ↑
+  =    ← Handle appears on hover between rows
+  ↓
+─────────────
+Row 2 content
+```
+
+**Visual Elements:**
+
+- **Double horizontal bars (=)** - Center indicator
+- **Up arrow (↑)** - Top side (drag up to decrease height)
+- **Down arrow (↓)** - Bottom side (drag down to increase height)
+- **Position:** Between table rows (on bottom border of each row except last)
+- **Behavior:** Instant appearance on hover (no transition)
+
+**Implementation Requirements:**
+
+1. **TableRow Extension (Add rowHeight attribute):**
+
+```typescript
+TableRow.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      rowHeight: {
+        default: null,
+        parseHTML: (element) =>
+          element.getAttribute("data-row-height") ||
+          element.style.height ||
+          null,
+        renderHTML: (attributes) => {
+          if (!attributes.rowHeight) return {};
+          return {
+            "data-row-height": attributes.rowHeight,
+            style: `height: ${attributes.rowHeight}`,
+          };
+        },
+      },
+    };
+  },
+}),
+```
+
+2. **CSS Styling:**
+
+```css
+/* Row Resize Handle - Google Docs style: ↑ = ↓ */
+.ProseMirror .row-resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 20px;
+  background: transparent;
+  cursor: row-resize;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Double horizontal bars in center (=) */
+.ProseMirror .row-resize-handle::before {
+  content: "=";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  color: #1f2937;
+  letter-spacing: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Up and down arrows: ↑ ↓ */
+.ProseMirror .row-resize-handle::after {
+  content: "↑\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0↓";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1f2937;
+  white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Show handle when hovering over row */
+.ProseMirror tr:hover .row-resize-handle {
+  opacity: 1;
+}
+
+/* Dark mode */
+.dark .ProseMirror .row-resize-handle::before,
+.dark .ProseMirror .row-resize-handle::after {
+  color: #cbd5e1;
+}
+```
+
+3. **React useEffect for Drag Logic:**
+
+```typescript
+// Phase 6: Row resize handles
+useEffect(() => {
+  if (!editor) return;
+
+  let indicator: HTMLDivElement | null = null;
+  let activeRow: HTMLTableRowElement | null = null;
+  let startY = 0;
+  let startHeight = 0;
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!activeRow || !indicator) return;
+
+    const deltaY = e.clientY - startY;
+    const newHeight = Math.max(30, startHeight + deltaY);
+
+    activeRow.style.height = `${newHeight}px`;
+    indicator.textContent = `${Math.round(newHeight)}px`;
+  };
+
+  const handleMouseUp = () => {
+    if (!activeRow || !editor) {
+      cleanup();
+      return;
+    }
+
+    // Persist row height to ProseMirror state
+    const rowHeight = activeRow.style.height;
+    // ... (update node attributes via editor.chain().command())
+
+    cleanup();
+  };
+
+  const handleMouseDown = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (!target?.classList.contains("row-resize-handle")) return;
+
+    activeRow = target.closest("tr") as HTMLTableRowElement;
+    if (!activeRow) return;
+
+    startY = event.clientY;
+    startHeight = activeRow.offsetHeight;
+
+    indicator = document.createElement("div");
+    indicator.className = "table-resize-indicator";
+    document.body.appendChild(indicator);
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp, { once: true });
+  };
+
+  document.addEventListener("mousedown", handleMouseDown);
+  return () => {
+    document.removeEventListener("mousedown", handleMouseDown);
+    cleanup();
+  };
+}, [editor]);
+```
+
+4. **DOM Handle Injection:**
+
+```typescript
+useEffect(() => {
+  if (!editor) return;
+
+  const addRowResizeHandles = () => {
+    const tables = editor.view.dom.querySelectorAll("table");
+
+    tables.forEach((table) => {
+      const rows = table.querySelectorAll("tr");
+      rows.forEach((row, index) => {
+        // Don't add handle to last row
+        if (index === rows.length - 1) return;
+
+        // Check if handle already exists
+        if (row.querySelector(".row-resize-handle")) return;
+
+        const handle = document.createElement("div");
+        handle.className = "row-resize-handle";
+        row.appendChild(handle);
+      });
+    });
+  };
+
+  addRowResizeHandles();
+  editor.on("transaction", addRowResizeHandles);
+
+  return () => {
+    editor.off("transaction", addRowResizeHandles);
+  };
+}, [editor]);
+```
+
+**Files to modify:**
+
+- `components/ui/rich-text-editor.tsx` (+200 lines)
+- `components/ui/editor-styles.css` (+100 lines)
+
+**Code Impact:** ~300 lines
+**Bundle size:** 0 KB (no external dependencies)
+**Performance:** Zero impact (same pattern as column resize)
+
+**Challenges:**
+
+1. **ProseMirror TableRow doesn't natively support rowHeight**
+
+   - Need to extend TableRow with custom attribute
+   - Need to apply height via inline style for immediate effect
+
+2. **Handle positioning**
+
+   - Must position at bottom border of each row
+   - Must not interfere with cell content or column resize handles
+
+3. **Conflict with whole-table resize**
+   - Row resize should work independently from table corner resize
+   - Corner resize should not reset individual row heights
+
+**Priority:** 🟡 Medium (nice-to-have, not critical)
+**Time estimate:** 3-4 hours
+**Status:** 📝 Documented for future implementation
 
 ---
 
@@ -795,7 +1060,7 @@ TextAlign.extend({
 - 🔲 Use **Fullscreen API** (browser native)
 - 🔲 Keyboard shortcut: F11 or Esc to exit
 
-future: 
+future:
 ✨ Fullscreen animation (fade/slide transition)
 🎨 Custom fullscreen background color picker
 📱 Mobile-optimized fullscreen mode
@@ -974,7 +1239,7 @@ future:
 
 ### **Why TipTap is BETTER than Sun Editor:**
 
-1. ✅ **MathLive Integration** - Visual math editor (Sun Editor does NOT have this)
+1. ✅ **MathLive Integration** - (Sun Editor does NOT have this)
 2. ✅ **44% Smaller Bundle** - 195 KB vs 350 KB
 3. ✅ **Modern React Integration** - Native, not wrapper
 4. ✅ **Full TypeScript Support** - Type-safe
@@ -1873,9 +2138,6 @@ npm install emoji-picker-react  # For emoji picker
 **Last Updated:** 2025-01-09
 **Author:** AI Assistant (Augment Agent)
 
-
-
-
 🧩 Phase 1 – Quick UX Upgrade (Dropdown-based Lists)
 1.1 Bullet List → Popover with “bullet style” options
 Current:
@@ -1907,17 +2169,18 @@ Format: normal 1. 2. 3.
 Plan:
 
 Ordered list button o popover-based hobe: Formats:
+
 1. 2. 3. (default)
-01. 02. 03. (padded)
-a. b. c. (lower-alpha)
-A. B. C. (upper-alpha)
-i. ii. iii. (lower-roman)
-I. II. III. (upper-roman)
-Technically:
-orderedList extension extend kore listStyleType / data-num-style attribute:
-"decimal" | "decimal-leading-zero" | "lower-alpha" | "upper-alpha" | "lower-roman" | "upper-roman"
-CSS counters ba <ol type="a"> + custom handling diye style handle.
-Benefit:
+1. 2. 3. (padded)
+         a. b. c. (lower-alpha)
+         A. B. C. (upper-alpha)
+         i. ii. iii. (lower-roman)
+         I. II. III. (upper-roman)
+         Technically:
+         orderedList extension extend kore listStyleType / data-num-style attribute:
+         "decimal" | "decimal-leading-zero" | "lower-alpha" | "upper-alpha" | "lower-roman" | "upper-roman"
+         CSS counters ba <ol type="a"> + custom handling diye style handle.
+         Benefit:
 
 Question / exam formatting er jonne very flexible – e.g. options a), b) or roman numerals easily.
 1.3 Indent/Outdent UX polish around Lists

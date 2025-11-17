@@ -14,3 +14,18 @@
 
  ✓ Starting...
  ✓ Ready in 438ms
+ ○ Compiling /embed ...
+ GET /embed?token=dev-token 200 in 3.3s (compile: 3.2s, render: 89ms)
+ GET /embed?token=dev-token 200 in 26ms (compile: 3ms, render: 23ms)
+ GET /embed?token=dev-token 200 in 23ms (compile: 3ms, render: 21ms)
+ ✓ Compiled in 196ms
+ ✓ Compiled in 181ms
+ ✓ Compiled in 136ms
+ ✓ Compiled in 69ms
+ ✓ Compiled in 132ms
+ ✓ Compiled in 64ms
+ ✓ Compiled in 245ms
+ GET /embed?token=dev-token 500 in 924ms (compile: 811ms, render: 114ms)
+ GET /embed?token=dev-token 500 in 917ms (compile: 885ms, render: 31ms)
+ GET /embed?token=dev-token 500 in 394ms (compile: 369ms, render: 25ms)
+ GET /embed?token=dev-token 200 in 139ms (compile: 64ms, render: 75ms)

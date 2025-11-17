@@ -431,3 +431,20 @@
 .dark .audio-progress-bar::-moz-range-thumb {
   background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
 }
+
+/* HTML Block - Custom styled content */
+.html-block-wrapper {
+  margin: 16px 0;
+}
+
+.html-block-content {
+  /* Preserve all inline styles from inserted HTML */
+  all: initial;
+  font-family: inherit;
+  color: inherit;
+}
+
+.html-block-content * {
+  /* Allow child elements to inherit styles */
+  all: revert;
+}

@@ -14,3 +14,847 @@ npm warn Unknown project config "auto-install-peers". This will stop working in 
  Detected additional lockfiles: 
    * K:\projects\lms\texril\web\package-lock.json
 
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to C:\Users\Sajeeb\AppData\Local\Temp\next-panic-85eb52c76a2a602136d5c59fde421744.log.
+
+To help make Turbopack better, report this error by clicking here: https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fembed%2Fpage&body=Turbopack%20version%3A%20%60de6bc159%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ATurbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fembed%2Fpage%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
+-----
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+ ⨯ ./texril/web/src/components/ui/mathlive-modal.tsx:23:29
+Module not found: Can't resolve 'mathlive'
+[0m [90m 21 |[39m [36mfunction[39m loadMathLiveModule()[33m:[39m [33mPromise[39m[33m<[39m[33mMathLiveModule[39m[33m>[39m {
+ [90m 22 |[39m   [36mif[39m ([33m![39mmathLiveImportPromise) {
+[31m[1m>[22m[39m[90m 23 |[39m     mathLiveImportPromise [33m=[39m [36mimport[39m([32m"mathlive"[39m)
+ [90m    |[39m                             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 24 |[39m       [33m.[39mthen((mathlive) [33m=>[39m {
+ [90m 25 |[39m         [36mif[39m (mathlive[33m?[39m[33m.[39m[33mMathfieldElement[39m) {
+ [90m 26 |[39m           mathlive[33m.[39m[33mMathfieldElement[39m[33m.[39msoundsDirectory [33m=[39m [36mnull[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+
+./texril/web/src/components/ui/mathlive-modal.tsx:15:1
+Module not found: Can't resolve 'mathlive/static.css'
+[0m [90m 13 |[39m [36mimport[39m { [33mLabel[39m } [36mfrom[39m [32m"@/components/ui/label"[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { [33mInput[39m } [36mfrom[39m [32m"@/components/ui/input"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m [32m"mathlive/static.css"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 16 |[39m
+ [90m 17 |[39m type [33mMathLiveModule[39m [33m=[39m [36mtypeof[39m [36mimport[39m([32m"mathlive"[39m)[33m;[39m
+ [90m 18 |[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./texril/web/src/components/ui/mathlive-modal.tsx [Client Component Browser]
+    ./texril/web/src/components/ui/rich-text-editor.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Client Component Browser]
+    ./texril/web/src/app/embed/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+

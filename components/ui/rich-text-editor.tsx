@@ -92,6 +92,8 @@ import {
   type ImageProperties,
 } from "@/components/ui/image-properties-dialog";
 import { LinkDialog } from "@/components/ui/link-dialog";
+import { InsertHTMLModal } from "@/components/ui/insert-html-modal";
+import { HTMLBlock } from "@/components/editor/html-block-extension";
 import { FontFamilySelector } from "@/components/ui/font-family-selector";
 import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern table grid selector
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
@@ -2108,6 +2110,9 @@ export default function RichTextEditor({
   // Phase 5.1: Audio Recorder Dialog state
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
 
+  // Insert HTML Dialog state
+  const [showInsertHTML, setShowInsertHTML] = useState(false);
+
   // Phase 5.2: Fullscreen Mode state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -2497,6 +2502,8 @@ export default function RichTextEditor({
       }),
       // Phase 5.1: Audio Recording
       Audio,
+      // Custom HTML Block - Preserves inline styles
+      HTMLBlock,
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -3318,6 +3325,24 @@ export default function RichTextEditor({
   const handleMathLiveInsert = (latex: string) => {
     insertMathNode(latex);
     setShowMathLive(false);
+  };
+
+  const handleHTMLInsert = (html: string) => {
+    if (!editor) return;
+
+    // Insert sanitized HTML as HTMLBlock node (preserves inline styles)
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "htmlBlock",
+        attrs: {
+          html: html,
+        },
+      })
+      .run();
+
+    setShowInsertHTML(false);
   };
 
   // Color presets
@@ -5085,6 +5110,22 @@ export default function RichTextEditor({
             <TooltipContent>Insert Image</TooltipContent>
           </Tooltip>
 
+          {/* Insert HTML - Sanitized */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() => setShowInsertHTML(true)}
+              >
+                <Code className="h-4 w-4 mr-1" />
+                HTML
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Insert HTML Code (Sanitized)</TooltipContent>
+          </Tooltip>
+
           <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1" />
 
           {/* Phase 5.1: Audio Recording */}
@@ -5252,6 +5293,13 @@ export default function RichTextEditor({
           open={showMathLive}
           onClose={() => setShowMathLive(false)}
           onInsert={handleMathLiveInsert}
+        />
+
+        {/* Insert HTML Modal - Sanitized */}
+        <InsertHTMLModal
+          open={showInsertHTML}
+          onClose={() => setShowInsertHTML(false)}
+          onInsert={handleHTMLInsert}
         />
 
         {/* Phase 3.4: Link Dialog - Modern & Secure */}
