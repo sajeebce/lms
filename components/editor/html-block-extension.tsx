@@ -1,56 +1,103 @@
-'use client'
+"use client";
 
-import { Node, mergeAttributes } from '@tiptap/core'
-import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
+import { Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
+import { Pencil } from "lucide-react";
 
 // Custom HTML Block Node - Preserves inline styles
 export const HTMLBlock = Node.create({
-  name: 'htmlBlock',
+  name: "htmlBlock",
 
-  group: 'block',
+  group: "block",
 
   atom: true, // Treat as single unit (non-editable)
 
   addAttributes() {
     return {
       html: {
-        default: '',
-        parseHTML: element => element.getAttribute('data-html-content') || '',
-        renderHTML: attributes => {
+        default: "",
+        parseHTML: (element) => element.getAttribute("data-html-content") || "",
+        renderHTML: (attributes) => {
           return {
-            'data-html-content': attributes.html,
-          }
+            "data-html-content": attributes.html,
+          };
         },
       },
-    }
+      id: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-id"),
+        renderHTML: (attributes) => {
+          // Generate unique ID if not present
+          if (!attributes.id) {
+            attributes.id = `html-${Date.now()}-${Math.random()
+              .toString(36)
+              .substr(2, 9)}`;
+          }
+          return {
+            "data-id": attributes.id,
+          };
+        },
+      },
+    };
   },
 
   parseHTML() {
     return [
       {
-        tag: 'div[data-html-block]',
+        tag: "div[data-html-block]",
       },
-    ]
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-html-block': '' })]
+    return ["div", mergeAttributes(HTMLAttributes, { "data-html-block": "" })];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(HTMLBlockComponent)
+    return ReactNodeViewRenderer(HTMLBlockComponent);
   },
-})
+});
 
 // React component to render HTML block
-function HTMLBlockComponent({ node }: any) {
+function HTMLBlockComponent({ node, selected, editor, getPos }: any) {
+  const handleEdit = () => {
+    // Use per-editor callback stored on the TipTap editor instance
+    // This avoids using global window state and works safely with multiple
+    // RichTextEditor instances on the same page.
+    const callback = (editor as any)?.__onHtmlBlockEdit as
+      | ((data: { html: string; id: string | null }) => void)
+      | undefined;
+
+    if (callback) {
+      callback({
+        html: node.attrs.html,
+        id: node.attrs.id,
+      });
+    } else {
+      console.warn("HTMLBlock edit callback not found on editor instance");
+    }
+  };
+
   return (
     <NodeViewWrapper className="html-block-wrapper">
-      <div
-        className="html-block-content"
-        dangerouslySetInnerHTML={{ __html: node.attrs.html }}
-      />
-    </NodeViewWrapper>
-  )
-}
+      <div className="relative group">
+        {/* Edit button - shows on hover or when selected */}
+        {(selected || false) && (
+          <button
+            onClick={handleEdit}
+            className="absolute top-2 right-2 z-10 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md p-2 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            title="Edit HTML"
+          >
+            <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+          </button>
+        )}
 
+        {/* HTML content */}
+        <div
+          className="html-block-content"
+          dangerouslySetInnerHTML={{ __html: node.attrs.html }}
+        />
+      </div>
+    </NodeViewWrapper>
+  );
+}
