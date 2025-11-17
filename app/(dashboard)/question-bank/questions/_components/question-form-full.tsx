@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 import { toast } from "sonner";
 import { createQuestion, updateQuestion } from "@/lib/actions/question.actions";
-import { Plus, Trash2, Save, X, Eye } from "lucide-react";
+import { Plus, Trash2, Save, X, Eye, ArrowUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import RichTextEditor from "@/components/ui/rich-text-editor";
@@ -38,6 +38,7 @@ export default function QuestionFormFull({
 }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Form State (all in one view - no steps!)
   const [selectedSubject, setSelectedSubject] = useState(
@@ -82,6 +83,19 @@ export default function QuestionFormFull({
     initialData?.explanation || ""
   );
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Scroll to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // Filter logic
   const filteredChapters = chapters.filter(
@@ -182,277 +196,284 @@ export default function QuestionFormFull({
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold dark:text-slate-200">
-            {initialData ? "Edit Question" : "Create New Question"}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Fill in all fields below to create a complete question
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPreviewOpen(true)}>
-            <Eye className="h-4 w-4 mr-2" />
-            Show Preview
-          </Button>
-          <Button variant="outline" onClick={() => router.back()}>
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white font-medium"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? "Saving..." : "Save Question"}
-          </Button>
+    <div className="min-h-screen flex flex-col">
+      {/* STICKY HEADER - Always visible */}
+      <div className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-border dark:border-slate-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold dark:text-slate-200">
+                {initialData ? "Edit Question" : "Create New Question"}
+              </h1>
+              <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
+                Fill in all fields below to create a complete question
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setPreviewOpen(true)}>
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <Button variant="outline" onClick={() => router.back()}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white font-medium"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? "Saving..." : "Save Question"}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Section 1: Location */}
-        <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-          <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
-            📍 Question Location
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Subject *</Label>
-              <SearchableDropdown
-                options={subjects.map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                }))}
-                value={selectedSubject}
-                onChange={setSelectedSubject}
-                placeholder="Select subject"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Class *</Label>
-              <SearchableDropdown
-                options={classes.map((c) => ({ value: c.id, label: c.name }))}
-                value={selectedClass}
-                onChange={setSelectedClass}
-                placeholder="Select class"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Chapter *</Label>
-              <SearchableDropdown
-                options={filteredChapters.map((ch) => ({
-                  value: ch.id,
-                  label: ch.name,
-                }))}
-                value={selectedChapter}
-                onChange={setSelectedChapter}
-                placeholder="Select chapter"
-                disabled={!selectedSubject || !selectedClass}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Topic *</Label>
-              <SearchableDropdown
-                options={filteredTopics.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                }))}
-                value={selectedTopic}
-                onChange={setSelectedTopic}
-                placeholder="Select topic"
-                disabled={!selectedChapter}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Difficulty *</Label>
-              <SearchableDropdown
-                options={[
-                  { value: "EASY", label: "🟢 Easy" },
-                  { value: "MEDIUM", label: "🟡 Medium" },
-                  { value: "HARD", label: "🟠 Hard" },
-                  { value: "EXPERT", label: "🔴 Expert" },
-                ]}
-                value={difficulty}
-                onChange={setDifficulty}
-                placeholder="Select difficulty"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Source (Optional)</Label>
-              <SearchableDropdown
-                options={[
-                  { value: "", label: "No Source" },
-                  ...sources.map((s) => ({ value: s.id, label: s.name })),
-                ]}
-                value={sourceId}
-                onChange={setSourceId}
-                placeholder="Select source"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 2: Question Details */}
-        <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-          <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
-            ❓ Question Details
-          </h2>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Question Type *</Label>
-              <SearchableDropdown
-                options={[
-                  { value: "MCQ", label: "📝 Multiple Choice (MCQ)" },
-                  { value: "TRUE_FALSE", label: "✓✗ True/False" },
-                  { value: "SHORT_ANSWER", label: "📄 Short Answer" },
-                  { value: "LONG_ANSWER", label: "📋 Long Answer" },
-                ]}
-                value={questionType}
-                onChange={setQuestionType}
-                placeholder="Select question type"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Question Text * (Supports Math Equations)</Label>
-              <RichTextEditor
-                value={questionText}
-                onChange={setQuestionText}
-                placeholder="Enter your question here... Click 'Math' button to add equations like E=mc², ∫x²dx, etc."
-                minHeight="150px"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                💡 Tip: Use the <strong>Math</strong> button to insert LaTeX
-                equations. Examples: E=mc², \frac{"{a}"}
-                {"{b}"}, \sqrt{"{x}"}
-              </p>
+      {/* SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          {/* Section 1: Location */}
+          <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              📍 Question Location
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Subject *</Label>
+                <SearchableDropdown
+                  options={subjects.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  }))}
+                  value={selectedSubject}
+                  onChange={setSelectedSubject}
+                  placeholder="Select subject"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Class *</Label>
+                <SearchableDropdown
+                  options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                  value={selectedClass}
+                  onChange={setSelectedClass}
+                  placeholder="Select class"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Chapter *</Label>
+                <SearchableDropdown
+                  options={filteredChapters.map((ch) => ({
+                    value: ch.id,
+                    label: ch.name,
+                  }))}
+                  value={selectedChapter}
+                  onChange={setSelectedChapter}
+                  placeholder="Select chapter"
+                  disabled={!selectedSubject || !selectedClass}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Topic *</Label>
+                <SearchableDropdown
+                  options={filteredTopics.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                  }))}
+                  value={selectedTopic}
+                  onChange={setSelectedTopic}
+                  placeholder="Select topic"
+                  disabled={!selectedChapter}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Difficulty *</Label>
+                <SearchableDropdown
+                  options={[
+                    { value: "EASY", label: "🟢 Easy" },
+                    { value: "MEDIUM", label: "🟡 Medium" },
+                    { value: "HARD", label: "🟠 Hard" },
+                    { value: "EXPERT", label: "🔴 Expert" },
+                  ]}
+                  value={difficulty}
+                  onChange={setDifficulty}
+                  placeholder="Select difficulty"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Source (Optional)</Label>
+                <SearchableDropdown
+                  options={[
+                    { value: "", label: "No Source" },
+                    ...sources.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                  value={sourceId}
+                  onChange={setSourceId}
+                  placeholder="Select source"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Section 3: Answer */}
-        <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
-          <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
-            ✅ Answer
-          </h2>
+          {/* Section 2: Question Details */}
+          <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              ❓ Question Details
+            </h2>
 
-          {questionType === "MCQ" && (
             <div className="space-y-4">
-              <Label>Options * (Check correct answer)</Label>
-              {mcqOptions.map((opt, idx) => (
-                <div
-                  key={idx}
-                  className="border dark:border-slate-700 rounded-lg p-4"
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <Checkbox
-                      checked={opt.isCorrect}
-                      onCheckedChange={(checked) =>
-                        updateMcqOption(idx, "isCorrect", checked as boolean)
-                      }
-                      className="mt-3"
-                    />
-                    <div className="flex-1">
+              <div className="space-y-2">
+                <Label>Question Type *</Label>
+                <SearchableDropdown
+                  options={[
+                    { value: "MCQ", label: "📝 Multiple Choice (MCQ)" },
+                    { value: "TRUE_FALSE", label: "✓✗ True/False" },
+                    { value: "SHORT_ANSWER", label: "📄 Short Answer" },
+                    { value: "LONG_ANSWER", label: "📋 Long Answer" },
+                  ]}
+                  value={questionType}
+                  onChange={setQuestionType}
+                  placeholder="Select question type"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Question Text * (Supports Math Equations)</Label>
+                <RichTextEditor
+                  value={questionText}
+                  onChange={setQuestionText}
+                  placeholder="Enter your question here... Click 'Math' button to add equations like E=mc², ∫x²dx, etc."
+                  minHeight="150px"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 Tip: Use the <strong>Math</strong> button to insert LaTeX
+                  equations. Examples: E=mc², \frac{"{a}"}
+                  {"{b}"}, \sqrt{"{x}"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Answer */}
+          <div className="bg-card dark:bg-slate-800/50 rounded-lg border dark:border-slate-700 p-6">
+            <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
+              ✅ Answer
+            </h2>
+
+            {questionType === "MCQ" && (
+              <div className="space-y-4">
+                <Label>Options * (Check correct answer)</Label>
+                {mcqOptions.map((opt, idx) => (
+                  <div
+                    key={idx}
+                    className="border dark:border-slate-700 rounded-lg p-4"
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <Checkbox
+                        checked={opt.isCorrect}
+                        onCheckedChange={(checked) =>
+                          updateMcqOption(idx, "isCorrect", checked as boolean)
+                        }
+                        className="mt-3"
+                      />
+                      <div className="flex-1">
+                        <Label className="text-xs text-muted-foreground mb-1">
+                          Option {idx + 1} Text *
+                        </Label>
+                        <RichTextEditor
+                          value={opt.text}
+                          onChange={(value) =>
+                            updateMcqOption(idx, "text", value)
+                          }
+                          placeholder={`Enter option ${idx + 1}...`}
+                          minHeight="80px"
+                        />
+                      </div>
+                      {mcqOptions.length > 2 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMcqOption(idx)}
+                          className="mt-2"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="ml-9">
                       <Label className="text-xs text-muted-foreground mb-1">
-                        Option {idx + 1} Text *
+                        Explanation for Option {idx + 1} (Optional)
                       </Label>
                       <RichTextEditor
-                        value={opt.text}
+                        value={opt.explanation || ""}
                         onChange={(value) =>
-                          updateMcqOption(idx, "text", value)
+                          updateMcqOption(idx, "explanation", value)
                         }
-                        placeholder={`Enter option ${idx + 1}...`}
-                        minHeight="80px"
+                        placeholder="Explain this option with reasoning, steps, or why students might choose it..."
+                        minHeight="60px"
                       />
                     </div>
-                    {mcqOptions.length > 2 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMcqOption(idx)}
-                        className="mt-2"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    )}
                   </div>
-                  <div className="ml-9">
-                    <Label className="text-xs text-muted-foreground mb-1">
-                      Explanation for Option {idx + 1} (Optional)
-                    </Label>
-                    <RichTextEditor
-                      value={opt.explanation || ""}
-                      onChange={(value) =>
-                        updateMcqOption(idx, "explanation", value)
-                      }
-                      placeholder="Explain this option with reasoning, steps, or why students might choose it..."
-                      minHeight="60px"
-                    />
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addMcqOption}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Option
+                </Button>
+              </div>
+            )}
+
+            {questionType === "TRUE_FALSE" && (
+              <div>
+                <Label>Correct Answer *</Label>
+                <RadioGroup
+                  value={trueFalseAnswer}
+                  onValueChange={setTrueFalseAnswer}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="TRUE" id="true" />
+                    <Label htmlFor="true">True</Label>
                   </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addMcqOption}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Option
-              </Button>
-            </div>
-          )}
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="FALSE" id="false" />
+                    <Label htmlFor="false">False</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
 
-          {questionType === "TRUE_FALSE" && (
-            <div>
-              <Label>Correct Answer *</Label>
-              <RadioGroup
-                value={trueFalseAnswer}
-                onValueChange={setTrueFalseAnswer}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="TRUE" id="true" />
-                  <Label htmlFor="true">True</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="FALSE" id="false" />
-                  <Label htmlFor="false">False</Label>
-                </div>
-              </RadioGroup>
-            </div>
-          )}
+            {(questionType === "SHORT_ANSWER" ||
+              questionType === "LONG_ANSWER") && (
+              <div>
+                <Label>Correct Answer *</Label>
+                <RichTextEditor
+                  value={textAnswer}
+                  onChange={setTextAnswer}
+                  placeholder="Enter the correct answer..."
+                  minHeight="120px"
+                />
+              </div>
+            )}
 
-          {(questionType === "SHORT_ANSWER" ||
-            questionType === "LONG_ANSWER") && (
-            <div>
-              <Label>Correct Answer *</Label>
-              <RichTextEditor
-                value={textAnswer}
-                onChange={setTextAnswer}
-                placeholder="Enter the correct answer..."
-                minHeight="120px"
-              />
-            </div>
-          )}
-
-          {/* Overall Explanation - Only for non-MCQ questions */}
-          {questionType !== "MCQ" && (
-            <div className="mt-4 space-y-2">
-              <Label>Explanation (Optional)</Label>
-              <RichTextEditor
-                value={explanation}
-                onChange={setExplanation}
-                placeholder="Explain the answer with steps, formulas, etc..."
-                minHeight="150px"
-              />
-            </div>
-          )}
+            {/* Overall Explanation - Only for non-MCQ questions */}
+            {questionType !== "MCQ" && (
+              <div className="mt-4 space-y-2">
+                <Label>Explanation (Optional)</Label>
+                <RichTextEditor
+                  value={explanation}
+                  onChange={setExplanation}
+                  placeholder="Explain the answer with steps, formulas, etc..."
+                  minHeight="150px"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -604,6 +625,18 @@ export default function QuestionFormFull({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* SCROLL TO TOP BUTTON */}
+      {showScrollTop && (
+        <Button
+          onClick={scrollToTop}
+          size="lg"
+          className="fixed bottom-6 right-6 z-40 rounded-full h-14 w-14 p-0 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
+          title="Scroll to top"
+        >
+          <ArrowUp className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 }
