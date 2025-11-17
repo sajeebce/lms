@@ -919,7 +919,7 @@
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --table-border-width: 2px;
   --table-border-style: solid;
-  --table-border-color: #e2e8f0;
+  --table-border-color: #000000;
   /* Outer border uses cell borders only; table itself has no line */
   border: none;
 }
@@ -1001,7 +1001,7 @@
   background: transparent;
   cursor: col-resize;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  /* Instant appearance - no transition for snappy UX */
   display: flex;
   align-items: center;
   justify-content: center;

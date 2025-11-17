@@ -2371,10 +2371,10 @@ export default function RichTextEditor({
                 "solid",
             },
             borderColor: {
-              default: "#e2e8f0",
+              default: "#000000",
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-color") ||
-                "#e2e8f0",
+                "#000000",
             },
             borderRadius: {
               default: "0px",
@@ -2725,7 +2725,7 @@ export default function RichTextEditor({
         if (!domNode) return;
         const borderWidth = (node.attrs.borderWidth as string) || "2px";
         const borderStyle = (node.attrs.borderStyle as string) || "solid";
-        const borderColor = (node.attrs.borderColor as string) || "#cbd5e1";
+        const borderColor = (node.attrs.borderColor as string) || "#000000";
         const borderRadius = (node.attrs.borderRadius as string) || "0px";
         const tableHeight = (node.attrs.tableHeight as string | null) || null;
 
