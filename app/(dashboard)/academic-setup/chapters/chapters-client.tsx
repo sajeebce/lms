@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 import {
@@ -228,7 +229,6 @@ export default function ChaptersClient({
               setEditingChapter(null);
               setAddDialogOpen(true);
             }}
-            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Chapter
@@ -237,6 +237,9 @@ export default function ChaptersClient({
         <Table>
           <TableHeader className="bg-muted/50 dark:bg-slate-800/50">
             <TableRow className="hover:bg-transparent dark:hover:bg-transparent border-border dark:border-slate-700">
+              <TableHead className="font-semibold text-foreground dark:text-slate-200">
+                Order
+              </TableHead>
               <TableHead className="font-semibold text-foreground dark:text-slate-200">
                 Chapter
               </TableHead>
@@ -264,7 +267,7 @@ export default function ChaptersClient({
             {filteredChapters.length === 0 ? (
               <TableRow className="border-b border-border dark:border-slate-700">
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground dark:text-slate-400"
                 >
                   No chapters found
@@ -277,18 +280,18 @@ export default function ChaptersClient({
                   className="border-border dark:border-slate-700 hover:bg-muted/50 dark:hover:bg-slate-800/50"
                 >
                   <TableCell>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {chapter.order}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="text-2xl bg-slate-100 dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center">
                         📖
                       </div>
-                      <div>
-                        <p className="font-medium text-foreground dark:text-slate-200">
-                          {chapter.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground dark:text-slate-400">
-                          Order: {chapter.order}
-                        </p>
-                      </div>
+                      <p className="font-medium text-foreground dark:text-slate-200">
+                        {chapter.name}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>

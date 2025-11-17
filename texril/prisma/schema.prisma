@@ -8,15 +8,15 @@ datasource db {
 }
 
 model Tenant {
-  id               String               @id @default(cuid())
+  id               String              @id @default(cuid())
   name             String
-  slug             String               @unique
-  status           TenantStatus         @default(ACTIVE)
+  slug             String              @unique
+  status           TenantStatus        @default(ACTIVE)
   planId           String?
   currentPeriodEnd DateTime?
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  plan             Plan?                @relation(fields: [planId], references: [id])
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  plan             Plan?               @relation(fields: [planId], references: [id])
   domains          TenantDomain[]
   subscriptions    Subscription[]
   apiKeys          ApiKey[]
@@ -42,16 +42,16 @@ model TenantDomain {
 }
 
 model Plan {
-  id           String         @id @default(cuid())
-  code         String         @unique
-  name         String
-  description  String?
-  limits       Json
-  priceMonthly Int?
-  priceYearly  Int?
-  isActive     Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  description   String?
+  limits        Json
+  priceMonthly  Int?
+  priceYearly   Int?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   subscriptions Subscription[]
   tenants       Tenant[]
 }
@@ -76,14 +76,14 @@ model Subscription {
 }
 
 model ApiKey {
-  id        String        @id @default(cuid())
-  tenantId  String
-  keyHash   String        @unique
-  label     String?
-  status    ApiKeyStatus  @default(ACTIVE)
+  id         String       @id @default(cuid())
+  tenantId   String
+  keyHash    String       @unique
+  label      String?
+  status     ApiKeyStatus @default(ACTIVE)
   lastUsedAt DateTime?
-  createdAt DateTime      @default(now())
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -97,6 +97,7 @@ model User {
   updatedAt    DateTime       @updatedAt
   tenant       Tenant?        @relation(fields: [tenantId], references: [id])
   domainsAdded TenantDomain[] @relation("UserAddedDomain")
+  auditEvents  AuditEvent[]   @relation("UserAuditEvents")
 }
 
 model TenantIntegration {
@@ -115,13 +116,13 @@ model TenantIntegration {
 }
 
 model Platform {
-  id        String            @id @default(cuid())
-  code      String            @unique
-  name      String
-  category  PlatformCategory
-  isActive  Boolean           @default(true)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id           String              @id @default(cuid())
+  code         String              @unique
+  name         String
+  category     PlatformCategory
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   integrations TenantIntegration[]
 }
 
@@ -132,7 +133,7 @@ model AuditEvent {
   action    String
   payload   Json?
   createdAt DateTime @default(now())
-  actor     User?    @relation(fields: [actorId], references: [id])
+  actor     User?    @relation("UserAuditEvents", fields: [actorId], references: [id])
   tenant    Tenant?  @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])

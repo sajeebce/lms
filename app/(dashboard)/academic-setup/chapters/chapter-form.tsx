@@ -31,7 +31,11 @@ const formSchema = z.object({
     .string()
     .max(500, "Description must be 500 characters or less")
     .optional(),
-  order: z.number().min(0).max(9999).optional(),
+  order: z
+    .number()
+    .min(1, "Order must be between 1 and 9999")
+    .max(9999, "Order must be between 1 and 9999")
+    .optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
@@ -264,8 +268,9 @@ export default function ChapterForm({
                 <FormControl>
                   <Input
                     type="number"
-                    min={0}
+                    min={1}
                     max={9999}
+                    placeholder="Display order (1-9999). Leave blank for auto ordering."
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -278,9 +283,6 @@ export default function ChapterForm({
                     }}
                   />
                 </FormControl>
-                <FormDescription>
-                  Display order (1-9999). Leave blank for auto ordering.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -327,11 +329,7 @@ export default function ChapterForm({
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
-          >
+          <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting
               ? "Saving..."
               : chapter

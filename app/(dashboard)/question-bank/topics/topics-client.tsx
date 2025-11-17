@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -228,10 +229,7 @@ export default function TopicsClient({
               placeholder="Filter by status"
             />
 
-            <Button
-              onClick={() => setAddDialogOpen(true)}
-              className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
-            >
+            <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Topic
             </Button>
@@ -250,6 +248,7 @@ export default function TopicsClient({
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 dark:bg-slate-800/50">
+              <TableHead>Order</TableHead>
               <TableHead>Topic</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Class</TableHead>
@@ -264,7 +263,7 @@ export default function TopicsClient({
             {filteredTopics.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No topics found. Create your first topic to get started.
@@ -273,6 +272,11 @@ export default function TopicsClient({
             ) : (
               filteredTopics.map((topic) => (
                 <TableRow key={topic.id}>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {topic.order}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-medium">{topic.name}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1">
@@ -333,7 +337,6 @@ export default function TopicsClient({
             subjects={subjects}
             classes={classes}
             onSuccess={handleAddSuccess}
-            onCancel={() => setAddDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>
@@ -351,7 +354,6 @@ export default function TopicsClient({
             subjects={subjects}
             classes={classes}
             onSuccess={handleEditSuccess}
-            onCancel={() => setEditingTopic(null)}
           />
         </DialogContent>
       </Dialog>

@@ -29,7 +29,7 @@ const formSchema = z.object({
     .optional(),
   icon: z.string().max(50, "Icon must be 50 characters or less").optional(),
   color: z.string().max(20, "Color must be 20 characters or less").optional(),
-  order: z.coerce.number().min(0).max(9999).optional(),
+  order: z.number().min(0).max(9999).optional(), // Changed from z.coerce.number() to z.number() (same as Chapter)
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
@@ -58,6 +58,8 @@ export default function SubjectForm({
       description: initialData?.description || "",
       icon: initialData?.icon || "",
       color: initialData?.color || "#6366f1",
+      // For new subjects, prefill with suggestedOrder (next order in the list).
+      // User can still clear it to let the backend auto-assign the order.
       order: initialData?.order ?? suggestedOrder ?? undefined,
       status: initialData?.status || "ACTIVE",
     },
@@ -187,24 +189,19 @@ export default function SubjectForm({
                 <FormLabel className="dark:text-slate-200">Order</FormLabel>
                 <FormControl>
                   <Input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={4}
+                    type="number"
+                    min={0}
+                    max={9999}
                     className="dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
-                    {...field}
+                    value={field.value ?? ""}
                     onChange={(e) => {
-                      const raw = e.target.value;
-                      // Allow clearing the field completely for auto ordering
-                      if (raw === "") {
-                        field.onChange(undefined as any);
+                      const value = e.target.value;
+                      if (value === "") {
+                        field.onChange(undefined);
                         return;
                       }
-                      // Only allow digits
-                      if (!/^\d+$/.test(raw)) {
-                        return;
-                      }
-                      // Store as number; Zod will also coerce on submit
-                      field.onChange(Number(raw) as any);
+                      const parsed = parseInt(value, 10);
+                      field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                     }}
                   />
                 </FormControl>

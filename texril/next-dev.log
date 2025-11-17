@@ -156,3 +156,6 @@
  ✓ Compiled in 42ms
  ✓ Compiled in 34ms
  ✓ Compiled in 41ms
+ ✓ Compiled in 47ms
+ GET / 500 in 251ms (compile: 244ms, render: 7ms)
+[?25h

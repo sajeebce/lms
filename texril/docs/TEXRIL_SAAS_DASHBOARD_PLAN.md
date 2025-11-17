@@ -387,7 +387,14 @@ model AuditEvent {
 - API key generation → store only hash, return plaintext once।
 - Plan limits JSON schema enforced via Zod when parsing (numbers for counts, booleans for features)।
 
-এই subsection complete থাকায় Phase S1 এর প্রথম deliverable (schema blueprint) ready — dev এখন সরাসরি Prisma model copy করে migration চালাতে পারবে।
+**Implementation status**
+
+- Prisma schema lives in `texril/prisma/schema.prisma` and matches the spec line‑for‑line (tenants, domains, plans, subscriptions, API keys, users, integrations, platforms, audit events, enums).
+- Initial migration SQL captured under `texril/prisma/migrations/20251117000000_init/migration.sql` (generated via `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script`).
+- `npx prisma generate` + `npx prisma format` run successfully after the schema update.
+- Pending step for local runs: set `DATABASE_URL` (PostgreSQL) before executing `npm run db:migrate && npm run db:seed`.
+
+এই subsection এখন কেবল blueprint নয়, বাস্তব schema + migration ফাইলসহ সম্পূর্ণ — যেকোনো dev Postgres URL পেয়ে গেছেন মানেই migrations apply করতে পারবেন।
 
 #### S1.2 Auth & Role Guard Blueprint (✅ detailed)
 

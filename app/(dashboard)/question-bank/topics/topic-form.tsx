@@ -32,7 +32,11 @@ const formSchema = z.object({
     .string()
     .max(500, "Description must be 500 characters or less")
     .optional(),
-  order: z.number().min(0).max(9999).optional(),
+  order: z
+    .number()
+    .min(1, "Order must be between 1 and 9999")
+    .max(9999, "Order must be between 1 and 9999")
+    .optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 
@@ -58,7 +62,6 @@ interface TopicFormProps {
   subjects: Subject[];
   classes: Class[];
   onSuccess: (topic: Topic) => void;
-  onCancel: () => void;
 }
 
 export default function TopicForm({
@@ -68,7 +71,6 @@ export default function TopicForm({
   subjects,
   classes,
   onSuccess,
-  onCancel,
 }: TopicFormProps) {
   const [availableClasses, setAvailableClasses] = useState<Class[]>(classes);
   const [availableChapters, setAvailableChapters] =
@@ -213,15 +215,9 @@ export default function TopicForm({
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Select class"
+                    disabled={!selectedSubject}
                   />
                 </FormControl>
-                <FormDescription>
-                  {selectedSubject
-                    ? `Classes with ${
-                        subjects.find((s) => s.id === selectedSubject)?.name
-                      } chapters`
-                    : "Select subject first"}
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -242,13 +238,9 @@ export default function TopicForm({
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Select chapter"
+                    disabled={!selectedSubject || !selectedClass}
                   />
                 </FormControl>
-                <FormDescription>
-                  {selectedSubject && selectedClass
-                    ? `Chapters for selected filters`
-                    : "Select subject and class first"}
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -324,8 +316,9 @@ export default function TopicForm({
                 <FormControl>
                   <Input
                     type="number"
-                    min={0}
+                    min={1}
                     max={9999}
+                    placeholder="Display order (1-9999). Leave blank for auto ordering."
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -338,9 +331,6 @@ export default function TopicForm({
                     }}
                   />
                 </FormControl>
-                <FormDescription>
-                  Display order (1-9999). Leave blank for auto ordering.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -377,14 +367,11 @@ export default function TopicForm({
         )}
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
+        <div className="flex justify-end pt-4">
           <Button
             type="submit"
             disabled={form.formState.isSubmitting}
-            className="bg-gradient-to-r from-violet-600 to-orange-500 hover:from-violet-700 hover:to-orange-600 text-white font-medium"
+            className="w-full"
           >
             {form.formState.isSubmitting
               ? "Saving..."
