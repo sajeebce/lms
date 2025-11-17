@@ -98,6 +98,7 @@ import { FontFamilySelector } from "@/components/ui/font-family-selector";
 import { TableGridSelector } from "./table-grid-selector"; // Phase 4.1: Modern table grid selector
 import { TableBubbleMenu } from "./table-bubble-menu"; // Phase 4.2: Floating table toolbar
 import { AudioRecorderDialog } from "@/components/ui/audio-recorder-dialog"; // Phase 5.1: Audio recording
+import { toast } from "sonner"; // Toast notifications
 
 const lowlight = createLowlight(common);
 
@@ -2112,6 +2113,9 @@ export default function RichTextEditor({
 
   // Insert HTML Dialog state
   const [showInsertHTML, setShowInsertHTML] = useState(false);
+  const [htmlEditMode, setHtmlEditMode] = useState(false);
+  const [htmlEditContent, setHtmlEditContent] = useState("");
+  const [htmlEditId, setHtmlEditId] = useState<string | null>(null);
 
   // Phase 5.2: Fullscreen Mode state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -3202,6 +3206,27 @@ export default function RichTextEditor({
     };
   }, [isResizing]);
 
+  // HTML Block editing: per-editor callback (no global window state)
+  useEffect(() => {
+    if (!editor) return;
+
+    (editor as any).__onHtmlBlockEdit = (data: {
+      html: string;
+      id: string;
+    }) => {
+      setHtmlEditMode(true);
+      setHtmlEditContent(data.html);
+      setHtmlEditId(data.id);
+      setShowInsertHTML(true);
+    };
+
+    return () => {
+      if ((editor as any).__onHtmlBlockEdit) {
+        (editor as any).__onHtmlBlockEdit = undefined;
+      }
+    };
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -3330,17 +3355,88 @@ export default function RichTextEditor({
   const handleHTMLInsert = (html: string) => {
     if (!editor) return;
 
-    // Insert sanitized HTML as HTMLBlock node (preserves inline styles)
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: "htmlBlock",
-        attrs: {
-          html: html,
-        },
-      })
-      .run();
+    if (htmlEditMode && htmlEditId) {
+      // Edit mode: Find and update existing HTML block by ID
+      console.log("🔍 HTML Edit Mode - ID:", htmlEditId);
+      console.log("🔍 HTML Edit Mode - New HTML:", html.substring(0, 100));
+
+      // Find node by ID using doc.descendants (same pattern as Table)
+      editor
+        .chain()
+        .focus()
+        .command(({ tr, state }) => {
+          let found = false;
+
+          // Search for the HTML block with matching ID
+          state.doc.descendants((node, pos) => {
+            // Debug: Log all htmlBlock nodes
+            if (node.type.name === "htmlBlock") {
+              console.log(
+                "🔍 Found htmlBlock at pos:",
+                pos,
+                "with ID:",
+                node.attrs.id
+              );
+            }
+
+            if (
+              node.type.name === "htmlBlock" &&
+              node.attrs.id === htmlEditId
+            ) {
+              console.log("✅ Found matching HTML block at position:", pos);
+
+              // Update node attributes using setNodeMarkup
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                html: html,
+              });
+
+              found = true;
+              return false; // Stop searching
+            }
+          });
+
+          if (!found) {
+            console.error("❌ HTML block not found with ID:", htmlEditId);
+            toast.error("HTML block no longer exists");
+          } else {
+            console.log("✅ HTML block updated successfully");
+            toast.success("HTML updated successfully");
+          }
+
+          return found;
+        })
+        .run();
+
+      // Reset edit mode state
+      setHtmlEditMode(false);
+      setHtmlEditContent("");
+      setHtmlEditId(null);
+    } else {
+      // Insert mode: Insert new HTML block with unique ID
+      const newId = `html-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      console.log("🆕 Inserting new HTML block with ID:", newId);
+
+      const inserted = editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "htmlBlock",
+          attrs: {
+            html: html,
+            id: newId, // ✅ Provide ID when creating
+          },
+        })
+        .run();
+
+      if (inserted) {
+        toast.success("HTML inserted successfully");
+      } else {
+        toast.error("Failed to insert HTML block");
+      }
+    }
 
     setShowInsertHTML(false);
   };
@@ -5298,8 +5394,16 @@ export default function RichTextEditor({
         {/* Insert HTML Modal - Sanitized */}
         <InsertHTMLModal
           open={showInsertHTML}
-          onClose={() => setShowInsertHTML(false)}
+          onClose={() => {
+            setShowInsertHTML(false);
+            // Reset edit mode when closing
+            setHtmlEditMode(false);
+            setHtmlEditContent("");
+            setHtmlEditId(null);
+          }}
           onInsert={handleHTMLInsert}
+          initialHtml={htmlEditContent}
+          isEditMode={htmlEditMode}
         />
 
         {/* Phase 3.4: Link Dialog - Modern & Secure */}
