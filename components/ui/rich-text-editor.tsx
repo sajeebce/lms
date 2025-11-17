@@ -19,7 +19,7 @@ import { Highlight } from "@tiptap/extension-highlight";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
-import { Table, TableView } from "@tiptap/extension-table";
+import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -2354,7 +2354,6 @@ export default function RichTextEditor({
         defaultLanguage: "javascript",
       }),
       // Phase 4: Tables - Modern & Beautiful with custom borders
-      // Phase 6.1: Added width/height attributes for whole-table resize
       Table.extend({
         addAttributes() {
           return {
@@ -2363,6 +2362,19 @@ export default function RichTextEditor({
               default: "1px",
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-width") || "1px",
+              renderHTML: (attributes) => {
+                return {
+                  style: `--table-border-width: ${
+                    attributes.borderWidth || "1px"
+                  }; --table-border-style: ${
+                    attributes.borderStyle || "solid"
+                  }; --table-border-color: ${
+                    attributes.borderColor || "#e2e8f0"
+                  }; --table-border-radius: ${
+                    attributes.borderRadius || "0px"
+                  };`,
+                };
+              },
             },
             borderStyle: {
               default: "solid",
@@ -2381,17 +2393,6 @@ export default function RichTextEditor({
               parseHTML: (element) =>
                 element.style.getPropertyValue("--table-border-radius") ||
                 "0px",
-            },
-            // Height can be persisted on the table node; width is driven entirely
-            // by ProseMirror's column widths (colwidth) so that the built-in
-            // columnResizing plugin remains the single source of truth for
-            // horizontal sizing.
-            tableHeight: {
-              default: null,
-              parseHTML: (element) =>
-                element.getAttribute("data-table-height") ||
-                element.style.height ||
-                null,
             },
           };
         },
@@ -2723,11 +2724,10 @@ export default function RichTextEditor({
         if (node.type.name !== "table") return;
         const domNode = view.nodeDOM(pos) as HTMLElement | null;
         if (!domNode) return;
-        const borderWidth = (node.attrs.borderWidth as string) || "2px";
-        const borderStyle = (node.attrs.borderStyle as string) || "solid";
-        const borderColor = (node.attrs.borderColor as string) || "#cbd5e1";
-        const borderRadius = (node.attrs.borderRadius as string) || "0px";
-        const tableHeight = (node.attrs.tableHeight as string | null) || null;
+        const width = (node.attrs.borderWidth as string) || "2px";
+        const style = (node.attrs.borderStyle as string) || "solid";
+        const color = (node.attrs.borderColor as string) || "#cbd5e1";
+        const radius = (node.attrs.borderRadius as string) || "0px";
 
         // Find the actual <table> element inside the node view wrapper
         const tableElement =
@@ -2741,22 +2741,10 @@ export default function RichTextEditor({
         // We do NOT set per-cell inline border styles anymore so that operations
         // like column resizing, which may re-render cells, don't "lose" the
         // border styling.
-        tableElement.style.setProperty("--table-border-width", borderWidth);
-        tableElement.style.setProperty("--table-border-style", borderStyle);
-        tableElement.style.setProperty("--table-border-color", borderColor);
-        tableElement.style.setProperty("--table-border-radius", borderRadius);
-
-        // Apply persisted table height from node attrs. Width is controlled by
-        // ProseMirror's column widths (colwidth) and the built-in
-        // columnResizing plugin so that there is a single source of truth for
-        // horizontal sizing.
-        if (tableHeight) {
-          tableElement.style.height = tableHeight;
-          tableElement.setAttribute("data-table-height", tableHeight);
-        } else {
-          tableElement.style.removeProperty("height");
-          tableElement.removeAttribute("data-table-height");
-        }
+        tableElement.style.setProperty("--table-border-width", width);
+        tableElement.style.setProperty("--table-border-style", style);
+        tableElement.style.setProperty("--table-border-color", color);
+        tableElement.style.setProperty("--table-border-radius", radius);
       });
     };
 
@@ -2768,7 +2756,6 @@ export default function RichTextEditor({
     };
   }, [editor]);
 
-  // Phase 4: Column resize indicator (existing)
   useEffect(() => {
     if (!editor) return;
     let indicator: HTMLDivElement | null = null;
@@ -2828,338 +2815,6 @@ export default function RichTextEditor({
     document.addEventListener("mousedown", handleMouseDown);
     return () => {
       document.removeEventListener("mousedown", handleMouseDown);
-      cleanup();
-    };
-  }, [editor]);
-
-  // Phase 6.1: Whole-table resize handles (TinyMCE-style corner drag)
-  useEffect(() => {
-    if (!editor) return;
-
-    let resizeHandles: HTMLDivElement[] = [];
-    let sizeBadge: HTMLDivElement | null = null;
-    let currentTable: HTMLTableElement | null = null;
-    let currentTablePos: number | null = null;
-    let isResizing = false;
-
-    const cleanup = () => {
-      resizeHandles.forEach((handle) => handle.remove());
-      resizeHandles = [];
-      if (sizeBadge) {
-        sizeBadge.remove();
-        sizeBadge = null;
-      }
-      currentTable = null;
-      currentTablePos = null;
-    };
-
-    const createResizeHandles = (table: HTMLTableElement, pos: number) => {
-      cleanup();
-      currentTable = table;
-      currentTablePos = pos;
-
-      // Create 4 corner handles (NW, NE, SW, SE)
-      const positions = [
-        { name: "nw", cursor: "nwse-resize", top: "-6px", left: "-6px" },
-        { name: "ne", cursor: "nesw-resize", top: "-6px", right: "-6px" },
-        { name: "sw", cursor: "nesw-resize", bottom: "-6px", left: "-6px" },
-        { name: "se", cursor: "nwse-resize", bottom: "-6px", right: "-6px" },
-      ];
-
-      positions.forEach((pos) => {
-        const handle = document.createElement("div");
-        handle.className = `table-resize-handle table-resize-handle-${pos.name}`;
-        handle.style.position = "absolute";
-        handle.style.width = "12px";
-        handle.style.height = "12px";
-        handle.style.borderRadius = "50%";
-        handle.style.background = "#3b82f6";
-        handle.style.border = "2px solid white";
-        handle.style.cursor = pos.cursor;
-        handle.style.zIndex = "100";
-        handle.style.boxShadow = "0 1px 3px rgba(15, 23, 42, 0.35)";
-        handle.style.pointerEvents = "auto";
-
-        if (pos.top) handle.style.top = pos.top;
-        if (pos.bottom) handle.style.bottom = pos.bottom;
-        if (pos.left) handle.style.left = pos.left;
-        if (pos.right) handle.style.right = pos.right;
-
-        handle.addEventListener("mousedown", (e) =>
-          handleResizeStart(e, pos.name as "nw" | "ne" | "sw" | "se")
-        );
-
-        resizeHandles.push(handle);
-      });
-
-      // Create size badge
-      sizeBadge = document.createElement("div");
-      sizeBadge.style.position = "absolute";
-      sizeBadge.style.top = "-36px";
-      sizeBadge.style.left = "50%";
-      sizeBadge.style.transform = "translateX(-50%)";
-      sizeBadge.style.padding = "4px 10px";
-      sizeBadge.style.borderRadius = "999px";
-      sizeBadge.style.background = "rgba(15, 23, 42, 0.85)";
-      sizeBadge.style.color = "white";
-      sizeBadge.style.fontSize = "12px";
-      sizeBadge.style.fontWeight = "600";
-      sizeBadge.style.display = "none";
-      sizeBadge.style.pointerEvents = "none";
-      sizeBadge.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.25)";
-      sizeBadge.style.zIndex = "101";
-
-      // Append handles directly to the <table> element so they track its size
-      const wrapper = table as HTMLElement;
-      wrapper.style.position = wrapper.style.position || "relative";
-      resizeHandles.forEach((handle) => wrapper.appendChild(handle));
-      wrapper.appendChild(sizeBadge);
-    };
-
-    const handleResizeStart = (
-      e: MouseEvent,
-      corner: "nw" | "ne" | "sw" | "se"
-    ) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!currentTable || currentTablePos === null) return;
-
-      isResizing = true;
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startWidth = currentTable.offsetWidth;
-      const startHeight = currentTable.offsetHeight;
-
-      if (sizeBadge) {
-        sizeBadge.style.display = "inline-flex";
-        sizeBadge.textContent = `${startWidth}px × ${startHeight}px`;
-      }
-
-      const onMouseMove = (moveEvent: MouseEvent) => {
-        if (!currentTable || !sizeBadge) return;
-
-        const deltaX = moveEvent.clientX - startX;
-        const deltaY = moveEvent.clientY - startY;
-
-        let newWidth = startWidth;
-        let newHeight = startHeight;
-
-        // Calculate new dimensions based on corner
-        if (corner === "se") {
-          newWidth = startWidth + deltaX;
-          newHeight = startHeight + deltaY;
-        } else if (corner === "sw") {
-          newWidth = startWidth - deltaX;
-          newHeight = startHeight + deltaY;
-        } else if (corner === "ne") {
-          newWidth = startWidth + deltaX;
-          newHeight = startHeight - deltaY;
-        } else if (corner === "nw") {
-          newWidth = startWidth - deltaX;
-          newHeight = startHeight - deltaY;
-        }
-
-        // Apply constraints
-        newWidth = Math.max(200, Math.min(newWidth, 2000));
-        newHeight = Math.max(100, Math.min(newHeight, 2000));
-
-        // Apply to table
-        currentTable.style.width = `${newWidth}px`;
-        currentTable.style.height = `${newHeight}px`;
-
-        // Update badge
-        sizeBadge.textContent = `${Math.round(newWidth)}px × ${Math.round(
-          newHeight
-        )}px`;
-      };
-
-      const onMouseUp = () => {
-        isResizing = false;
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-
-        if (sizeBadge) {
-          sizeBadge.style.display = "none";
-        }
-
-        // Save to TipTap node attributes + synchronize column widths with the
-        // DOM so that subsequent column resizing uses the "new" table width as
-        // its baseline instead of snapping back to the previous width.
-        if (currentTable) {
-          const newHeight = `${currentTable.offsetHeight}px`;
-
-          // Find the current table position dynamically (it may have changed)
-          let foundPos: number | null = null;
-          editor.state.doc.descendants((node, pos) => {
-            if (node.type.name === "table") {
-              const domNode = editor.view.nodeDOM(pos) as HTMLElement | null;
-              const tableElement =
-                domNode instanceof HTMLTableElement
-                  ? domNode
-                  : (domNode?.querySelector(
-                      "table"
-                    ) as HTMLTableElement | null);
-
-              if (tableElement === currentTable) {
-                foundPos = pos;
-                return false; // Stop searching
-              }
-            }
-            return true;
-          });
-
-          if (foundPos !== null) {
-            editor.commands.command(({ tr, state, dispatch }) => {
-              const tableNode: any = state.doc.nodeAt(foundPos!);
-
-              if (tableNode && tableNode.type.name === "table" && dispatch) {
-                // 1) Recompute column widths based on the DOM after the
-                // whole-table resize. We look at the first table row's DOM
-                // cells, measure their rendered widths, and write those values
-                // into the colwidth attributes. This keeps ProseMirror's
-                // columnResizing plugin perfectly in sync with what the user
-                // sees after dragging the corner handle.
-                const firstRowInfo: { node: any; offset: number } | null =
-                  (() => {
-                    let info: { node: any; offset: number } | null = null;
-                    tableNode.forEach((row: any, offset: number) => {
-                      if (!info && row.type && row.type.name === "tableRow") {
-                        info = { node: row, offset };
-                      }
-                    });
-                    return info;
-                  })();
-
-                if (firstRowInfo && currentTable) {
-                  const { node: firstRow, offset: firstRowOffset } =
-                    firstRowInfo;
-
-                  const domFirstRow = currentTable.querySelector("tr");
-                  if (domFirstRow) {
-                    const domCells = Array.from(
-                      domFirstRow.children
-                    ) as HTMLTableCellElement[];
-
-                    const rowStartPos = foundPos! + 1 + firstRowOffset;
-                    let domCellIndex = 0;
-
-                    firstRow.forEach((cell: any, cellOffset: number) => {
-                      const colspan =
-                        (cell.attrs?.colspan as number | undefined) || 1;
-                      const domCell = domCells[domCellIndex] as
-                        | HTMLTableCellElement
-                        | undefined;
-                      domCellIndex += 1;
-
-                      let totalCellWidth: number | null = null;
-
-                      if (domCell) {
-                        const rect = domCell.getBoundingClientRect();
-                        if (rect.width && isFinite(rect.width)) {
-                          totalCellWidth = rect.width;
-                        }
-                      }
-
-                      // Fallbacks if, for some reason, the DOM measurement
-                      // isn't available.
-                      if (totalCellWidth == null) {
-                        const existing = cell.attrs?.colwidth as
-                          | number[]
-                          | undefined;
-                        if (
-                          Array.isArray(existing) &&
-                          existing.length === colspan
-                        ) {
-                          totalCellWidth = existing.reduce(
-                            (sum: number, w: number) => sum + w,
-                            0
-                          );
-                        } else {
-                          totalCellWidth = colspan * 50; // safe minimum
-                        }
-                      }
-
-                      const perColWidth = Math.max(
-                        25,
-                        Math.round(totalCellWidth / colspan)
-                      );
-                      const cellWidths = Array(colspan).fill(perColWidth);
-
-                      const cellPos = rowStartPos + 1 + cellOffset;
-                      tr.setNodeMarkup(cellPos, undefined, {
-                        ...cell.attrs,
-                        colwidth: cellWidths,
-                      });
-                    });
-                  }
-                }
-
-                // 2) Persist the updated table height on the node so vertical
-                // resizing survives re-renders. Horizontal sizing comes from
-                // colwidth/columnResizing only.
-                tr.setNodeMarkup(foundPos!, undefined, {
-                  ...tableNode.attrs,
-                  tableHeight: newHeight,
-                });
-
-                dispatch(tr);
-              }
-              return true;
-            });
-          }
-        }
-      };
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    };
-
-    const updateHandles = () => {
-      const { state, view } = editor;
-      const { selection } = state;
-
-      // Check if cursor is inside a table
-      let tableNode = null;
-      let tablePos = null;
-
-      state.doc.descendants((node, pos) => {
-        if (node.type.name === "table") {
-          const nodeStart = pos;
-          const nodeEnd = pos + node.nodeSize;
-          if (selection.from >= nodeStart && selection.to <= nodeEnd) {
-            tableNode = node;
-            tablePos = pos;
-            return false; // Stop searching
-          }
-        }
-      });
-
-      if (tableNode && tablePos !== null) {
-        const domNode = view.nodeDOM(tablePos) as HTMLElement | null;
-        const tableElement =
-          domNode instanceof HTMLTableElement
-            ? domNode
-            : (domNode?.querySelector("table") as HTMLTableElement | null);
-
-        if (tableElement && tableElement !== currentTable) {
-          createResizeHandles(tableElement, tablePos);
-        }
-      } else {
-        cleanup();
-      }
-    };
-
-    // Update handles on selection change
-    editor.on("selectionUpdate", updateHandles);
-    editor.on("transaction", updateHandles);
-
-    // Initial update
-    updateHandles();
-
-    return () => {
-      editor.off("selectionUpdate", updateHandles);
-      editor.off("transaction", updateHandles);
       cleanup();
     };
   }, [editor]);
