@@ -418,10 +418,14 @@
 /* Small checkbox when font size is 12px (from node attr OR inline span style) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="12px"] > label input[type="checkbox"],
+  li[data-font-size="12px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 12px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 12px"])
+  > label
+  input[type="checkbox"] {
   width: 0.8rem;
   height: 0.8rem;
 }
@@ -431,10 +435,14 @@
 /* Large checkbox when font size is 20px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="20px"] > label input[type="checkbox"],
+  li[data-font-size="20px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 20px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 20px"])
+  > label
+  input[type="checkbox"] {
   width: 1.25rem;
   height: 1.25rem;
 }
@@ -442,10 +450,14 @@
 /* Huge checkbox when font size is 24px (attr or inline) */
 .ProseMirror
   ul[data-type="taskList"]
-  li[data-font-size="24px"] > label input[type="checkbox"],
+  li[data-font-size="24px"]
+  > label
+  input[type="checkbox"],
 .ProseMirror
   ul[data-type="taskList"]
-  li:has(span[style*="font-size: 24px"]) > label input[type="checkbox"] {
+  li:has(span[style*="font-size: 24px"])
+  > label
+  input[type="checkbox"] {
   width: 1.45rem;
   height: 1.45rem;
 }
@@ -476,7 +488,6 @@
   display: inline;
   margin: 0;
 }
-
 
 .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
   position: relative;
@@ -897,8 +908,10 @@
 /* Table Container */
 .ProseMirror table {
   border-collapse: collapse;
+  /* Phase 6.1: Keep fixed layout so column resizing stays stable */
   table-layout: fixed;
-  width: 100%;
+  /* Phase 6.1: Don't force 100% width if custom width is set */
+  /* width: 100%; - Removed, now controlled by inline style */
   margin: 1.5rem 0;
   overflow: hidden;
   --table-border-radius: 0px;
@@ -909,6 +922,11 @@
   --table-border-color: #e2e8f0;
   /* Outer border uses cell borders only; table itself has no line */
   border: none;
+}
+
+/* Phase 6.1: Default width for tables without custom width */
+.ProseMirror table:not([data-table-width]) {
+  width: 100%;
 }
 
 /* Table Cells - Base Styling */
@@ -1049,6 +1067,25 @@
 .dark .table-resize-indicator {
   background: rgba(15, 23, 42, 0.95);
   color: #fff;
+}
+
+/* Phase 6.1: Whole-table resize handles (TinyMCE-style)
+   Handles are always visible when the table is selected; visibility is
+   controlled from React (we mount/unmount them based on selection).
+*/
+.table-resize-handle {
+  transition: all 0.2s ease;
+}
+
+.table-resize-handle:hover {
+  background: #2563eb !important;
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+}
+
+.table-resize-handle:active {
+  background: #1d4ed8 !important;
+  transform: scale(1.1);
 }
 
 /* Phase 5.1: Audio Player Styles */
