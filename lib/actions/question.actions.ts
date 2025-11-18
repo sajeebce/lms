@@ -45,9 +45,12 @@ export async function createQuestion(data: {
     options: z
       .array(
         z.object({
-          text: z.string().min(1).max(500),
+          text: z
+            .string()
+            .min(1)
+            .max(5000, 'Option text must be 5000 characters or less'),
           isCorrect: z.boolean(),
-          explanation: z.string().max(5000).optional(),
+          explanation: z.string().max(10000).optional(),
         })
       )
       .optional(),
@@ -62,7 +65,27 @@ export async function createQuestion(data: {
     imageUrl: z.string().optional(),
   })
 
-  const validated = schema.parse(data)
+  const parsed = schema.safeParse(data)
+
+  if (!parsed.success) {
+    console.error('createQuestion validation failed', parsed.error)
+
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const [first] = issue.path
+      const key = first ? String(first) : 'form'
+      if (!fieldErrors[key]) {
+        fieldErrors[key] = issue.message
+      }
+    }
+
+    const message =
+      parsed.error.issues[0]?.message || 'Invalid data for question'
+
+    return { success: false, error: message, fieldErrors }
+  }
+
+  const validated = parsed.data
 
   // 4. OWNERSHIP CHECK (topic belongs to tenant)
   const topic = await prisma.topic.findFirst({
@@ -177,9 +200,12 @@ export async function updateQuestion(
     options: z
       .array(
         z.object({
-          text: z.string().min(1).max(500),
+          text: z
+            .string()
+            .min(1)
+            .max(5000, 'Option text must be 5000 characters or less'),
           isCorrect: z.boolean(),
-          explanation: z.string().max(5000).optional(),
+          explanation: z.string().max(10000).optional(),
         })
       )
       .optional(),
@@ -195,7 +221,27 @@ export async function updateQuestion(
     status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
   })
 
-  const validated = schema.parse(data)
+  const parsed = schema.safeParse(data)
+
+  if (!parsed.success) {
+    console.error('updateQuestion validation failed', parsed.error)
+
+    const fieldErrors: Record<string, string> = {}
+    for (const issue of parsed.error.issues) {
+      const [first] = issue.path
+      const key = first ? String(first) : 'form'
+      if (!fieldErrors[key]) {
+        fieldErrors[key] = issue.message
+      }
+    }
+
+    const message =
+      parsed.error.issues[0]?.message || 'Invalid data for question'
+
+    return { success: false, error: message, fieldErrors }
+  }
+
+  const validated = parsed.data
 
   // 4. OWNERSHIP CHECK
   const question = await prisma.question.findFirst({
@@ -304,6 +350,8 @@ export async function getQuestions(filters?: {
   topicId?: string
   difficulty?: string
   questionType?: string
+  institutionId?: string
+  examYearId?: string
   sourceId?: string
   search?: string
   page?: number
@@ -341,6 +389,14 @@ export async function getQuestions(filters?: {
 
   if (filters?.questionType) {
     where.questionType = filters.questionType
+  }
+
+  if (filters?.institutionId) {
+    where.institutionId = filters.institutionId
+  }
+
+  if (filters?.examYearId) {
+    where.examYearId = filters.examYearId
   }
 
   if (filters?.sourceId) {

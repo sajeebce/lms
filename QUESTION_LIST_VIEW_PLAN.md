@@ -27,7 +27,9 @@ A question is associated with a hierarchy and tags that must all be filterable:
 - **Topic** (e.g. Introduction)
 - **Difficulty** (EASY, MEDIUM, HARD, EXPERT)
 - **Question Type** (MCQ, TRUE_FALSE, SHORT_ANSWER, LONG_ANSWER, FILL_BLANK, MATCHING)
-- **Source** (question source / book / exam – if present)
+- **Institution / Board / College** (ExamBoard entity – e.g. “Dhaka Board”, “Notre Dame College”) – optional
+- **Exam Year** (ExamYear entity – e.g. `2024`, label `SSC 2024`) – optional
+- **Source Type** (UI-only tag such as “📘 Board Exam”, “📗 Textbook” – optional; legacy `sourceId` from `QuestionSource` is still supported for older data)
 
 Marks **do not live on the Question Bank model**. Marks are assigned later at the **exam-question level**, so the same question can carry different marks in different exams. Therefore there is **no marks filter** on the `/question-bank/questions` screen; marks-based filtering will live on the Exam/Question Paper screens.
 
@@ -40,7 +42,9 @@ Marks **do not live on the Question Bank model**. Marks are assigned later at th
 - Extend filters to include:
   - **Chapter** (SearchableDropdown)
   - **Topic** (SearchableDropdown)
-  - **Source** (SearchableDropdown) – optional.
+  - **Institution / Board / College** (SearchableDropdown backed by `ExamBoard`)
+  - **Exam Year** (SearchableDropdown backed by `ExamYear`)
+  - **Source Type** (SearchableDropdown with static options: Board Exam, Textbook, Reference Book, Custom, Previous Year, Mock Test) – optional.
   - Keep a free-text **Search** box that searches in question text and maybe correct answer.
 - All dropdowns must use the shared **SearchableDropdown** component (per global dropdown standards).
 
@@ -55,7 +59,7 @@ Marks **do not live on the Question Bank model**. Marks are assigned later at th
 
 ### 2.4 Server-side filters
 
-`getQuestions(filters)` already supports:
+`getQuestions(filters)` should support (and be extended to include):
 
 ```ts
 {
@@ -65,7 +69,10 @@ Marks **do not live on the Question Bank model**. Marks are assigned later at th
   topicId?: string
   difficulty?: string
   questionType?: string
-  sourceId?: string
+  institutionId?: string
+  examYearId?: string
+  sourceId?: string // legacy QuestionSource-based filter (optional)
+  // Future: sourceType?: SourceType
   search?: string
   page?: number
   pageSize?: number
@@ -116,7 +123,7 @@ Behaviour:
 On first load and whenever filters/pagination change, `getQuestions` should return **only lightweight fields**:
 
 - `id`, `questionText`, `questionType`, `difficulty`, `status`.
-- Hierarchy & tag relations: `topic` (+ chapter, subject, class), `source`.
+- Hierarchy & tag relations: `topic` (+ chapter, subject, class), `institution` (ExamBoard), `examYear`, and, for legacy data only, `source`.
 - **Do NOT include**:
   - `options` JSON.
   - `explanation` (rich HTML).
@@ -195,6 +202,9 @@ Card usage:
   - Subject, Class, Chapter, Topic (hierarchy).
   - Question Type.
   - Difficulty.
+  - Institution / Board / College (if `institutionId` is set).
+  - Exam Year (if `examYearId` is set).
+  - (Optional, future) Source Type (e.g. "📘 Board Exam") once we persist it per question.
 - These chips must be **clickable filters** per §2.3.
 
 ### 5.3 MCQ options (when viewMode ≠ QUESTION)
@@ -243,7 +253,7 @@ When `viewMode === 'FULL'` and `detailsCache[question.id].explanation` exists:
 4. **Add the view mode toolbar** under filters and wire it to `viewMode` state and lazy-load calls.
 5. **Refactor card rendering**:
    - Use `getPlainPreview` for the main question text.
-   - Keep/adjust tag chips (subject/class/chapter/topic/type/difficulty) and make them clickable filters.
+   - Keep/adjust tag chips (subject/class/chapter/topic/type/difficulty/institution/examYear/[future] source type) and make them clickable filters.
    - Render options/explanations according to `viewMode` and `detailsCache` using `.ProseMirror` + `prose` classes.
 6. **Test filters** to ensure every visible tag/location is actually filterable via either the top controls or chip clicks.
 7. **Polish**: loading states, hover effects on chips, responsive behaviour.

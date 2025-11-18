@@ -114,6 +114,7 @@ export default function QuestionFormFull({
     initialData?.explanation || ""
   );
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Scroll to top button visibility
   useEffect(() => {
@@ -158,6 +159,8 @@ export default function QuestionFormFull({
   };
 
   const handleSubmit = async () => {
+    setFieldErrors({});
+
     // Validation
     if (!selectedTopic) {
       toast.error("Please select a topic");
@@ -217,6 +220,9 @@ export default function QuestionFormFull({
         router.push("/question-bank/questions");
         router.refresh();
       } else {
+        if (result.fieldErrors && typeof result.fieldErrors === "object") {
+          setFieldErrors(result.fieldErrors as Record<string, string>);
+        }
         toast.error(result.error || "Failed to save question");
       }
     } catch (error) {
@@ -413,13 +419,30 @@ export default function QuestionFormFull({
               </div>
 
               <div className="space-y-2">
-                <Label>Question Text * (Supports Math Equations)</Label>
-                <RichTextEditor
-                  value={questionText}
-                  onChange={setQuestionText}
-                  placeholder="Enter your question here... Click 'Math' button to add equations like E=mc², ∫x²dx, etc."
-                  minHeight="150px"
-                />
+                <Label
+                  className={fieldErrors.questionText ? "text-red-600" : undefined}
+                >
+                  Question Text * (Supports Math Equations)
+                </Label>
+                <div
+                  className={
+                    fieldErrors.questionText
+                      ? "rounded-md ring-1 ring-red-500"
+                      : undefined
+                  }
+                >
+                  <RichTextEditor
+                    value={questionText}
+                    onChange={setQuestionText}
+                    placeholder="Enter your question here... Click 'Math' button to add equations like E=mc², ∫x²dx, etc."
+                    minHeight="150px"
+                  />
+                </div>
+                {fieldErrors.questionText && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.questionText}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-2">
                   💡 Tip: Use the <strong>Math</strong> button to insert LaTeX
                   equations. Examples: E=mc², \frac{"{a}"}
@@ -437,11 +460,22 @@ export default function QuestionFormFull({
 
             {questionType === "MCQ" && (
               <div className="space-y-4">
-                <Label>Options * (Check correct answer)</Label>
+                <Label
+                  className={fieldErrors.options ? "text-red-600" : undefined}
+                >
+                  Options * (Check correct answer)
+                </Label>
+                {fieldErrors.options && (
+                  <p className="text-xs text-red-500">
+                    {fieldErrors.options}
+                  </p>
+                )}
                 {mcqOptions.map((opt, idx) => (
                   <div
                     key={idx}
-                    className="border dark:border-slate-700 rounded-lg p-4"
+                    className={`border dark:border-slate-700 rounded-lg p-4 ${
+                      fieldErrors.options ? "border-red-500" : ""
+                    }`}
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <Checkbox

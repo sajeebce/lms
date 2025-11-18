@@ -322,34 +322,48 @@ export default function QuestionsClient({
                     {question.questionText}
                   </p>
 
-                  {/* Badges */}
+                  {/* Badges (clickable filters) */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge
                       variant="outline"
-                      className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+                      className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800 cursor-pointer hover:shadow-sm"
+                      onClick={() => setFilterSubject(question.topic.chapter.subject.name)}
                     >
                       📚 {question.topic.chapter.subject.name}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800"
+                      className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 cursor-pointer hover:shadow-sm"
+                      onClick={() => setFilterClass(question.topic.chapter.class.name)}
                     >
                       🎓 {question.topic.chapter.class.name}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800"
+                      className="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800 cursor-pointer hover:shadow-sm"
+                      onClick={() => setFilterChapter(question.topic.chapter.name)}
                     >
                       📖 {question.topic.chapter.name}
                     </Badge>
                     <Badge
                       variant="outline"
-                      className="bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800"
+                      className="bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800 cursor-pointer hover:shadow-sm"
+                      onClick={() => setFilterTopic(question.topic.name)}
                     >
                       📝 {question.topic.name}
                     </Badge>
-                    {getTypeBadge(question.questionType)}
-                    {getDifficultyBadge(question.difficulty)}
+                    <span
+                      className="cursor-pointer"
+                      onClick={() => setFilterType(question.questionType)}
+                    >
+                      {getTypeBadge(question.questionType)}
+                    </span>
+                    <span
+                      className="cursor-pointer"
+                      onClick={() => setFilterDifficulty(question.difficulty)}
+                    >
+                      {getDifficultyBadge(question.difficulty)}
+                    </span>
                     <Badge
                       variant="outline"
                       className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
@@ -359,7 +373,8 @@ export default function QuestionsClient({
                     {question.institution && (
                       <Badge
                         variant="outline"
-                        className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800"
+                        className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800 cursor-pointer hover:shadow-sm"
+                        onClick={() => setFilterInstitution(question.institution!.name)}
                       >
                         🏫 {question.institution.name}
                       </Badge>
@@ -367,7 +382,8 @@ export default function QuestionsClient({
                     {question.examYear && (
                       <Badge
                         variant="outline"
-                        className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                        className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 cursor-pointer hover:shadow-sm"
+                        onClick={() => setFilterYear(String(question.examYear!.year))}
                       >
                         📅{' '}
                         {question.examYear.label
