@@ -491,7 +491,8 @@ const ResizableImage = Image.extend({
       // Toolbar (delete + alignment buttons)
       const toolbar = document.createElement("div");
       toolbar.style.position = "absolute";
-      toolbar.style.top = "-45px";
+      // Position toolbar below the image so it doesn't clash with the main editor toolbar
+      toolbar.style.top = "calc(100% + 8px)";
       toolbar.style.left = "50%";
       toolbar.style.transform = "translateX(-50%)";
       toolbar.style.display = "none";
@@ -1224,6 +1225,35 @@ const ResizableImage = Image.extend({
         },
       };
     };
+  },
+  renderHTML({ HTMLAttributes }) {
+    const attrs: Record<string, any> = {
+      ...HTMLAttributes,
+    };
+
+    const border = attrs["data-border"] as string | undefined;
+    const borderColor =
+      (attrs["data-border-color"] as string | undefined) || "#d1d5db";
+
+    if (border && border !== "none") {
+      let borderWidth = "1px";
+      if (border === "medium") {
+        borderWidth = "2px";
+      } else if (border === "thick") {
+        borderWidth = "4px";
+      }
+
+      const existingStyle = attrs.style ? String(attrs.style) : "";
+      const borderStyle = `border: ${borderWidth} solid ${borderColor}`;
+
+      attrs.style = existingStyle
+        ? `${existingStyle}${
+            existingStyle.trim().endsWith(";") ? " " : "; "
+          }${borderStyle}`
+        : borderStyle;
+    }
+
+    return ["img", mergeAttributes(this.options.HTMLAttributes, attrs)];
   },
 });
 
@@ -3290,47 +3320,44 @@ export default function RichTextEditor({
   const handleImageInsert = (props: ImageProperties) => {
     if (!editor) return;
 
+    const attrs = {
+      src: props.url,
+      alt: props.alt,
+      title: props.alt,
+      description: props.description,
+      width: props.width,
+      height: props.height,
+      textAlign: props.alignment,
+      border: props.border,
+      borderColor: props.borderColor,
+      "data-file-id": props.fileId,
+    };
+
     // Check if we're editing an existing image
-    if (editingImageData && editingImageData.pos !== null) {
-      // Update existing image
-      editor
-        .chain()
-        .focus()
-        .setNodeSelection(editingImageData.pos)
-        .updateAttributes("image", {
-          src: props.url,
-          alt: props.alt,
-          title: props.alt,
-          description: props.description,
-          width: props.width,
-          height: props.height,
-          textAlign: props.alignment,
-          border: props.border,
-          borderColor: props.borderColor,
-          "data-file-id": props.fileId,
-        })
-        .run();
+    if (editingImageData && typeof editingImageData.pos === "number") {
+      const pos = editingImageData.pos as number;
+      const { doc } = editor.state;
+      const nodeAtPos =
+        pos >= 0 && pos <= doc.content.size ? doc.nodeAt(pos) : null;
+
+      if (nodeAtPos) {
+        // Safe: node still exists at recorded position
+        editor
+          .chain()
+          .focus()
+          .setNodeSelection(pos)
+          .updateAttributes("image", attrs)
+          .run();
+      } else {
+        // Fallback: best-effort update on current selection's image
+        editor.chain().focus().updateAttributes("image", attrs).run();
+      }
 
       // Clear editing state
       setEditingImageData(null);
     } else {
       // Insert new image
-      editor
-        .chain()
-        .focus()
-        .setImage({
-          src: props.url,
-          alt: props.alt,
-          title: props.alt,
-          description: props.description,
-          width: props.width,
-          height: props.height,
-          textAlign: props.alignment,
-          border: props.border,
-          borderColor: props.borderColor,
-          "data-file-id": props.fileId,
-        })
-        .run();
+      editor.chain().focus().setImage(attrs).run();
 
       // Apply alignment if specified
       if (props.alignment && props.alignment !== "left") {

@@ -1,16 +1,12 @@
-'use client'
+"use client";
 
-import { GraduationCap } from 'lucide-react'
-import { SidebarNav } from '@/components/sidebar-nav'
-import { Breadcrumb } from '@/components/breadcrumb'
-import { useState } from 'react'
+import { GraduationCap } from "lucide-react";
+import { SidebarNav } from "@/components/sidebar-nav";
+import { Breadcrumb } from "@/components/breadcrumb-nav";
+import { useState } from "react";
 
-export function DashboardClient({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+export function DashboardClient({ children }: { children: React.ReactNode }) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -20,11 +16,15 @@ export function DashboardClient({
           <div className="flex items-center gap-3">
             <GraduationCap className="h-8 w-8 text-violet-600 dark:text-violet-400" />
             <div>
-              <h1 className="text-xl font-bold text-card-foreground dark:text-white">LMS Admin</h1>
+              <h1 className="text-xl font-bold text-card-foreground dark:text-white">
+                LMS Admin
+              </h1>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-foreground/80 dark:text-slate-300">Admin User</span>
+            <span className="text-sm text-foreground/80 dark:text-slate-300">
+              Admin User
+            </span>
           </div>
         </div>
       </header>
@@ -35,7 +35,7 @@ export function DashboardClient({
         <aside
           className="flex-shrink-0 h-full min-h-0 transition-all duration-300 border-r border-border dark:border-slate-700 bg-background dark:bg-slate-900 overflow-y-auto overscroll-y-contain"
           style={{
-            width: isSidebarCollapsed ? '4rem' : 'clamp(240px, 280px, 280px)'
+            width: isSidebarCollapsed ? "4rem" : "clamp(240px, 280px, 280px)",
           }}
         >
           <SidebarNav
@@ -49,17 +49,39 @@ export function DashboardClient({
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           className="absolute top-6 z-10 bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] border-2 border-white dark:border-slate-600 rounded-full p-1.5 hover:opacity-90 transition-all shadow-md hover:shadow-lg"
           style={{
-            left: isSidebarCollapsed ? 'calc(4rem - 14px)' : 'calc(clamp(240px, 280px, 280px) - 14px)'
+            left: isSidebarCollapsed
+              ? "calc(4rem - 14px)"
+              : "calc(clamp(240px, 280px, 280px) - 14px)",
           }}
-          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isSidebarCollapsed ? (
-            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="h-3.5 w-3.5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           ) : (
-            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-3.5 w-3.5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           )}
         </button>
@@ -76,6 +98,5 @@ export function DashboardClient({
         </main>
       </div>
     </div>
-  )
+  );
 }
-

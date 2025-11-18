@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 
 const getSourceTypeLabel = (type: string): string => {
   switch (type) {
@@ -48,6 +47,49 @@ type Props = {
   examYears: any[];
   initialData?: any;
 };
+function RichHtmlBlock({
+  html,
+  className,
+}: {
+  html: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = ref.current;
+    if (!container) return;
+
+    const images =
+      container.querySelectorAll<HTMLImageElement>("img[data-border]");
+
+    images.forEach((img) => {
+      const border = img.getAttribute("data-border");
+      if (!border || border === "none") {
+        img.style.border = "none";
+        return;
+      }
+
+      const color = img.getAttribute("data-border-color") || "#d1d5db";
+      let width = "1px";
+      if (border === "medium") {
+        width = "2px";
+      } else if (border === "thick") {
+        width = "4px";
+      }
+
+      img.style.border = `${width} solid ${color}`;
+    });
+  }, [html]);
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 
 export default function QuestionFormFull({
   subjects,
@@ -100,16 +142,12 @@ export default function QuestionFormFull({
   const [institutionId, setInstitutionId] = useState(
     initialData?.institutionId || ""
   );
-  const [examYearId, setExamYearId] = useState(
-    initialData?.examYearId || ""
-  );
+  const [examYearId, setExamYearId] = useState(initialData?.examYearId || "");
 
   const [difficulty, setDifficulty] = useState(
     initialData?.difficulty || "MEDIUM"
   );
-  const [sourceType, setSourceType] = useState(
-    initialData?.source?.type || ""
-  );
+  const [sourceType, setSourceType] = useState(initialData?.source?.type || "");
   const [explanation, setExplanation] = useState(
     initialData?.explanation || ""
   );
@@ -381,12 +419,27 @@ export default function QuestionFormFull({
                 <SearchableDropdown
                   options={[
                     { value: "", label: "No Source" },
-                    { value: "BOARD_EXAM", label: getSourceTypeLabel("BOARD_EXAM") },
-                    { value: "TEXTBOOK", label: getSourceTypeLabel("TEXTBOOK") },
-                    { value: "REFERENCE_BOOK", label: getSourceTypeLabel("REFERENCE_BOOK") },
+                    {
+                      value: "BOARD_EXAM",
+                      label: getSourceTypeLabel("BOARD_EXAM"),
+                    },
+                    {
+                      value: "TEXTBOOK",
+                      label: getSourceTypeLabel("TEXTBOOK"),
+                    },
+                    {
+                      value: "REFERENCE_BOOK",
+                      label: getSourceTypeLabel("REFERENCE_BOOK"),
+                    },
                     { value: "CUSTOM", label: getSourceTypeLabel("CUSTOM") },
-                    { value: "PREVIOUS_YEAR", label: getSourceTypeLabel("PREVIOUS_YEAR") },
-                    { value: "MOCK_TEST", label: getSourceTypeLabel("MOCK_TEST") },
+                    {
+                      value: "PREVIOUS_YEAR",
+                      label: getSourceTypeLabel("PREVIOUS_YEAR"),
+                    },
+                    {
+                      value: "MOCK_TEST",
+                      label: getSourceTypeLabel("MOCK_TEST"),
+                    },
                   ]}
                   value={sourceType}
                   onChange={setSourceType}
@@ -420,7 +473,9 @@ export default function QuestionFormFull({
 
               <div className="space-y-2">
                 <Label
-                  className={fieldErrors.questionText ? "text-red-600" : undefined}
+                  className={
+                    fieldErrors.questionText ? "text-red-600" : undefined
+                  }
                 >
                   Question Text * (Supports Math Equations)
                 </Label>
@@ -466,9 +521,7 @@ export default function QuestionFormFull({
                   Options * (Check correct answer)
                 </Label>
                 {fieldErrors.options && (
-                  <p className="text-xs text-red-500">
-                    {fieldErrors.options}
-                  </p>
+                  <p className="text-xs text-red-500">{fieldErrors.options}</p>
                 )}
                 {mcqOptions.map((opt, idx) => (
                   <div
@@ -597,13 +650,12 @@ export default function QuestionFormFull({
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                 Question
               </h3>
-              <div className="ProseMirror prose dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border overflow-x-auto">
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      questionText ||
-                      "<p class='text-muted-foreground'>No question text entered yet</p>",
-                  }}
+              <div className="ProseMirror prose dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border break-words">
+                <RichHtmlBlock
+                  html={
+                    questionText ||
+                    "<p class='text-muted-foreground'>No question text entered yet</p>"
+                  }
                 />
               </div>
             </div>
@@ -629,13 +681,12 @@ export default function QuestionFormFull({
                           <span className="font-semibold text-sm mt-1">
                             {String.fromCharCode(65 + idx)}.
                           </span>
-                          <div className="flex-1 ProseMirror prose dark:prose-invert prose-sm max-w-none overflow-x-auto">
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html:
-                                  opt.text ||
-                                  "<span class='text-muted-foreground'>Empty option</span>",
-                              }}
+                          <div className="flex-1 ProseMirror prose dark:prose-invert prose-sm max-w-none break-words">
+                            <RichHtmlBlock
+                              html={
+                                opt.text ||
+                                "<span class='text-muted-foreground'>Empty option</span>"
+                              }
                             />
                           </div>
                           {opt.isCorrect && (
@@ -651,12 +702,8 @@ export default function QuestionFormFull({
                             <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">
                               💡 Explanation:
                             </p>
-                            <div className="ProseMirror prose dark:prose-invert prose-sm max-w-none text-sm overflow-x-auto">
-                              <div
-                                dangerouslySetInnerHTML={{
-                                  __html: opt.explanation,
-                                }}
-                              />
+                            <div className="ProseMirror prose dark:prose-invert prose-sm max-w-none text-sm break-words">
+                              <RichHtmlBlock html={opt.explanation} />
                             </div>
                           </div>
                         </div>
@@ -689,8 +736,8 @@ export default function QuestionFormFull({
                   <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                     Correct Answer
                   </h3>
-                  <div className="ProseMirror prose dark:prose-invert max-w-none bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-500 overflow-x-auto">
-                    <div dangerouslySetInnerHTML={{ __html: textAnswer }} />
+                  <div className="ProseMirror prose dark:prose-invert max-w-none bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-500 break-words">
+                    <RichHtmlBlock html={textAnswer} />
                   </div>
                 </div>
               )}
@@ -701,8 +748,8 @@ export default function QuestionFormFull({
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                   Explanation
                 </h3>
-                <div className="ProseMirror prose dark:prose-invert max-w-none bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-500 overflow-x-auto">
-                  <div dangerouslySetInnerHTML={{ __html: explanation }} />
+                <div className="ProseMirror prose dark:prose-invert max-w-none bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-500 break-words">
+                  <RichHtmlBlock html={explanation} />
                 </div>
               </div>
             )}

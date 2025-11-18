@@ -1,46 +1,52 @@
-'use server'
+"use server";
 
-import { requireRole, getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { z } from 'zod'
+import { requireRole, getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 // Create Question
 export async function createQuestion(data: {
-  topicId: string
-  questionText: string
-  questionType: 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'FILL_BLANK' | 'MATCHING'
-  options?: { text: string; isCorrect: boolean; explanation?: string }[]
-  correctAnswer?: string
-  explanation?: string
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT'
-  marks: number
-  negativeMarks?: number
-  sourceId?: string
-  institutionId?: string
-  examYearId?: string
-  imageUrl?: string
+  topicId: string;
+  questionText: string;
+  questionType:
+    | "MCQ"
+    | "TRUE_FALSE"
+    | "SHORT_ANSWER"
+    | "LONG_ANSWER"
+    | "FILL_BLANK"
+    | "MATCHING";
+  options?: { text: string; isCorrect: boolean; explanation?: string }[];
+  correctAnswer?: string;
+  explanation?: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD" | "EXPERT";
+  marks: number;
+  negativeMarks?: number;
+  sourceId?: string;
+  institutionId?: string;
+  examYearId?: string;
+  imageUrl?: string;
 }) {
   // 1. ROLE GUARD
-  await requireRole(['ADMIN', 'TEACHER'])
+  await requireRole(["ADMIN", "TEACHER"]);
 
   // 2. TENANT ID
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // 3. ZOD VALIDATION
   const schema = z.object({
     topicId: z.string().min(1),
     questionText: z
       .string()
-      .min(1, 'Question text is required')
-      .max(2000, 'Question text must be 2000 characters or less'),
+      .min(1, "Question text is required")
+      .max(2000, "Question text must be 2000 characters or less"),
     questionType: z.enum([
-      'MCQ',
-      'TRUE_FALSE',
-      'SHORT_ANSWER',
-      'LONG_ANSWER',
-      'FILL_BLANK',
-      'MATCHING',
+      "MCQ",
+      "TRUE_FALSE",
+      "SHORT_ANSWER",
+      "LONG_ANSWER",
+      "FILL_BLANK",
+      "MATCHING",
     ]),
     options: z
       .array(
@@ -48,7 +54,7 @@ export async function createQuestion(data: {
           text: z
             .string()
             .min(1)
-            .max(5000, 'Option text must be 5000 characters or less'),
+            .max(5000, "Option text must be 5000 characters or less"),
           isCorrect: z.boolean(),
           explanation: z.string().max(10000).optional(),
         })
@@ -56,83 +62,91 @@ export async function createQuestion(data: {
       .optional(),
     correctAnswer: z.string().max(2000).optional(),
     explanation: z.string().max(10000).optional(),
-    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']),
+    difficulty: z.enum(["EASY", "MEDIUM", "HARD", "EXPERT"]),
     marks: z.number().min(0).max(100),
     negativeMarks: z.number().min(0).max(10).optional(),
     sourceId: z.string().optional(),
     institutionId: z.string().optional(),
     examYearId: z.string().optional(),
     imageUrl: z.string().optional(),
-  })
+  });
 
-  const parsed = schema.safeParse(data)
+  const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
-    console.error('createQuestion validation failed', parsed.error)
+    console.error("createQuestion validation failed", parsed.error);
 
-    const fieldErrors: Record<string, string> = {}
+    const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) {
-      const [first] = issue.path
-      const key = first ? String(first) : 'form'
+      const [first] = issue.path;
+      const key = first ? String(first) : "form";
       if (!fieldErrors[key]) {
-        fieldErrors[key] = issue.message
+        fieldErrors[key] = issue.message;
       }
     }
 
     const message =
-      parsed.error.issues[0]?.message || 'Invalid data for question'
+      parsed.error.issues[0]?.message || "Invalid data for question";
 
-    return { success: false, error: message, fieldErrors }
+    return { success: false, error: message, fieldErrors };
   }
 
-  const validated = parsed.data
+  const validated = parsed.data;
 
   // 4. OWNERSHIP CHECK (topic belongs to tenant)
   const topic = await prisma.topic.findFirst({
     where: { id: validated.topicId, tenantId },
-  })
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // Validate institution & exam year belong to this tenant
   if (validated.institutionId) {
     const institution = await prisma.examBoard.findFirst({
       where: { id: validated.institutionId, tenantId },
-    })
+    });
 
     if (!institution) {
-      return { success: false, error: 'Selected institution/board not found' }
+      return { success: false, error: "Selected institution/board not found" };
     }
   }
 
   if (validated.examYearId) {
     const examYear = await prisma.examYear.findFirst({
       where: { id: validated.examYearId, tenantId },
-    })
+    });
 
     if (!examYear) {
-      return { success: false, error: 'Selected exam year not found' }
+      return { success: false, error: "Selected exam year not found" };
     }
   }
 
   // Validate MCQ options
-  if (validated.questionType === 'MCQ') {
+  if (validated.questionType === "MCQ") {
     if (!validated.options || validated.options.length < 2) {
-      return { success: false, error: 'MCQ must have at least 2 options' }
+      return { success: false, error: "MCQ must have at least 2 options" };
     }
 
-    const correctCount = validated.options.filter((opt) => opt.isCorrect).length
+    const correctCount = validated.options.filter(
+      (opt) => opt.isCorrect
+    ).length;
     if (correctCount === 0) {
-      return { success: false, error: 'MCQ must have at least one correct answer' }
+      return {
+        success: false,
+        error: "MCQ must have at least one correct answer",
+      };
     }
   }
 
   // Validate TRUE_FALSE
-  if (validated.questionType === 'TRUE_FALSE') {
+  if (validated.questionType === "TRUE_FALSE") {
     if (!validated.correctAnswer) {
-      return { success: false, error: 'True/False question must have a correct answer' }
+      return {
+        success: false,
+        error: "True/False question must have a correct answer",
+      };
     }
   }
 
@@ -153,49 +167,62 @@ export async function createQuestion(data: {
       institutionId: validated.institutionId,
       examYearId: validated.examYearId,
       imageUrl: validated.imageUrl,
-      status: 'ACTIVE',
+      status: "ACTIVE",
     },
-  })
+  });
 
   // 5. REVALIDATE PATH
-  revalidatePath('/question-bank/questions')
+  revalidatePath("/question-bank/questions");
 
   // 6. RETURN CONSISTENT FORMAT
-  return { success: true, questionId: question.id }
+  return { success: true, questionId: question.id };
 }
 
 // Update Question
 export async function updateQuestion(
   id: string,
   data: {
-    topicId?: string
-    questionText?: string
-    questionType?: 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'FILL_BLANK' | 'MATCHING'
-    options?: { text: string; isCorrect: boolean; explanation?: string }[]
-    correctAnswer?: string
-    explanation?: string
-    difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT'
-    marks?: number
-    negativeMarks?: number
-    sourceId?: string
-    institutionId?: string
-    examYearId?: string
-    imageUrl?: string
-    status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'
+    topicId?: string;
+    questionText?: string;
+    questionType?:
+      | "MCQ"
+      | "TRUE_FALSE"
+      | "SHORT_ANSWER"
+      | "LONG_ANSWER"
+      | "FILL_BLANK"
+      | "MATCHING";
+    options?: { text: string; isCorrect: boolean; explanation?: string }[];
+    correctAnswer?: string;
+    explanation?: string;
+    difficulty?: "EASY" | "MEDIUM" | "HARD" | "EXPERT";
+    marks?: number;
+    negativeMarks?: number;
+    sourceId?: string;
+    institutionId?: string;
+    examYearId?: string;
+    imageUrl?: string;
+    status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   }
 ) {
   // 1. ROLE GUARD
-  await requireRole(['ADMIN', 'TEACHER'])
+  await requireRole(["ADMIN", "TEACHER"]);
 
   // 2. TENANT ID
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // 3. ZOD VALIDATION
   const schema = z.object({
     topicId: z.string().min(1).optional(),
     questionText: z.string().min(1).max(2000).optional(),
     questionType: z
-      .enum(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'FILL_BLANK', 'MATCHING'])
+      .enum([
+        "MCQ",
+        "TRUE_FALSE",
+        "SHORT_ANSWER",
+        "LONG_ANSWER",
+        "FILL_BLANK",
+        "MATCHING",
+      ])
       .optional(),
     options: z
       .array(
@@ -203,7 +230,7 @@ export async function updateQuestion(
           text: z
             .string()
             .min(1)
-            .max(5000, 'Option text must be 5000 characters or less'),
+            .max(5000, "Option text must be 5000 characters or less"),
           isCorrect: z.boolean(),
           explanation: z.string().max(10000).optional(),
         })
@@ -211,55 +238,55 @@ export async function updateQuestion(
       .optional(),
     correctAnswer: z.string().max(2000).optional(),
     explanation: z.string().max(10000).optional(),
-    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']).optional(),
+    difficulty: z.enum(["EASY", "MEDIUM", "HARD", "EXPERT"]).optional(),
     marks: z.number().min(0).max(100).optional(),
     negativeMarks: z.number().min(0).max(10).optional(),
     sourceId: z.string().optional(),
     institutionId: z.string().optional(),
     examYearId: z.string().optional(),
     imageUrl: z.string().optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
-  })
+    status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
+  });
 
-  const parsed = schema.safeParse(data)
+  const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
-    console.error('updateQuestion validation failed', parsed.error)
+    console.error("updateQuestion validation failed", parsed.error);
 
-    const fieldErrors: Record<string, string> = {}
+    const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) {
-      const [first] = issue.path
-      const key = first ? String(first) : 'form'
+      const [first] = issue.path;
+      const key = first ? String(first) : "form";
       if (!fieldErrors[key]) {
-        fieldErrors[key] = issue.message
+        fieldErrors[key] = issue.message;
       }
     }
 
     const message =
-      parsed.error.issues[0]?.message || 'Invalid data for question'
+      parsed.error.issues[0]?.message || "Invalid data for question";
 
-    return { success: false, error: message, fieldErrors }
+    return { success: false, error: message, fieldErrors };
   }
 
-  const validated = parsed.data
+  const validated = parsed.data;
 
   // 4. OWNERSHIP CHECK
   const question = await prisma.question.findFirst({
     where: { id, tenantId },
-  })
+  });
 
   if (!question) {
-    return { success: false, error: 'Question not found' }
+    return { success: false, error: "Question not found" };
   }
 
   // If topicId is being updated, check ownership
   if (validated.topicId) {
     const topic = await prisma.topic.findFirst({
       where: { id: validated.topicId, tenantId },
-    })
+    });
 
     if (!topic) {
-      return { success: false, error: 'Topic not found' }
+      return { success: false, error: "Topic not found" };
     }
   }
 
@@ -267,33 +294,41 @@ export async function updateQuestion(
   if (validated.institutionId) {
     const institution = await prisma.examBoard.findFirst({
       where: { id: validated.institutionId, tenantId },
-    })
+    });
 
     if (!institution) {
-      return { success: false, error: 'Selected institution/board not found' }
+      return { success: false, error: "Selected institution/board not found" };
     }
   }
 
   if (validated.examYearId) {
     const examYear = await prisma.examYear.findFirst({
       where: { id: validated.examYearId, tenantId },
-    })
+    });
 
     if (!examYear) {
-      return { success: false, error: 'Selected exam year not found' }
+      return { success: false, error: "Selected exam year not found" };
     }
   }
 
   // Validate MCQ options if provided
-  if (validated.questionType === 'MCQ' || (question.questionType === 'MCQ' && validated.options)) {
-    const options = validated.options || (question.options ? JSON.parse(question.options) : [])
+  if (
+    validated.questionType === "MCQ" ||
+    (question.questionType === "MCQ" && validated.options)
+  ) {
+    const options =
+      validated.options ||
+      (question.options ? JSON.parse(question.options) : []);
     if (options.length < 2) {
-      return { success: false, error: 'MCQ must have at least 2 options' }
+      return { success: false, error: "MCQ must have at least 2 options" };
     }
 
-    const correctCount = options.filter((opt: any) => opt.isCorrect).length
+    const correctCount = options.filter((opt: any) => opt.isCorrect).length;
     if (correctCount === 0) {
-      return { success: false, error: 'MCQ must have at least one correct answer' }
+      return {
+        success: false,
+        error: "MCQ must have at least one correct answer",
+      };
     }
   }
 
@@ -302,139 +337,150 @@ export async function updateQuestion(
     where: { id },
     data: {
       ...validated,
-      options: validated.options ? JSON.stringify(validated.options) : undefined,
+      options: validated.options
+        ? JSON.stringify(validated.options)
+        : undefined,
     },
-  })
+  });
 
   // 5. REVALIDATE PATH
-  revalidatePath('/question-bank/questions')
+  revalidatePath("/question-bank/questions");
 
   // 6. RETURN CONSISTENT FORMAT
-  return { success: true }
+  return { success: true };
 }
 
 // Delete Question
 export async function deleteQuestion(id: string) {
   // 1. ROLE GUARD
-  await requireRole(['ADMIN', 'TEACHER'])
+  await requireRole(["ADMIN", "TEACHER"]);
 
   // 2. TENANT ID
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // 4. OWNERSHIP CHECK
   const question = await prisma.question.findFirst({
     where: { id, tenantId },
-  })
+  });
 
   if (!question) {
-    return { success: false, error: 'Question not found' }
+    return { success: false, error: "Question not found" };
   }
 
   // Delete
   await prisma.question.delete({
     where: { id },
-  })
+  });
 
   // 5. REVALIDATE PATH
-  revalidatePath('/question-bank/questions')
+  revalidatePath("/question-bank/questions");
 
   // 6. RETURN CONSISTENT FORMAT
-  return { success: true }
+  return { success: true };
 }
 
 // Get Questions with Filters
 export async function getQuestions(filters?: {
-  subjectId?: string
-  classId?: string
-  chapterId?: string
-  topicId?: string
-  difficulty?: string
-  questionType?: string
-  institutionId?: string
-  examYearId?: string
-  sourceId?: string
-  search?: string
-  page?: number
-  pageSize?: number
+  subjectId?: string;
+  classId?: string;
+  chapterId?: string;
+  topicId?: string;
+  difficulty?: string;
+  questionType?: string;
+  institutionId?: string;
+  examYearId?: string;
+  sourceId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   // 1. ROLE GUARD
-  await requireRole(['ADMIN', 'TEACHER'])
+  await requireRole(["ADMIN", "TEACHER"]);
 
   // 2. TENANT ID
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
-  const page = filters?.page || 1
-  const pageSize = filters?.pageSize || 20
-  const skip = (page - 1) * pageSize
+  const page = filters?.page || 1;
+  const pageSize = filters?.pageSize || 20;
+  const skip = (page - 1) * pageSize;
 
   // Build where clause
-  const where: any = { tenantId, status: 'ACTIVE' }
+  const where: any = { tenantId, status: "ACTIVE" };
 
   if (filters?.topicId) {
-    where.topicId = filters.topicId
+    where.topicId = filters.topicId;
   } else if (filters?.chapterId) {
-    where.topic = { chapterId: filters.chapterId }
+    where.topic = { chapterId: filters.chapterId };
   } else if (filters?.classId && filters?.subjectId) {
     where.topic = {
       chapter: {
         classId: filters.classId,
         subjectId: filters.subjectId,
       },
-    }
+    };
   }
 
   if (filters?.difficulty) {
-    where.difficulty = filters.difficulty
+    where.difficulty = filters.difficulty;
   }
 
   if (filters?.questionType) {
-    where.questionType = filters.questionType
+    where.questionType = filters.questionType;
   }
 
   if (filters?.institutionId) {
-    where.institutionId = filters.institutionId
+    where.institutionId = filters.institutionId;
   }
 
   if (filters?.examYearId) {
-    where.examYearId = filters.examYearId
+    where.examYearId = filters.examYearId;
   }
 
   if (filters?.sourceId) {
-    where.sourceId = filters.sourceId
+    where.sourceId = filters.sourceId;
   }
 
   if (filters?.search) {
     where.questionText = {
       contains: filters.search,
-      mode: 'insensitive',
-    }
+      mode: "insensitive",
+    };
   }
 
-  // Get questions with pagination
+  // Get questions with pagination (lightweight - no options/explanation)
   const [questions, total] = await Promise.all([
     prisma.question.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        questionText: true,
+        questionType: true,
+        difficulty: true,
+        marks: true,
+        correctAnswer: true,
+        status: true,
         topic: {
-          include: {
+          select: {
+            name: true,
             chapter: {
-              include: {
-                subject: true,
-                class: true,
+              select: {
+                name: true,
+                subject: { select: { name: true } },
+                class: { select: { name: true } },
               },
             },
           },
         },
-        source: true,
-        institution: true,
-        examYear: true,
+        source: { select: { name: true } },
+        institution: { select: { name: true } },
+        examYear: { select: { year: true, label: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
     }),
     prisma.question.count({ where }),
-  ])
+  ]);
 
   return {
     questions,
@@ -444,6 +490,61 @@ export async function getQuestions(filters?: {
       total,
       totalPages: Math.ceil(total / pageSize),
     },
-  }
+  };
 }
 
+// Get Question Details for Lazy Loading (Options & Explanations)
+export async function getQuestionDetailsForPage(data: {
+  questionIds: string[];
+  includeExplanations: boolean;
+}) {
+  // 1. ROLE GUARD
+  await requireRole(["ADMIN", "TEACHER"]);
+
+  // 2. TENANT ID
+  const tenantId = await getTenantId();
+
+  // 3. ZOD VALIDATION
+  const schema = z.object({
+    questionIds: z.array(z.string()),
+    includeExplanations: z.boolean(),
+  });
+
+  const validated = schema.parse(data);
+
+  // 4. FETCH QUESTIONS (tenant-scoped)
+  const questions = await prisma.question.findMany({
+    where: {
+      id: { in: validated.questionIds },
+      tenantId,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      options: true,
+      explanation: true,
+    },
+  });
+
+  // 5. BUILD RESPONSE MAP
+  const detailsMap: Record<
+    string,
+    { options?: any[]; explanation?: string | null }
+  > = {};
+
+  const includeExplanations = validated.includeExplanations;
+
+  for (const q of questions) {
+    const base: { options?: any[]; explanation?: string | null } = {
+      options: q.options ? JSON.parse(q.options) : undefined,
+    };
+
+    if (includeExplanations) {
+      base.explanation = q.explanation ?? null;
+    }
+
+    detailsMap[q.id] = base;
+  }
+
+  return { success: true, details: detailsMap };
+}

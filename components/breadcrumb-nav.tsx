@@ -5,14 +5,19 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
+interface BreadcrumbItem {
+  label: string;
+  href: string;
+}
+
 export function Breadcrumb() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "/";
   const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
   // Generate breadcrumb items from pathname
   const pathSegments = pathname.split("/").filter(Boolean);
 
-  const breadcrumbItems = [
+  const breadcrumbItems: BreadcrumbItem[] = [
     // Root dashboard always goes to the app home, which redirects to the tenant's default module
     { label: "Dashboard", href: "/" },
   ];
@@ -99,7 +104,7 @@ export function Breadcrumb() {
       return;
     }
 
-    // For student profile pages, use username instead of ID
+    // For student profile pages, use username instead of ID when available
     let label = labelMap[segment];
     if (!label) {
       if (pathSegments[0] === "students" && index === 1 && studentUsername) {
@@ -112,7 +117,7 @@ export function Breadcrumb() {
     // Use a stable destination for some segments
     let href = currentPath;
     if (segment === "question-bank") {
-      // Question Bank module root  Questions list (avoids /question-bank 404)
+      // Question Bank module root -> Questions list (avoids /question-bank 404)
       href = "/question-bank/questions";
     }
 
@@ -125,7 +130,7 @@ export function Breadcrumb() {
         const isLast = index === breadcrumbItems.length - 1;
 
         return (
-          <div key={item.href} className="flex items-center">
+          <div key={`${item.href}-${index}`} className="flex items-center">
             {index > 0 && (
               <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/60" />
             )}

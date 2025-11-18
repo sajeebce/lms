@@ -202,6 +202,25 @@
   margin: 1rem 0;
 }
 
+/* Image border variants from Rich Text Editor */
+.ProseMirror img[data-border="thin"] {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #d1d5db;
+}
+
+.ProseMirror img[data-border="medium"] {
+  border-width: 2px;
+  border-style: solid;
+  border-color: #d1d5db;
+}
+
+.ProseMirror img[data-border="thick"] {
+  border-width: 4px;
+  border-style: solid;
+  border-color: #d1d5db;
+}
+
 /* Phase 3.1: Blockquote Styles */
 .ProseMirror blockquote {
   margin: 1.5rem 0;
