@@ -1,8 +1,8 @@
 # 📚 Course Management System - Implementation Plan
 
-**Project:** LMS (Learning Management System)  
-**Module:** Course Management (Course Category & Course Creation)  
-**Date:** 2025-11-04  
+**Project:** LMS (Learning Management System)
+**Module:** Course Management (Course Category & Course Creation)
+**Date:** 2025-11-04
 **Status:** 📋 **PLANNING PHASE**
 
 ---
@@ -25,7 +25,9 @@
 ## 🎯 Overview
 
 ### Goal
+
 Implement a comprehensive Course Management System that allows:
+
 - ✅ Admins/Instructors to create and manage courses
 - ✅ Course categorization and organization
 - ✅ Single and Bundle course types
@@ -34,6 +36,7 @@ Implement a comprehensive Course Management System that allows:
 - ✅ Flexible pricing (One-time, Subscription, Free)
 
 ### Key Features
+
 - 🎓 **Course Categories** - Organize courses by subject/department
 - 📚 **Single Courses** - Standalone courses with topics and lessons
 - 📦 **Bundle Courses** - Package multiple courses together
@@ -44,7 +47,9 @@ Implement a comprehensive Course Management System that allows:
 - 🎫 **Auto Invoice Generation** - Automatic invoice creation on enrollment
 
 ### Architecture Alignment
+
 This implementation follows your existing LMS architecture:
+
 - ✅ **Multi-tenant** - All models include `tenantId`
 - ✅ **RBAC** - Role-based access control (ADMIN, TEACHER, STUDENT)
 - ✅ **Next.js App Router** - Server components + Client components
@@ -59,6 +64,7 @@ This implementation follows your existing LMS architecture:
 ## 🗄️ Database Schema
 
 ### Migration Command
+
 ```bash
 npx prisma migrate dev --name course_management_init
 ```
@@ -66,6 +72,7 @@ npx prisma migrate dev --name course_management_init
 ### Core Models
 
 #### 1. CourseCategory
+
 ```prisma
 model CourseCategory {
   id          String   @id @default(cuid())
@@ -77,18 +84,19 @@ model CourseCategory {
   color       String?  // Hex color for UI theming
   order       Int      @default(0) // Display order
   status      Status   @default(ACTIVE)
-  
+
   courses     Course[]
-  
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@unique([tenantId, slug])
   @@index([tenantId, status])
 }
 ```
 
 **Features:**
+
 - ✅ Tenant isolation
 - ✅ Unique slug per tenant
 - ✅ Custom color theming
@@ -97,82 +105,84 @@ model CourseCategory {
 - ✅ Active/Inactive status
 
 **Delete Guard:**
+
 - Cannot delete if courses exist
 - Show warning: "This category has X courses. Please reassign or delete them first."
 
 ---
 
 #### 2. Course
+
 ```prisma
 model Course {
   id                String        @id @default(cuid())
   tenantId          String
-  
+
   // Basic Info
   title             String
   slug              String        // Auto-generated from title
   description       String?       @db.Text
   shortDescription  String?       @db.VarChar(500)
-  
+
   // Category & Type
   categoryId        String?
   category          CourseCategory? @relation(fields: [categoryId], references: [id])
   courseType        CourseType    @default(SINGLE) // SINGLE, BUNDLE
-  
+
   // Author/Instructor
   authorName        String?       // "Dr. Nabil Rahman"
   instructorId      String?       // Link to Teacher/User
   instructor        Teacher?      @relation(fields: [instructorId], references: [id])
-  
+
   // Pricing
   paymentType       PaymentType   @default(ONE_TIME) // ONE_TIME, SUBSCRIPTION, FREE
   invoiceTitle      String?
   regularPrice      Decimal?      @db.Decimal(10, 2)
   offerPrice        Decimal?      @db.Decimal(10, 2)
   currency          String        @default("BDT")
-  
+
   // Subscription (Phase 2)
   subscriptionDuration Int?       // In months
   subscriptionType     SubscriptionType? // MONTHLY, QUARTERLY, YEARLY, CUSTOM
-  
+
   // Invoice Settings
   autoGenerateInvoice Boolean     @default(true)
-  
+
   // Media
   featuredImage     String?       // File path
   introVideoUrl     String?       // YouTube/Vimeo URL
-  
+
   // Visibility & Status
   status            CourseStatus  @default(DRAFT) // DRAFT, PUBLISHED, SCHEDULED, PRIVATE
   publishedAt       DateTime?
   scheduledAt       DateTime?
-  
+
   // SEO & Meta
   metaTitle         String?
   metaDescription   String?
   metaKeywords      String?
-  
+
   // Settings
   isFeatured        Boolean       @default(false)
   allowComments     Boolean       @default(true)
   certificateEnabled Boolean      @default(false)
-  
+
   // Stats (computed)
   totalTopics       Int           @default(0)
   totalLessons      Int           @default(0)
   totalDuration     Int           @default(0) // In minutes
   totalEnrollments  Int           @default(0)
-  
+
   // Relations
   topics            CourseTopic[]
   enrollments       CourseEnrollment[]
   bundleCourses     BundleCourse[] @relation("BundleParent")
   bundleItems       BundleCourse[] @relation("BundleChild")
   faqs              CourseFAQ[]
-  
+
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  
+
   @@unique([tenantId, slug])
   @@index([tenantId, status])
   @@index([categoryId])
@@ -180,6 +190,7 @@ model Course {
 ```
 
 **Features:**
+
 - ✅ Single and Bundle course types
 - ✅ Flexible pricing (One-time, Subscription, Free)
 - ✅ SEO optimization
@@ -189,6 +200,7 @@ model Course {
 - ✅ Draft/Published/Scheduled/Private status
 
 **Character Limits:**
+
 - Title: 200 characters
 - Short Description: 500 characters
 - Description: Unlimited (Text field)
@@ -200,114 +212,140 @@ model Course {
 ---
 
 #### 3. BundleCourse (Junction Table)
+
 ```prisma
 model BundleCourse {
   id          String   @id @default(cuid())
   tenantId    String
-  
+
   bundleId    String   // Parent bundle course
   bundle      Course   @relation("BundleParent", fields: [bundleId], references: [id], onDelete: Cascade)
-  
+
   courseId    String   // Child course
   course      Course   @relation("BundleChild", fields: [courseId], references: [id], onDelete: Cascade)
-  
+
   order       Int      @default(0)
-  
+
   createdAt   DateTime @default(now())
-  
+
   @@unique([bundleId, courseId])
   @@index([tenantId])
 }
 ```
 
 **Features:**
+
 - ✅ Many-to-many relationship between bundle and courses
 - ✅ Sortable order
 - ✅ Cascade delete protection
 
 ---
 
-#### 4. CourseTopic
+#### 4. CourseTopic (Hybrid with Academic Setup & Question Bank)
+
 ```prisma
 model CourseTopic {
   id          String        @id @default(cuid())
   tenantId    String
   courseId    String
   course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
+
+  // Core fields (course-level structure)
   title       String
   description String?       @db.Text
   order       Int           @default(0)
-  
+
+  // Optional mapping to academic/question bank hierarchy
+  subjectId   String?       // Link to Subject (from Academic Setup)
+  chapterId   String?       // Link to Chapter (from Question Bank)
+  topicId     String?       // Link to Topic (from Question Bank)
+  sourceType  String        @default("CUSTOM") // "CUSTOM" | "QUESTION_BANK"
+
   lessons     CourseLesson[]
   activities  CourseActivity[]
-  
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  
+
   @@index([tenantId, courseId])
+  @@index([tenantId, subjectId])
+  @@index([tenantId, chapterId])
+  @@index([tenantId, topicId])
 }
 ```
 
-**Features:**
-- ✅ Organize lessons into topics
+**Features (Hybrid model):**
+
+- ✅ `CourseTopic` is the **course-local curriculum structure** (always stored here)
+- ✅ Optional mapping to existing `Subject`/`Chapter`/`Topic` from Academic Setup + Question Bank
+- ✅ Supports both **linked** topics (reuse existing syllabus) and **custom** topics (course-only)
 - ✅ Sortable order
 - ✅ Cascade delete (deleting course deletes topics)
 
 **Character Limits:**
+
 - Title: 200 characters
 - Description: Unlimited (Text field)
+
+**Behaviour Notes (for implementation):**
+
+- Add Topic (in builder UI):
+  - Option 1 – "Use existing Chapter/Topic": set `subjectId`/`chapterId`/`topicId` and `sourceType = "QUESTION_BANK"`, copy current Chapter/Topic name into `title` as snapshot.
+  - Option 2 – "Create custom topic": only `title`/`description`; leave mapping fields `null` and keep `sourceType = "CUSTOM"`.
+- Changes in Question Bank should **not** auto-edit `CourseTopic.title`; reporting and filters should use the mapping IDs.
 
 ---
 
 #### 5. CourseLesson
+
 ```prisma
 model CourseLesson {
   id              String        @id @default(cuid())
   tenantId        String
   topicId         String
   topic           CourseTopic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  
+
   title           String
   description     String?       @db.Text
   lessonType      LessonType    // VIDEO_YOUTUBE, VIDEO_VIMEO, VIDEO_LOCAL, VIDEO_GDRIVE, DOCUMENT, TEXT, IFRAME
-  
+
   // Content
   contentUrl      String?       // Video URL, Document URL, etc.
   contentText     String?       @db.Text // For TEXT type
   iframeCode      String?       @db.Text // For IFRAME type
-  
+
   // Video specific
   duration        Int?          // In seconds
   videoProvider   String?       // "youtube", "vimeo", "local", "gdrive"
-  
+
   // Files
   attachments     String?       @db.Text // JSON array of file paths
-  
+
   // Access Control
   accessType      AccessType    @default(PUBLIC) // PUBLIC, PASSWORD, ENROLLED_ONLY
   password        String?
-  
+
   // Scheduling
   scheduledRelease DateTime?
-  
+
   // Settings
   allowDownload   Boolean       @default(false)
   isPreview       Boolean       @default(false) // Free preview lesson
-  
+
   order           Int           @default(0)
-  
+
   // Progress tracking
   completions     LessonCompletion[]
-  
+
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  
+
   @@index([tenantId, topicId])
 }
 ```
 
 **Lesson Types:**
+
 1. **VIDEO_YOUTUBE** - YouTube video embed
 2. **VIDEO_VIMEO** - Vimeo video embed
 3. **VIDEO_LOCAL** - Uploaded video file
@@ -317,11 +355,13 @@ model CourseLesson {
 7. **IFRAME** - Custom iframe embed
 
 **Access Control:**
+
 - **PUBLIC** - Anyone can view
 - **PASSWORD** - Requires password
 - **ENROLLED_ONLY** - Only enrolled students
 
 **Features:**
+
 - ✅ 7 lesson types
 - ✅ Access control
 - ✅ Scheduled release dates
@@ -375,9 +415,11 @@ app/(dashboard)/
 ## 🚀 Implementation Sprints
 
 ### Sprint 1 (Week 1-2): Foundation
+
 **Goal:** Database + Category Management
 
 **Tasks:**
+
 1. ✅ Create Prisma schema
 2. ✅ Run migration
 3. ✅ Create server actions for categories
@@ -389,14 +431,17 @@ app/(dashboard)/
 9. ✅ Test dark mode
 
 **Deliverables:**
+
 - `/course-management/categories` page fully functional
 
 ---
 
 ### Sprint 2 (Week 3-4): Course Creation
+
 **Goal:** Single & Bundle Course Forms
 
 **Tasks:**
+
 1. ✅ Create course type selection page
 2. ✅ Build single course form (6 tabs)
 3. ✅ Build bundle course form
@@ -407,6 +452,7 @@ app/(dashboard)/
 8. ✅ Test all form validations
 
 **Deliverables:**
+
 - `/course-management/courses/new` page
 - `/course-management/courses/create/single` page
 - `/course-management/courses/create/bundle` page
@@ -415,9 +461,11 @@ app/(dashboard)/
 ---
 
 ### Sprint 3 (Week 5-6): Course Builder
+
 **Goal:** Topic & Lesson Management
 
 **Tasks:**
+
 1. ✅ Build course builder UI
 2. ✅ Implement topic CRUD
 3. ✅ Implement lesson CRUD (all 7 types)
@@ -427,14 +475,17 @@ app/(dashboard)/
 7. ✅ Test all lesson types
 
 **Deliverables:**
+
 - `/course-management/courses/[id]/builder` page fully functional
 
 ---
 
 ### Sprint 4 (Week 7-8): Enrollment & Student View
+
 **Goal:** Enrollment Management + Student Course Player
 
 **Tasks:**
+
 1. ✅ Build enrollment management page
 2. ✅ Implement manual enrollment
 3. ✅ Build student course catalog
@@ -444,6 +495,7 @@ app/(dashboard)/
 7. ✅ Test enrollment flow
 
 **Deliverables:**
+
 - `/course-management/courses/[id]/enrollments` page
 - `/courses` (student catalog)
 - `/my-courses/[id]/learn` (course player)
@@ -453,6 +505,7 @@ app/(dashboard)/
 ## ✅ Testing Checklist
 
 ### Category Management
+
 - [ ] Create category
 - [ ] Edit category
 - [ ] Delete category (with guard)
@@ -462,6 +515,7 @@ app/(dashboard)/
 - [ ] Test dark mode
 
 ### Course Creation
+
 - [ ] Select course type (Single/Bundle)
 - [ ] Create single course
 - [ ] Create bundle course
@@ -474,6 +528,7 @@ app/(dashboard)/
 - [ ] Test dark mode
 
 ### Course Builder
+
 - [ ] Add topic
 - [ ] Edit topic
 - [ ] Delete topic
@@ -492,6 +547,7 @@ app/(dashboard)/
 - [ ] Test dark mode
 
 ### Enrollment
+
 - [ ] Manual enrollment
 - [ ] Auto invoice generation
 - [ ] Progress tracking
@@ -499,6 +555,7 @@ app/(dashboard)/
 - [ ] Test dark mode
 
 ### Student Experience
+
 - [ ] Browse course catalog
 - [ ] Enroll in course
 - [ ] View course content
@@ -511,32 +568,38 @@ app/(dashboard)/
 ## 🎯 Key Improvements Over Original Plan
 
 ### ✅ 1. Better Data Modeling
+
 - Separate `CourseTopic` and `CourseLesson` for better organization
 - `BundleCourse` junction table for many-to-many relationship
 - `LessonCompletion` for granular progress tracking
 - Support for multiple subscription types
 
 ### ✅ 2. Enhanced Lesson Types
+
 - Added Google Drive video support
 - Added iFrame embed support
 - Added text-based lessons (articles)
 
 ### ✅ 3. Access Control
+
 - Password-protected lessons
 - Preview lessons (free sample)
 - Scheduled release dates
 
 ### ✅ 4. Better Enrollment Management
+
 - Track enrollment type (PAID/FREE/MANUAL)
 - Expiry dates for time-limited access
 - Certificate issuance tracking
 
 ### ✅ 5. SEO & Marketing
+
 - Meta tags for SEO
 - Featured courses
 - Fake enrollment count (social proof)
 
 ### ✅ 6. Consistent with Your Codebase
+
 - Uses same patterns as Academic Setup
 - Same UI components (SearchableDropdown, Table, Dialog)
 - Same RBAC and tenant isolation
@@ -548,6 +611,7 @@ app/(dashboard)/
 ## 📊 Complete Database Schema (All Models)
 
 ### 6. CourseActivity
+
 ```prisma
 model CourseActivity {
   id          String        @id @default(cuid())
@@ -582,6 +646,7 @@ model CourseActivity {
 ```
 
 ### 7. CourseEnrollment
+
 ```prisma
 model CourseEnrollment {
   id              String          @id @default(cuid())
@@ -628,6 +693,7 @@ model CourseEnrollment {
 ```
 
 ### 8. LessonCompletion
+
 ```prisma
 model LessonCompletion {
   id            String            @id @default(cuid())
@@ -648,6 +714,7 @@ model LessonCompletion {
 ```
 
 ### 9. CourseFAQ
+
 ```prisma
 model CourseFAQ {
   id          String   @id @default(cuid())
@@ -667,6 +734,7 @@ model CourseFAQ {
 ```
 
 ### Enums
+
 ```prisma
 enum CourseType {
   SINGLE
@@ -738,6 +806,7 @@ enum EnrollmentStatus {
 **Route:** `/course-management/courses`
 
 **Top Section:**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ All Courses                                          [+ Add New] │
@@ -752,6 +821,7 @@ enum EnrollmentStatus {
 ```
 
 **Table:**
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ ☐ | Title | Category | Type | Author | Price | Date | Enrollments | Status | Action │
@@ -763,6 +833,75 @@ enum EnrollmentStatus {
 │   |         |        |              |        |        |    |              | Duplicate │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Data points inspired by latest UI reference (screenshot):**
+
+- **Title column:**
+  - Thumbnail image (featuredImage)
+  - Course title (clickable)
+  - Meta line below: total topics, total lessons, total assignments/activities
+- **Category column:**
+  - Primary course category name
+  - Optional sub-label (e.g., stream or subject) in smaller text
+- **Type column:**
+  - Pill: `Single` / `Bundle`
+- **Author column:**
+  - Instructor avatar + name
+- **Price column:**
+  - Regular price / offer price
+  - `Free` pill if price is 0
+- **Date column:**
+  - Created or published date/time
+- **Enrollments column:**
+  - Total enrollments count (from CourseEnrollment)
+- **Active devices / engagement column (optional future):**
+  - Active device count per day (e.g., `288 / 324`)
+  - Small rating badge or average devices per student text
+- **View Enrolled column (CTA):**
+  - Button: `View Enrolled` → navigates to `/course-management/courses/[id]/enrollments`
+- **Status column:**
+  - Status pill: `Draft`, `Scheduled`, `Published`, `Archived`
+- **Action column (kebab menu):**
+  - View
+  - Edit
+  - Duplicate
+  - View Analytics
+  - Device Management
+  - Share Link (copy public URL)
+  - Delete (with delete guard)
+
+> Implementation note: Course list UI should feel like a modern analytics table with colorful chips (status, type, free/paid), not a dull ERP grid.
+
+**Responsive behaviour for course table (column priority):**
+
+- **Desktop (≥ 1024px)**
+
+  - Show all columns: Title, Category, Type, Author, Price, Date, Enrollments, Active Devices, View Enrolled, Status, Action.
+  - Each row is a single line with rich meta text under the Title (topics/lessons/assignments).
+
+- **Tablet (≈ 768–1023px)**
+
+  - Keep: Title, Category, Type, Price, Enrollments, Status, Action.
+  - Hide as separate columns: Author, Active Devices, View Enrolled, Date.
+    - Author avatar can move into the Title cell (small chip under title).
+    - "View Enrolled" becomes a button inside the Action menu or inline under Title.
+    - Date can appear as small muted text in the Title meta line if needed.
+
+- **Mobile (< 768px)**
+
+  - Switch from wide row → **stacked card layout** per course:
+    - Line 1: Thumbnail + Title + Status pill + kebab (Action) on the right.
+    - Line 2: Category + Type pill + Price/Free pill.
+    - Line 3: Meta: `Topics · Lessons · Assignments` + `Enrollments` count.
+  - Explicit columns removed: Category, Type, Author, Price, Date, Enrollments, Active Devices, View Enrolled (these are folded into the stacked card content).
+  - Primary actions (View, Edit, Duplicate, View Enrolled, Delete, etc.) stay in the kebab menu to avoid horizontal scroll.
+
+- **Priority levels (for future changes):**
+  - **High:** Title, Status, Action, Enrollments, Price.
+  - **Medium:** Category, Type, View Enrolled, Date.
+  - **Low / optional:** Active Devices, Author avatar (can hide on smaller screens).
+
+> Implementation note: avoid horizontal scroll on mobile; favour stacked cards with chips and concise meta lines.
 
 ### Course Type Selection Page
 
@@ -819,7 +958,176 @@ enum EnrollmentStatus {
 │   ...                                                            │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
+
+#### "Add activity or resource" modal (Course curriculum builder)
+
+When the teacher clicks `+ Add Lesson` or `+ Add Activity` inside a topic, open a full-screen-ish Dialog inspired by the screenshot.
+
+**Title:** `Add an activity or resource`
+
+**Primary tiles (first version):**
+
+- **Lesson**
+  - Description: `Add text / image / video / URL`
+  - Maps to: `CourseLesson` with rich content blocks (text, media, attachments, embed).
+  - After choosing this tile, open the Lesson editor with:
+    - Title, short description
+    - Content editor (block-based or rich-text)
+    - Optional attachments (PDF, image, link)
+- **PDF Resource**
+  - Description: `Upload or attach a PDF file`
+  - Maps to: `CourseLesson` of type `PDF` (stored file + optional description).
+  - Quick create: upload PDF, auto-fill title from filename, allow re-ordering in topic.
+- **Video-only Lesson**
+  - Description: `Add a single video with optional notes`
+  - Maps to: `CourseLesson` with `contentType = VIDEO`.
+  - Quick create: paste video URL or upload file, auto-detect duration (future), optional short description.
+  - Player-first layout: big video on top, notes/resources below.
+- **Online**
+  - Description: `Exam / practice`
+  - Maps to: `CourseActivity` of type `ONLINE_EXAM` or `PRACTICE_QUIZ`.
+  - After selecting, teacher can choose:
+    - Question source: `Create new` / `Import from question bank`
+    - Mode: `Exam` (timed, graded) vs `Practice` (infinite attempts, hints allowed).
+  - **Exam mode preview (student view)** — full-page exam layout (screenshot 1 style):
+    - Top bar with breadcrumb, exam title, remaining time countdown (MM:SS), and a prominent `Submit` button.
+    - Just below, a colored instruction banner showing marks, negative marking rules, and general instructions.
+    - Main content area lists questions one below another, each inside a card: question number, text, and options (radio/checkbox) with clear spacing.
+    - Right side shows a `Question Navigation` panel with numbered pills for all questions, indicating `Answered` vs `Unanswered` with color/dot legend.
+    - Timer and navigation remain visible while scrolling (sticky header/sidebar), so student always sees time left and can jump between questions.
+    - Admin "Preview" from the builder opens this same layout in read-only mode inside a dialog or new tab.
+  - **Practice mode preview (student view)** — immediate‑feedback layout (screenshot 2 style):
+    - Top bar still shows topic name, `Submit` button, and a timer showing `Time passed` (count‑up, optional pause/resume) with no hard time limit and **no `Time left` countdown UI at all**; plus summary chips: `Total`, `Correct`, `Wrong`.
+    - Just below, a green instruction banner like: `Full marks for each question and X marks deducted for each mistake`.
+    - Each question card highlights the selected option and correct option with subtle colored backgrounds (e.g. green for correct, red/amber for wrong) so students see feedback at a glance.
+    - Under each question there is a `Show answer & solution` button that expands the detailed explanation section; explanation area uses a light panel style for long text.
+    - Score chips and progress summary update live as answers are marked, reinforcing the practice / gamified feel.
+    - Admin "Preview" for practice opens the same layout from inside the modal so teachers can quickly see how hints, colors and solution block will look.
+    - Future improvement: optional per‑question hints and "retry" mode (clear this question only) without resetting the whole practice set.
+- **Assignment / Homework**
+  - Description: `Collect submissions and grade`
+  - Maps to: `CourseActivity` of type `ASSIGNMENT`.
+  - Fields: title, instructions, due date/time, max marks, submission type (file upload / text answer / both), allowed file types, late submission policy.
+  - Future: rubric-based grading + show in gradebook.
+- **Offline**
+  - Description: `Create offline question / sheet`
+  - Maps to: `CourseActivity` of type `OFFLINE_EXAM`.
+  - Fields: exam name, date/time, instructions, max marks, optional file (question paper PDF).
+- **SCORM / Package (future)**
+  - Description: `Upload SCORM / xAPI content package`
+  - Maps to: `CourseActivity` of type `SCORM_PACKAGE` (future integration).
+  - Behaviour: launches package in dedicated player, tracks completion/score back into course progress.
+  - Clearly marked as "Coming soon" in UI until backend support is ready.
+
+**Footer actions:**
+
+- **Import** button in bottom-left (like screenshot):
+  - `Import from another course` – pick an existing course + topics, then select lessons/activities to clone into the current topic.
+  - Future: `Import from template library` – use tenant/global templates for common lessons, quizzes, or offline exams.
+
+**Usability / UX improvements over the base design:**
+
+- Show each tile as a "card" with:
+  - Icon, title, one-line description
+  - Tiny tag line such as `Content`, `Assessment`, `Offline` to help scanning.
+- Optional category filters at top: `All`, `Content`, `Assessments`, `Offline` – simply highlight relevant tiles.
+- Support keyboard navigation:
+  - Arrow keys move between tiles
+  - `Enter` to choose, `Esc` to close.
+- Show "Recently used" hint on tiles the teacher uses most in this course (e.g., `Most used` badge).
+- For exam tiles (Online/Offline), show a small subtext like `Counts towards grade` vs `Practice only`.
+- Keep the same modern, slightly gamified tile style as rest of dashboard: light background, subtle glow border on hover, consistent accent color for active card.
+
+> Implementation note: technically, Lesson/PDF map into the same `CourseLesson` table with different `contentType`, and Online/Offline map into `CourseActivity` with different `activityType`. The UI should hide that complexity and present a simple, friendly choice.
+
+---
+
 ```
+
+### Course Enrollments Page (View Enrolled)
+
+**Route:** `/course-management/courses/[id]/enrollments`
+
+**Top Section:**
+
+- Title: `Enrolled Students (N)` with total count.
+- Global search bar: search by **student name, email, phone, or admission number**.
+- Filter + Reset buttons for:
+  - Enrollment status (Active, Completed, Expired, Cancelled, Suspended\*)
+  - Payment status (Paid, Pending, Overdue, Refunded) – from invoice module
+  - Progress range (e.g., 0–25%, 25–50%, 50–75%, 75–100%)
+- Checkbox: `Select All (Current Page)` for bulk actions.
+
+**Table Columns (per-row content):**
+
+- **Student**
+  - Avatar
+  - Full name
+  - Student code / roll (e.g., `STU006`)
+- **Contact**
+  - Email with mail icon
+  - Phone number with phone icon
+- **Status**
+  - Pill using `EnrollmentStatus` (ACTIVE, COMPLETED, EXPIRED, CANCELLED)
+  - Design can also support a "Suspended" style pill if we add such a status later.
+- **Progress**
+  - Percentage (e.g., `35%`)
+  - Horizontal progress bar using `progress` field
+- **Assignments / Activities**
+  - Text like `4/12 completed`
+  - Later: computed from `CourseActivity` + related completion records.
+- **Payment**
+  - Badge: `Paid`, `Pending`, `Overdue`, `Refunded` (from linked invoice/payment status).
+- **Last Activity**
+  - Relative time since last lesson/quiz (e.g., `2 weeks ago`, `3 days ago`, `2 hours ago`).
+- **Actions (kebab menu)**
+  - `View Profile` → open student profile page
+  - `Send Message` → open messaging/communication UI (future integration)
+  - `Remove from Course` → call unenroll action with confirmation dialog
+
+**Other behaviours:**
+
+- Pagination controls at bottom (page size select + Previous/Next).
+- Bulk selection to allow future bulk actions (e.g., bulk message, bulk unenroll).
+- Keep the same modern dashboard style as course list: light background, accent pills for status/payment, clean progress bars.
+
+---
+
+#### Extra features inspired by second "View Enrolled" design
+
+**Header actions:**
+
+- Primary button: `+ Enroll Students` → opens manual enrollment dialog for this course.
+- Bulk action button: `Remove` → unenroll selected students from **this course only** (with AlertDialog confirmation + reason optional).
+
+**Additional columns (per enrollment):**
+
+- **Admission Number** – admission / roll / student code.
+- **Class** – academic class/grade (from Academic Setup).
+- **Section** – section/cohort label.
+- **Last Login** – last visit time in this specific course (e.g., `11d 16h`, `3h 20m`).
+- **Active Device** – chip showing device state for this course:
+  - `Active` – normal single-device use
+  - `Multiple Device` – detected concurrent use from multiple devices
+  - Inline `Disable` button to temporarily block access for this enrollment
+
+**Per-course disable behaviour:**
+
+- Add a per-enrollment flag (planned) like `isDisabled` on `CourseEnrollment`:
+  - When `isDisabled = true`, student keeps account but **cannot open this course**.
+  - Course list / player should show a friendly message: "Access disabled by admin".
+  - Admin can toggle disable/enable from this table (row action or Active Device column button).
+
+**Bulk selection behaviour:**
+
+- Checkbox column allows selecting multiple enrollments.
+- Bulk actions (current + future):
+  - `Bulk Unenroll` – remove from course, update `totalEnrollments`, and log audit entry.
+  - `Bulk Disable/Enable` – toggle `isDisabled` for all selected students.
+
+> Implementation note: this page combines **progress/payment view** and **access/device control**. Start simple (progress + basic status), then gradually add Last Login, Active Device chips, and bulk disable features as supporting data becomes available.
+
+---
 
 ---
 
@@ -894,12 +1202,13 @@ enum EnrollmentStatus {
 ## 🔧 Server Actions Reference
 
 ### Category Actions
+
 ```typescript
 // lib/actions/course-category.actions.ts
 
 export async function createCourseCategory(data: CourseCategoryInput) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Validate
   const schema = z.object({
@@ -908,67 +1217,71 @@ export async function createCourseCategory(data: CourseCategoryInput) {
     description: z.string().max(500).optional(),
     icon: z.string().max(50).optional(),
     color: z.string().max(20).optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE']),
-  })
+    status: z.enum(["ACTIVE", "INACTIVE"]),
+  });
 
-  const validated = schema.parse(data)
+  const validated = schema.parse(data);
 
   // Create
   await prisma.courseCategory.create({
-    data: { ...validated, tenantId }
-  })
+    data: { ...validated, tenantId },
+  });
 
-  revalidatePath('/course-management/categories')
-  return { success: true }
+  revalidatePath("/course-management/categories");
+  return { success: true };
 }
 
-export async function updateCourseCategory(id: string, data: CourseCategoryInput) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+export async function updateCourseCategory(
+  id: string,
+  data: CourseCategoryInput
+) {
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Update
   await prisma.courseCategory.update({
     where: { id, tenantId },
-    data
-  })
+    data,
+  });
 
-  revalidatePath('/course-management/categories')
-  return { success: true }
+  revalidatePath("/course-management/categories");
+  return { success: true };
 }
 
 export async function deleteCourseCategory(id: string) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Check if courses exist
   const coursesCount = await prisma.course.count({
-    where: { categoryId: id, tenantId }
-  })
+    where: { categoryId: id, tenantId },
+  });
 
   if (coursesCount > 0) {
     return {
       success: false,
-      error: `Cannot delete category. ${coursesCount} courses are using this category.`
-    }
+      error: `Cannot delete category. ${coursesCount} courses are using this category.`,
+    };
   }
 
   // Delete
   await prisma.courseCategory.delete({
-    where: { id, tenantId }
-  })
+    where: { id, tenantId },
+  });
 
-  revalidatePath('/course-management/categories')
-  return { success: true }
+  revalidatePath("/course-management/categories");
+  return { success: true };
 }
 ```
 
 ### Course Actions
+
 ```typescript
 // lib/actions/course.actions.ts
 
 export async function createCourse(data: CourseInput) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Validate
   const schema = z.object({
@@ -977,25 +1290,25 @@ export async function createCourse(data: CourseInput) {
     shortDescription: z.string().max(500).optional(),
     description: z.string().optional(),
     categoryId: z.string().optional(),
-    courseType: z.enum(['SINGLE', 'BUNDLE']),
+    courseType: z.enum(["SINGLE", "BUNDLE"]),
     authorName: z.string().max(100).optional(),
     instructorId: z.string().optional(),
-    paymentType: z.enum(['ONE_TIME', 'SUBSCRIPTION', 'FREE']),
+    paymentType: z.enum(["ONE_TIME", "SUBSCRIPTION", "FREE"]),
     invoiceTitle: z.string().max(200).optional(),
     regularPrice: z.number().min(0).optional(),
     offerPrice: z.number().min(0).optional(),
     // ... more fields
-  })
+  });
 
-  const validated = schema.parse(data)
+  const validated = schema.parse(data);
 
   // Create course
   const course = await prisma.course.create({
-    data: { ...validated, tenantId }
-  })
+    data: { ...validated, tenantId },
+  });
 
-  revalidatePath('/course-management/courses')
-  return { success: true, courseId: course.id }
+  revalidatePath("/course-management/courses");
+  return { success: true, courseId: course.id };
 }
 ```
 
@@ -1005,15 +1318,15 @@ export async function createCourse(data: CourseInput) {
 
 ### ✅ Codex Requirements vs This Plan
 
-| Codex Requirement | Status | Implementation Details |
-|-------------------|--------|------------------------|
-| **Server Actions নাম/সীমানা** | ✅ **COVERED** | Section 1: Clear naming conventions, file organization, one action = one operation |
-| **TenantId + Role Guard Everywhere** | ✅ **COVERED** | Section 2: Mandatory pattern for ALL server actions (requireRole + getTenantId) |
-| **Enroll/Duplicate Hooks** | ✅ **COVERED** | Section 3: Transaction-based enrollment with auto invoice + deep clone duplicate |
-| **DnD Reorder** | ✅ **COVERED** | Section 4: Optimistic updates + transaction-based reorder for topics/lessons |
-| **Quiz Save Transaction** | ✅ **COVERED** | Section 5: Atomic quiz creation (activity + exam + questions in one transaction) |
-| **Performance/Aggregate Optimization** | ✅ **COVERED** | Section 6: N+1 prevention, computed fields, pagination, Prisma aggregates |
-| **Audit Trail** | ✅ **COVERED** | Section 7: Complete audit log schema + helper + usage examples |
+| Codex Requirement                      | Status         | Implementation Details                                                             |
+| -------------------------------------- | -------------- | ---------------------------------------------------------------------------------- |
+| **Server Actions নাম/সীমানা**          | ✅ **COVERED** | Section 1: Clear naming conventions, file organization, one action = one operation |
+| **TenantId + Role Guard Everywhere**   | ✅ **COVERED** | Section 2: Mandatory pattern for ALL server actions (requireRole + getTenantId)    |
+| **Enroll/Duplicate Hooks**             | ✅ **COVERED** | Section 3: Transaction-based enrollment with auto invoice + deep clone duplicate   |
+| **DnD Reorder**                        | ✅ **COVERED** | Section 4: Optimistic updates + transaction-based reorder for topics/lessons       |
+| **Quiz Save Transaction**              | ✅ **COVERED** | Section 5: Atomic quiz creation (activity + exam + questions in one transaction)   |
+| **Performance/Aggregate Optimization** | ✅ **COVERED** | Section 6: N+1 prevention, computed fields, pagination, Prisma aggregates          |
+| **Audit Trail**                        | ✅ **COVERED** | Section 7: Complete audit log schema + helper + usage examples                     |
 
 **Summary:** এই plan Codex এর সব requirements cover করেছে এবং আরো detail দিয়েছে। 🎯
 
@@ -1022,29 +1335,35 @@ export async function createCourse(data: CourseInput) {
 ### 1. Server Actions Naming & Boundaries
 
 **Naming Convention:**
+
 ```typescript
 // ✅ CORRECT - Clear, specific, action-oriented
-export async function createCourse(data: CourseInput)
-export async function updateCourseBasicInfo(courseId: string, data: BasicInfoInput)
-export async function deleteCourse(courseId: string)
-export async function publishCourse(courseId: string)
-export async function duplicateCourse(courseId: string)
-export async function enrollStudent(courseId: string, studentId: string)
-export async function reorderTopics(courseId: string, topicIds: string[])
+export async function createCourse(data: CourseInput);
+export async function updateCourseBasicInfo(
+  courseId: string,
+  data: BasicInfoInput
+);
+export async function deleteCourse(courseId: string);
+export async function publishCourse(courseId: string);
+export async function duplicateCourse(courseId: string);
+export async function enrollStudent(courseId: string, studentId: string);
+export async function reorderTopics(courseId: string, topicIds: string[]);
 
 // ❌ WRONG - Vague, generic
-export async function saveCourse(data: any)
-export async function handleCourse(action: string, data: any)
-export async function courseAction(type: string, payload: any)
+export async function saveCourse(data: any);
+export async function handleCourse(action: string, data: any);
+export async function courseAction(type: string, payload: any);
 ```
 
 **Boundaries:**
+
 - ✅ One action = One database operation (or one transaction)
 - ✅ Separate actions for different concerns (create vs update vs delete)
 - ✅ Separate actions for different entities (course vs topic vs lesson)
 - ❌ Never mix multiple entity operations in one action (unless transaction)
 
 **File Organization:**
+
 ```
 lib/actions/
 ├── course-category.actions.ts    // Category CRUD only
@@ -1061,82 +1380,85 @@ lib/actions/
 ### 2. TenantId + Role Guard (MANDATORY EVERYWHERE)
 
 **Every Server Action MUST:**
+
 ```typescript
 export async function createCourse(data: CourseInput) {
   // 1️⃣ ROLE GUARD - First line, always
-  await requireRole('ADMIN') // or ['ADMIN', 'TEACHER']
+  await requireRole("ADMIN"); // or ['ADMIN', 'TEACHER']
 
   // 2️⃣ TENANT ID - Second line, always
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // 3️⃣ VALIDATION - Third
   const schema = z.object({
     title: z.string().min(1).max(200),
     // ...
-  })
-  const validated = schema.parse(data)
+  });
+  const validated = schema.parse(data);
 
   // 4️⃣ TENANT ISOLATION - All queries filtered by tenantId
   const course = await prisma.course.create({
     data: {
       ...validated,
-      tenantId // ✅ Always include
-    }
-  })
+      tenantId, // ✅ Always include
+    },
+  });
 
   // 5️⃣ REVALIDATE - Update cache
-  revalidatePath('/course-management/courses')
+  revalidatePath("/course-management/courses");
 
-  return { success: true, courseId: course.id }
+  return { success: true, courseId: course.id };
 }
 ```
 
 **Read Operations:**
+
 ```typescript
 export async function getCourseById(courseId: string) {
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // ✅ ALWAYS filter by tenantId
   const course = await prisma.course.findFirst({
     where: {
       id: courseId,
-      tenantId // ✅ Prevents cross-tenant data access
-    }
-  })
+      tenantId, // ✅ Prevents cross-tenant data access
+    },
+  });
 
   if (!course) {
-    throw new Error('Course not found')
+    throw new Error("Course not found");
   }
 
-  return course
+  return course;
 }
 ```
 
 **Update/Delete Operations:**
+
 ```typescript
 export async function deleteCourse(courseId: string) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // ✅ Check ownership before delete
   const course = await prisma.course.findFirst({
-    where: { id: courseId, tenantId }
-  })
+    where: { id: courseId, tenantId },
+  });
 
   if (!course) {
-    return { success: false, error: 'Course not found' }
+    return { success: false, error: "Course not found" };
   }
 
   // ✅ Delete with tenantId filter
   await prisma.course.delete({
     where: {
       id: courseId,
-      tenantId // ✅ Double protection
-    }
-  })
+      tenantId, // ✅ Double protection
+    },
+  });
 
-  revalidatePath('/course-management/courses')
-  return { success: true }
+  revalidatePath("/course-management/courses");
+  return { success: true };
 }
 ```
 
@@ -1152,28 +1474,28 @@ export async function deleteCourse(courseId: string) {
 export async function enrollStudent(
   courseId: string,
   studentId: string,
-  enrollmentType: 'PAID' | 'FREE' | 'MANUAL' = 'PAID'
+  enrollmentType: "PAID" | "FREE" | "MANUAL" = "PAID"
 ) {
-  await requireRole(['ADMIN', 'TEACHER'])
-  const tenantId = await getTenantId()
+  await requireRole(["ADMIN", "TEACHER"]);
+  const tenantId = await getTenantId();
 
   // Validate course exists
   const course = await prisma.course.findFirst({
     where: { id: courseId, tenantId },
-    include: { topics: { include: { lessons: true } } }
-  })
+    include: { topics: { include: { lessons: true } } },
+  });
 
   if (!course) {
-    return { success: false, error: 'Course not found' }
+    return { success: false, error: "Course not found" };
   }
 
   // Check if already enrolled
   const existing = await prisma.courseEnrollment.findFirst({
-    where: { courseId, studentId, tenantId }
-  })
+    where: { courseId, studentId, tenantId },
+  });
 
   if (existing) {
-    return { success: false, error: 'Student already enrolled' }
+    return { success: false, error: "Student already enrolled" };
   }
 
   // 🔥 TRANSACTION - Enrollment + Invoice generation
@@ -1182,7 +1504,7 @@ export async function enrollStudent(
     const totalLessons = course.topics.reduce(
       (sum, topic) => sum + topic.lessons.length,
       0
-    )
+    );
 
     const enrollment = await tx.courseEnrollment.create({
       data: {
@@ -1191,14 +1513,14 @@ export async function enrollStudent(
         studentId,
         enrollmentType,
         totalLessons,
-        status: 'ACTIVE',
-      }
-    })
+        status: "ACTIVE",
+      },
+    });
 
     // 2. Generate invoice (if PAID and autoGenerateInvoice enabled)
-    let invoice = null
-    if (enrollmentType === 'PAID' && course.autoGenerateInvoice) {
-      const amount = course.offerPrice || course.regularPrice || 0
+    let invoice = null;
+    if (enrollmentType === "PAID" && course.autoGenerateInvoice) {
+      const amount = course.offerPrice || course.regularPrice || 0;
 
       invoice = await tx.invoice.create({
         data: {
@@ -1207,30 +1529,30 @@ export async function enrollStudent(
           title: course.invoiceTitle || `Course: ${course.title}`,
           amount,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-          status: 'PENDING',
-          type: 'COURSE_ENROLLMENT',
+          status: "PENDING",
+          type: "COURSE_ENROLLMENT",
           referenceId: enrollment.id,
-        }
-      })
+        },
+      });
     }
 
     // 3. Update course enrollment count
     await tx.course.update({
       where: { id: courseId },
-      data: { totalEnrollments: { increment: 1 } }
-    })
+      data: { totalEnrollments: { increment: 1 } },
+    });
 
-    return { enrollment, invoice }
-  })
+    return { enrollment, invoice };
+  });
 
-  revalidatePath(`/course-management/courses/${courseId}/enrollments`)
-  revalidatePath('/students')
+  revalidatePath(`/course-management/courses/${courseId}/enrollments`);
+  revalidatePath("/students");
 
   return {
     success: true,
     enrollmentId: result.enrollment.id,
-    invoiceId: result.invoice?.id
-  }
+    invoiceId: result.invoice?.id,
+  };
 }
 ```
 
@@ -1240,8 +1562,8 @@ export async function enrollStudent(
 // lib/actions/course.actions.ts
 
 export async function duplicateCourse(courseId: string) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   // Fetch original course with all relations
   const original = await prisma.course.findFirst({
@@ -1252,14 +1574,14 @@ export async function duplicateCourse(courseId: string) {
           lessons: true,
           activities: true,
         },
-        orderBy: { order: 'asc' }
+        orderBy: { order: "asc" },
       },
-      faqs: { orderBy: { order: 'asc' } }
-    }
-  })
+      faqs: { orderBy: { order: "asc" } },
+    },
+  });
 
   if (!original) {
-    return { success: false, error: 'Course not found' }
+    return { success: false, error: "Course not found" };
   }
 
   // 🔥 TRANSACTION - Deep clone course + topics + lessons + activities + FAQs
@@ -1283,15 +1605,15 @@ export async function duplicateCourse(courseId: string) {
         currency: original.currency,
         featuredImage: original.featuredImage,
         introVideoUrl: original.introVideoUrl,
-        status: 'DRAFT', // ✅ Always draft
+        status: "DRAFT", // ✅ Always draft
         isFeatured: false, // ✅ Not featured
         allowComments: original.allowComments,
         certificateEnabled: original.certificateEnabled,
         metaTitle: original.metaTitle,
         metaDescription: original.metaDescription,
         metaKeywords: original.metaKeywords,
-      }
-    })
+      },
+    });
 
     // 2. Clone topics
     for (const topic of original.topics) {
@@ -1302,8 +1624,8 @@ export async function duplicateCourse(courseId: string) {
           title: topic.title,
           description: topic.description,
           order: topic.order,
-        }
-      })
+        },
+      });
 
       // 3. Clone lessons
       for (const lesson of topic.lessons) {
@@ -1325,8 +1647,8 @@ export async function duplicateCourse(courseId: string) {
             allowDownload: lesson.allowDownload,
             isPreview: lesson.isPreview,
             order: lesson.order,
-          }
-        })
+          },
+        });
       }
 
       // 4. Clone activities
@@ -1343,8 +1665,8 @@ export async function duplicateCourse(courseId: string) {
             totalMarks: activity.totalMarks,
             passMarks: activity.passMarks,
             order: activity.order,
-          }
-        })
+          },
+        });
       }
     }
 
@@ -1357,20 +1679,20 @@ export async function duplicateCourse(courseId: string) {
           question: faq.question,
           answer: faq.answer,
           order: faq.order,
-        }
-      })
+        },
+      });
     }
 
-    return newCourse
-  })
+    return newCourse;
+  });
 
-  revalidatePath('/course-management/courses')
+  revalidatePath("/course-management/courses");
 
   return {
     success: true,
     courseId: duplicate.id,
-    message: 'Course duplicated successfully'
-  }
+    message: "Course duplicated successfully",
+  };
 }
 ```
 
@@ -1387,16 +1709,16 @@ export async function reorderTopics(
   courseId: string,
   topicIds: string[] // New order
 ) {
-  await requireRole(['ADMIN', 'TEACHER'])
-  const tenantId = await getTenantId()
+  await requireRole(["ADMIN", "TEACHER"]);
+  const tenantId = await getTenantId();
 
   // Validate course ownership
   const course = await prisma.course.findFirst({
-    where: { id: courseId, tenantId }
-  })
+    where: { id: courseId, tenantId },
+  });
 
   if (!course) {
-    return { success: false, error: 'Course not found' }
+    return { success: false, error: "Course not found" };
   }
 
   // 🔥 TRANSACTION - Update all topic orders atomically
@@ -1406,16 +1728,16 @@ export async function reorderTopics(
         where: {
           id: topicId,
           courseId,
-          tenantId // ✅ Tenant isolation
+          tenantId, // ✅ Tenant isolation
         },
-        data: { order: index }
+        data: { order: index },
       })
     )
-  )
+  );
 
-  revalidatePath(`/course-management/courses/${courseId}/builder`)
+  revalidatePath(`/course-management/courses/${courseId}/builder`);
 
-  return { success: true }
+  return { success: true };
 }
 ```
 
@@ -1424,20 +1746,17 @@ export async function reorderTopics(
 ```typescript
 // lib/actions/course-lesson.actions.ts
 
-export async function reorderLessons(
-  topicId: string,
-  lessonIds: string[]
-) {
-  await requireRole(['ADMIN', 'TEACHER'])
-  const tenantId = await getTenantId()
+export async function reorderLessons(topicId: string, lessonIds: string[]) {
+  await requireRole(["ADMIN", "TEACHER"]);
+  const tenantId = await getTenantId();
 
   // Validate topic ownership
   const topic = await prisma.courseTopic.findFirst({
-    where: { id: topicId, tenantId }
-  })
+    where: { id: topicId, tenantId },
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // 🔥 TRANSACTION - Update all lesson orders atomically
@@ -1447,16 +1766,16 @@ export async function reorderLessons(
         where: {
           id: lessonId,
           topicId,
-          tenantId
+          tenantId,
         },
-        data: { order: index }
+        data: { order: index },
       })
     )
-  )
+  );
 
-  revalidatePath(`/course-management/courses/${topic.courseId}/builder`)
+  revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
 
-  return { success: true }
+  return { success: true };
 }
 ```
 
@@ -1465,34 +1784,34 @@ export async function reorderLessons(
 ```typescript
 // components/course/topic-builder.tsx
 
-'use client'
+"use client";
 
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { reorderTopics } from '@/lib/actions/course-topic.actions'
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { reorderTopics } from "@/lib/actions/course-topic.actions";
 
 export function TopicBuilder({ courseId, topics }) {
-  const [optimisticTopics, setOptimisticTopics] = useState(topics)
+  const [optimisticTopics, setOptimisticTopics] = useState(topics);
 
   const handleDragEnd = async (result) => {
-    if (!result.destination) return
+    if (!result.destination) return;
 
-    const items = Array.from(optimisticTopics)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
+    const items = Array.from(optimisticTopics);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
 
     // ✅ Optimistic update (instant UI feedback)
-    setOptimisticTopics(items)
+    setOptimisticTopics(items);
 
     // ✅ Server update
-    const topicIds = items.map(item => item.id)
-    const result = await reorderTopics(courseId, topicIds)
+    const topicIds = items.map((item) => item.id);
+    const result = await reorderTopics(courseId, topicIds);
 
     if (!result.success) {
       // ✅ Rollback on error
-      setOptimisticTopics(topics)
-      toast.error('Failed to reorder topics')
+      setOptimisticTopics(topics);
+      toast.error("Failed to reorder topics");
     }
-  }
+  };
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -1517,7 +1836,7 @@ export function TopicBuilder({ courseId, topics }) {
         )}
       </Droppable>
     </DragDropContext>
-  )
+  );
 }
 ```
 
@@ -1531,25 +1850,25 @@ export function TopicBuilder({ courseId, topics }) {
 export async function createQuizActivity(
   topicId: string,
   data: {
-    title: string
-    description?: string
-    questions: QuizQuestion[] // Array of questions
-    duration?: number
-    totalMarks: number
-    passMarks: number
+    title: string;
+    description?: string;
+    questions: QuizQuestion[]; // Array of questions
+    duration?: number;
+    totalMarks: number;
+    passMarks: number;
   }
 ) {
-  await requireRole(['ADMIN', 'TEACHER'])
-  const tenantId = await getTenantId()
+  await requireRole(["ADMIN", "TEACHER"]);
+  const tenantId = await getTenantId();
 
   // Validate topic ownership
   const topic = await prisma.courseTopic.findFirst({
     where: { id: topicId, tenantId },
-    include: { course: true }
-  })
+    include: { course: true },
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // 🔥 TRANSACTION - Create activity + questions atomically
@@ -1563,10 +1882,10 @@ export async function createQuizActivity(
         duration: data.duration,
         totalMarks: data.totalMarks,
         passMarks: data.passMarks,
-        examType: 'QUIZ',
-        status: 'PUBLISHED',
-      }
-    })
+        examType: "QUIZ",
+        status: "PUBLISHED",
+      },
+    });
 
     // 2. Create questions
     for (const [index, question] of data.questions.entries()) {
@@ -1580,8 +1899,8 @@ export async function createQuizActivity(
           correctAnswer: question.correctAnswer,
           marks: question.marks,
           order: index,
-        }
-      })
+        },
+      });
     }
 
     // 3. Link to course activity
@@ -1589,7 +1908,7 @@ export async function createQuizActivity(
       data: {
         tenantId,
         topicId,
-        activityType: 'QUIZ',
+        activityType: "QUIZ",
         examId: exam.id,
         title: data.title,
         description: data.description,
@@ -1597,19 +1916,19 @@ export async function createQuizActivity(
         totalMarks: data.totalMarks,
         passMarks: data.passMarks,
         order: 0, // Will be updated by reorder
-      }
-    })
+      },
+    });
 
-    return { exam, activity }
-  })
+    return { exam, activity };
+  });
 
-  revalidatePath(`/course-management/courses/${topic.courseId}/builder`)
+  revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
 
   return {
     success: true,
     activityId: result.activity.id,
-    examId: result.exam.id
-  }
+    examId: result.exam.id,
+  };
 }
 ```
 
@@ -1618,6 +1937,7 @@ export async function createQuizActivity(
 ### 6. Performance & Aggregate Optimization
 
 #### **Problem: N+1 Query**
+
 ```typescript
 // ❌ BAD - N+1 queries
 const courses = await prisma.course.findMany({ where: { tenantId } })
@@ -1630,6 +1950,7 @@ for (const course of courses) {
 ```
 
 #### **Solution: Use Prisma Include + Aggregate**
+
 ```typescript
 // ✅ GOOD - Single query with aggregates
 const courses = await prisma.course.findMany({
@@ -1639,7 +1960,7 @@ const courses = await prisma.course.findMany({
       select: {
         topics: true,
         enrollments: true,
-      }
+      },
     },
     topics: {
       include: {
@@ -1647,72 +1968,74 @@ const courses = await prisma.course.findMany({
           select: {
             lessons: true,
             activities: true,
-          }
-        }
-      }
-    }
-  }
-})
+          },
+        },
+      },
+    },
+  },
+});
 
 // Access counts directly
-courses.forEach(course => {
-  console.log(course._count.topics) // No extra query
-  console.log(course._count.enrollments)
-})
+courses.forEach((course) => {
+  console.log(course._count.topics); // No extra query
+  console.log(course._count.enrollments);
+});
 ```
 
 #### **Computed Fields (Update on Change)**
+
 ```typescript
 // Update course stats when lesson is added
 export async function createLesson(topicId: string, data: LessonInput) {
-  await requireRole(['ADMIN', 'TEACHER'])
-  const tenantId = await getTenantId()
+  await requireRole(["ADMIN", "TEACHER"]);
+  const tenantId = await getTenantId();
 
   const topic = await prisma.courseTopic.findFirst({
     where: { id: topicId, tenantId },
-    include: { course: true }
-  })
+    include: { course: true },
+  });
 
   if (!topic) {
-    return { success: false, error: 'Topic not found' }
+    return { success: false, error: "Topic not found" };
   }
 
   // 🔥 TRANSACTION - Create lesson + update course stats
   await prisma.$transaction(async (tx) => {
     // 1. Create lesson
     const lesson = await tx.courseLesson.create({
-      data: { ...data, tenantId, topicId }
-    })
+      data: { ...data, tenantId, topicId },
+    });
 
     // 2. Update course stats
     await tx.course.update({
       where: { id: topic.courseId },
       data: {
         totalLessons: { increment: 1 },
-        totalDuration: { increment: data.duration || 0 }
-      }
-    })
-  })
+        totalDuration: { increment: data.duration || 0 },
+      },
+    });
+  });
 
-  revalidatePath(`/course-management/courses/${topic.courseId}/builder`)
-  return { success: true }
+  revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
+  return { success: true };
 }
 ```
 
 #### **Pagination for Large Lists**
+
 ```typescript
 // ✅ Always paginate course lists
 export async function getCourses(params: {
-  page?: number
-  limit?: number
-  categoryId?: string
-  status?: CourseStatus
-  search?: string
+  page?: number;
+  limit?: number;
+  categoryId?: string;
+  status?: CourseStatus;
+  search?: string;
 }) {
-  const tenantId = await getTenantId()
-  const page = params.page || 1
-  const limit = params.limit || 20
-  const skip = (page - 1) * limit
+  const tenantId = await getTenantId();
+  const page = params.page || 1;
+  const limit = params.limit || 20;
+  const skip = (page - 1) * limit;
 
   const where = {
     tenantId,
@@ -1720,26 +2043,26 @@ export async function getCourses(params: {
     ...(params.status && { status: params.status }),
     ...(params.search && {
       OR: [
-        { title: { contains: params.search, mode: 'insensitive' } },
-        { description: { contains: params.search, mode: 'insensitive' } },
-      ]
-    })
-  }
+        { title: { contains: params.search, mode: "insensitive" } },
+        { description: { contains: params.search, mode: "insensitive" } },
+      ],
+    }),
+  };
 
   const [courses, total] = await Promise.all([
     prisma.course.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         category: true,
         instructor: true,
-        _count: { select: { enrollments: true } }
-      }
+        _count: { select: { enrollments: true } },
+      },
     }),
-    prisma.course.count({ where })
-  ])
+    prisma.course.count({ where }),
+  ]);
 
   return {
     courses,
@@ -1747,9 +2070,9 @@ export async function getCourses(params: {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit)
-    }
-  }
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 }
 ```
 
@@ -1758,6 +2081,7 @@ export async function getCourses(params: {
 ### 7. Audit Trail (Optional but Recommended)
 
 #### **Schema Addition**
+
 ```prisma
 model AuditLog {
   id          String   @id @default(cuid())
@@ -1782,17 +2106,18 @@ model AuditLog {
 ```
 
 #### **Audit Helper**
+
 ```typescript
 // lib/audit.ts
 
 export async function logAudit(params: {
-  action: string
-  entityType: string
-  entityId: string
-  changes?: any
+  action: string;
+  entityType: string;
+  entityId: string;
+  changes?: any;
 }) {
-  const tenantId = await getTenantId()
-  const user = await getCurrentUser()
+  const tenantId = await getTenantId();
+  const user = await getCurrentUser();
 
   await prisma.auditLog.create({
     data: {
@@ -1804,39 +2129,40 @@ export async function logAudit(params: {
       changes: params.changes,
       ipAddress: await getClientIP(),
       userAgent: await getUserAgent(),
-    }
-  })
+    },
+  });
 }
 ```
 
 #### **Usage in Server Actions**
+
 ```typescript
 export async function deleteCourse(courseId: string) {
-  await requireRole('ADMIN')
-  const tenantId = await getTenantId()
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
 
   const course = await prisma.course.findFirst({
-    where: { id: courseId, tenantId }
-  })
+    where: { id: courseId, tenantId },
+  });
 
   if (!course) {
-    return { success: false, error: 'Course not found' }
+    return { success: false, error: "Course not found" };
   }
 
   await prisma.course.delete({
-    where: { id: courseId, tenantId }
-  })
+    where: { id: courseId, tenantId },
+  });
 
   // ✅ Log audit trail
   await logAudit({
-    action: 'DELETE_COURSE',
-    entityType: 'Course',
+    action: "DELETE_COURSE",
+    entityType: "Course",
     entityId: courseId,
-    changes: { title: course.title, status: course.status }
-  })
+    changes: { title: course.title, status: course.status },
+  });
 
-  revalidatePath('/course-management/courses')
-  return { success: true }
+  revalidatePath("/course-management/courses");
+  return { success: true };
 }
 ```
 
@@ -1849,70 +2175,71 @@ Copy this checklist when creating ANY new server action:
 ```typescript
 export async function yourActionName(params) {
   // ✅ 1. ROLE GUARD (First line)
-  await requireRole('ADMIN') // or ['ADMIN', 'TEACHER']
+  await requireRole("ADMIN"); // or ['ADMIN', 'TEACHER']
 
   // ✅ 2. TENANT ID (Second line)
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   // ✅ 3. ZOD VALIDATION (Third)
   const schema = z.object({
     field: z.string().min(1).max(100),
-  })
-  const validated = schema.parse(params)
+  });
+  const validated = schema.parse(params);
 
   // ✅ 4. OWNERSHIP CHECK (For update/delete)
   const entity = await prisma.entity.findFirst({
-    where: { id: params.id, tenantId }
-  })
+    where: { id: params.id, tenantId },
+  });
   if (!entity) {
-    return { success: false, error: 'Not found' }
+    return { success: false, error: "Not found" };
   }
 
   // ✅ 5. TRANSACTION (If multiple operations)
   await prisma.$transaction(async (tx) => {
     // Multiple operations here
-  })
+  });
 
   // ✅ 6. TENANT ISOLATION (All queries)
   await prisma.entity.create({
-    data: { ...validated, tenantId } // ✅ Always include tenantId
-  })
+    data: { ...validated, tenantId }, // ✅ Always include tenantId
+  });
 
   // ✅ 7. REVALIDATE PATH
-  revalidatePath('/your-page')
+  revalidatePath("/your-page");
 
   // ✅ 8. AUDIT LOG (Optional but recommended)
   await logAudit({
-    action: 'ACTION_NAME',
-    entityType: 'EntityType',
+    action: "ACTION_NAME",
+    entityType: "EntityType",
     entityId: entity.id,
-  })
+  });
 
   // ✅ 9. RETURN CONSISTENT FORMAT
-  return { success: true, data: entity }
+  return { success: true, data: entity };
 }
 ```
 
 ### Common Mistakes to Avoid
 
-| ❌ DON'T | ✅ DO |
-|----------|-------|
-| `await prisma.course.findMany()` | `await prisma.course.findMany({ where: { tenantId } })` |
-| `async function saveCourse(data: any)` | `async function createCourse(data: CourseInput)` |
-| Multiple entity operations in one action | Separate actions OR use transaction |
-| `alert('Deleted')` | `toast.success('Deleted successfully')` |
-| Hardcoded colors | Use theme CSS variables |
-| `<Select>` for 10+ items | Use `<SearchableDropdown>` |
-| Base64 file storage | Use `StorageService` |
-| Manual state for forms | Use React Hook Form + Zod |
-| Browser `confirm()` | Use `<AlertDialog>` |
-| Forget dark mode classes | Always add `dark:` variants |
+| ❌ DON'T                                 | ✅ DO                                                   |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `await prisma.course.findMany()`         | `await prisma.course.findMany({ where: { tenantId } })` |
+| `async function saveCourse(data: any)`   | `async function createCourse(data: CourseInput)`        |
+| Multiple entity operations in one action | Separate actions OR use transaction                     |
+| `alert('Deleted')`                       | `toast.success('Deleted successfully')`                 |
+| Hardcoded colors                         | Use theme CSS variables                                 |
+| `<Select>` for 10+ items                 | Use `<SearchableDropdown>`                              |
+| Base64 file storage                      | Use `StorageService`                                    |
+| Manual state for forms                   | Use React Hook Form + Zod                               |
+| Browser `confirm()`                      | Use `<AlertDialog>`                                     |
+| Forget dark mode classes                 | Always add `dark:` variants                             |
 
 ---
 
 ## 🎯 Implementation Priority Order
 
 ### Phase 1: Foundation (Week 1-2)
+
 1. ✅ Create Prisma schema (all 9 models + enums)
 2. ✅ Run migration
 3. ✅ Create server actions structure (7 files)
@@ -1920,6 +2247,7 @@ export async function yourActionName(params) {
 5. ✅ Test dark mode + RBAC + tenant isolation
 
 ### Phase 2: Course Creation (Week 3-4)
+
 1. ✅ Course type selection page
 2. ✅ Single course form (6 tabs)
 3. ✅ Bundle course form
@@ -1928,6 +2256,7 @@ export async function yourActionName(params) {
 6. ✅ Test all validations
 
 ### Phase 3: Course Builder (Week 5-6)
+
 1. ✅ Topic CRUD + DnD reorder
 2. ✅ Lesson CRUD (all 7 types) + DnD reorder
 3. ✅ Activity/Quiz integration
@@ -1936,6 +2265,7 @@ export async function yourActionName(params) {
 6. ✅ Test all lesson types
 
 ### Phase 4: Enrollment & Student View (Week 7-8)
+
 1. ✅ Enrollment management page
 2. ✅ Manual enrollment + auto invoice
 3. ✅ Student course catalog
@@ -1944,6 +2274,7 @@ export async function yourActionName(params) {
 6. ✅ Certificate generation (if enabled)
 
 ### Phase 5: Polish & Optimization (Week 9)
+
 1. ✅ Performance optimization (N+1 queries)
 2. ✅ Audit trail implementation
 3. ✅ SEO optimization
@@ -1956,6 +2287,7 @@ export async function yourActionName(params) {
 ## 🚀 Getting Started
 
 ### Step 1: Create Database Schema
+
 ```bash
 # Add all models to prisma/schema.prisma
 # Then run:
@@ -1964,6 +2296,7 @@ npx prisma migrate dev --name course_management_init
 ```
 
 ### Step 2: Create Server Actions Structure
+
 ```bash
 # Create action files
 mkdir -p lib/actions
@@ -1977,6 +2310,7 @@ touch lib/actions/course-faq.actions.ts
 ```
 
 ### Step 3: Create Page Structure
+
 ```bash
 # Create course management pages
 mkdir -p app/\(dashboard\)/course-management/categories
@@ -1986,6 +2320,7 @@ mkdir -p app/\(dashboard\)/course-management/courses/create/bundle
 ```
 
 ### Step 4: Install Dependencies (if needed)
+
 ```bash
 # For drag-and-drop
 npm install @hello-pangea/dnd
@@ -2001,11 +2336,13 @@ npm install tinymce @tinymce/tinymce-react
 ## 📚 Additional Resources
 
 ### Related Documentation
+
 - `PHASE_1_COMPLETE.md` - Academic Setup implementation reference
 - `README_FIXES.md` - UI/UX fixes and patterns
 - `.augment/rules/lms-rule.md` - Global architecture rules
 
 ### Key Files to Reference
+
 - `app/(dashboard)/academic-setup/cohorts/cohorts-client.tsx` - Filter + table pattern
 - `components/ui/searchable-dropdown.tsx` - Dropdown component
 - `components/ui/multi-select-dropdown.tsx` - Multi-select component
@@ -2013,9 +2350,10 @@ npm install tinymce @tinymce/tinymce-react
 - `lib/rbac.ts` - Role-based access control
 
 ### Design Patterns
+
 - **Server Components** - Data fetching (page.tsx)
-- **Client Components** - Interactivity (*-client.tsx)
-- **Server Actions** - Mutations (lib/actions/*.actions.ts)
+- **Client Components** - Interactivity (\*-client.tsx)
+- **Server Actions** - Mutations (lib/actions/\*.actions.ts)
 - **Form Pattern** - React Hook Form + Zod + shadcn Form
 - **Modal Pattern** - shadcn Dialog for CRUD
 - **Delete Pattern** - AlertDialog confirmation
@@ -2034,10 +2372,10 @@ npm install tinymce @tinymce/tinymce-react
 ## 📞 Questions or Clarifications?
 
 If you need clarification on any section:
+
 1. Check the **Quick Reference Checklist** above
 2. Review the **Common Mistakes** table
 3. Reference existing Academic Setup pages for patterns
 4. Ask specific questions about implementation details
 
 **Remember:** Follow Codex guidelines strictly - TenantId + Role Guard + Transactions + Audit Trail! 🔒
-
