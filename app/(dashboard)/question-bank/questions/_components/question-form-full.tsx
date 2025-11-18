@@ -19,12 +19,33 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+
+const getSourceTypeLabel = (type: string): string => {
+  switch (type) {
+    case "BOARD_EXAM":
+      return "📘 Board Exam";
+    case "TEXTBOOK":
+      return "📗 Textbook";
+    case "REFERENCE_BOOK":
+      return "📙 Reference Book";
+    case "CUSTOM":
+      return "✏️ Custom";
+    case "PREVIOUS_YEAR":
+      return "📅 Previous Year";
+    case "MOCK_TEST":
+      return "🧪 Mock Test";
+    default:
+      return "Custom";
+  }
+};
+
 type Props = {
   subjects: any[];
   classes: any[];
   chapters: any[];
   topics: any[];
-  sources: any[];
+  institutions: any[];
+  examYears: any[];
   initialData?: any;
 };
 
@@ -33,7 +54,8 @@ export default function QuestionFormFull({
   classes,
   chapters,
   topics,
-  sources,
+  institutions,
+  examYears,
   initialData,
 }: Props) {
   const router = useRouter();
@@ -75,10 +97,19 @@ export default function QuestionFormFull({
   const [textAnswer, setTextAnswer] = useState(
     initialData?.correctAnswer || ""
   );
+  const [institutionId, setInstitutionId] = useState(
+    initialData?.institutionId || ""
+  );
+  const [examYearId, setExamYearId] = useState(
+    initialData?.examYearId || ""
+  );
+
   const [difficulty, setDifficulty] = useState(
     initialData?.difficulty || "MEDIUM"
   );
-  const [sourceId, setSourceId] = useState(initialData?.sourceId || "");
+  const [sourceType, setSourceType] = useState(
+    initialData?.source?.type || ""
+  );
   const [explanation, setExplanation] = useState(
     initialData?.explanation || ""
   );
@@ -169,7 +200,8 @@ export default function QuestionFormFull({
         difficulty,
         marks: 1, // Default marks, will be set at exam/quiz level
         negativeMarks: 0, // Default negative marks, will be set at exam/quiz level
-        sourceId: sourceId || undefined,
+        institutionId: institutionId || undefined,
+        examYearId: examYearId || undefined,
       };
 
       const result = initialData
@@ -224,7 +256,11 @@ export default function QuestionFormFull({
                 className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white font-medium"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Question"}
+                {saving
+                  ? "Saving..."
+                  : initialData
+                  ? "Update Question"
+                  : "Save Question"}
               </Button>
             </div>
           </div>
@@ -239,7 +275,7 @@ export default function QuestionFormFull({
             <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">
               📍 Question Location
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Subject *</Label>
                 <SearchableDropdown
@@ -288,6 +324,39 @@ export default function QuestionFormFull({
                 />
               </div>
               <div className="space-y-2">
+                <Label>Institution / Board / College (Optional)</Label>
+                <SearchableDropdown
+                  options={[
+                    { value: "", label: "No Institution" },
+                    ...institutions.map((inst) => ({
+                      value: inst.id,
+                      label: inst.name,
+                    })),
+                  ]}
+                  value={institutionId}
+                  onChange={setInstitutionId}
+                  placeholder="Select institution / board"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Exam Year (Optional)</Label>
+                <SearchableDropdown
+                  options={[
+                    { value: "", label: "No Year" },
+                    ...examYears.map((year) => ({
+                      value: year.id,
+                      label: year.label
+                        ? `${year.year} - ${year.label}`
+                        : String(year.year),
+                    })),
+                  ]}
+                  value={examYearId}
+                  onChange={setExamYearId}
+                  placeholder="Select exam year"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>Difficulty *</Label>
                 <SearchableDropdown
                   options={[
@@ -306,11 +375,16 @@ export default function QuestionFormFull({
                 <SearchableDropdown
                   options={[
                     { value: "", label: "No Source" },
-                    ...sources.map((s) => ({ value: s.id, label: s.name })),
+                    { value: "BOARD_EXAM", label: getSourceTypeLabel("BOARD_EXAM") },
+                    { value: "TEXTBOOK", label: getSourceTypeLabel("TEXTBOOK") },
+                    { value: "REFERENCE_BOOK", label: getSourceTypeLabel("REFERENCE_BOOK") },
+                    { value: "CUSTOM", label: getSourceTypeLabel("CUSTOM") },
+                    { value: "PREVIOUS_YEAR", label: getSourceTypeLabel("PREVIOUS_YEAR") },
+                    { value: "MOCK_TEST", label: getSourceTypeLabel("MOCK_TEST") },
                   ]}
-                  value={sourceId}
-                  onChange={setSourceId}
-                  placeholder="Select source"
+                  value={sourceType}
+                  onChange={setSourceType}
+                  placeholder="Select source type"
                 />
               </div>
             </div>
@@ -479,17 +553,17 @@ export default function QuestionFormFull({
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-full sm:max-w-5xl max-h-[calc(100vh-5rem)] overflow-y-auto p-0 sm:p-6">
+          <DialogHeader className="px-4 pt-4 sm:px-0 sm:pt-0">
             <DialogTitle>Question Preview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="space-y-6 px-4 pb-4 sm:px-0 sm:pb-0">
             {/* Question Text */}
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                 Question
               </h3>
-              <div className="prose dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border">
+              <div className="ProseMirror prose dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border overflow-x-auto">
                 <div
                   dangerouslySetInnerHTML={{
                     __html:
@@ -521,7 +595,7 @@ export default function QuestionFormFull({
                           <span className="font-semibold text-sm mt-1">
                             {String.fromCharCode(65 + idx)}.
                           </span>
-                          <div className="flex-1 prose dark:prose-invert prose-sm max-w-none">
+                          <div className="flex-1 ProseMirror prose dark:prose-invert prose-sm max-w-none overflow-x-auto">
                             <div
                               dangerouslySetInnerHTML={{
                                 __html:
@@ -543,7 +617,7 @@ export default function QuestionFormFull({
                             <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">
                               💡 Explanation:
                             </p>
-                            <div className="prose dark:prose-invert prose-sm max-w-none text-sm">
+                            <div className="ProseMirror prose dark:prose-invert prose-sm max-w-none text-sm overflow-x-auto">
                               <div
                                 dangerouslySetInnerHTML={{
                                   __html: opt.explanation,
@@ -581,7 +655,7 @@ export default function QuestionFormFull({
                   <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                     Correct Answer
                   </h3>
-                  <div className="prose dark:prose-invert max-w-none bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-500">
+                  <div className="ProseMirror prose dark:prose-invert max-w-none bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-500 overflow-x-auto">
                     <div dangerouslySetInnerHTML={{ __html: textAnswer }} />
                   </div>
                 </div>
@@ -593,7 +667,7 @@ export default function QuestionFormFull({
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                   Explanation
                 </h3>
-                <div className="prose dark:prose-invert max-w-none bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-500">
+                <div className="ProseMirror prose dark:prose-invert max-w-none bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-500 overflow-x-auto">
                   <div dangerouslySetInnerHTML={{ __html: explanation }} />
                 </div>
               </div>

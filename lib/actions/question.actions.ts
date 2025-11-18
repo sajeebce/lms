@@ -10,13 +10,15 @@ export async function createQuestion(data: {
   topicId: string
   questionText: string
   questionType: 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'FILL_BLANK' | 'MATCHING'
-  options?: { text: string; isCorrect: boolean }[]
+  options?: { text: string; isCorrect: boolean; explanation?: string }[]
   correctAnswer?: string
   explanation?: string
   difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT'
   marks: number
   negativeMarks?: number
   sourceId?: string
+  institutionId?: string
+  examYearId?: string
   imageUrl?: string
 }) {
   // 1. ROLE GUARD
@@ -28,22 +30,35 @@ export async function createQuestion(data: {
   // 3. ZOD VALIDATION
   const schema = z.object({
     topicId: z.string().min(1),
-    questionText: z.string().min(1, 'Question text is required').max(2000, 'Question text must be 2000 characters or less'),
-    questionType: z.enum(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'FILL_BLANK', 'MATCHING']),
+    questionText: z
+      .string()
+      .min(1, 'Question text is required')
+      .max(2000, 'Question text must be 2000 characters or less'),
+    questionType: z.enum([
+      'MCQ',
+      'TRUE_FALSE',
+      'SHORT_ANSWER',
+      'LONG_ANSWER',
+      'FILL_BLANK',
+      'MATCHING',
+    ]),
     options: z
       .array(
         z.object({
           text: z.string().min(1).max(500),
           isCorrect: z.boolean(),
+          explanation: z.string().max(5000).optional(),
         })
       )
       .optional(),
     correctAnswer: z.string().max(2000).optional(),
-    explanation: z.string().max(1000).optional(),
+    explanation: z.string().max(10000).optional(),
     difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']),
     marks: z.number().min(0).max(100),
     negativeMarks: z.number().min(0).max(10).optional(),
     sourceId: z.string().optional(),
+    institutionId: z.string().optional(),
+    examYearId: z.string().optional(),
     imageUrl: z.string().optional(),
   })
 
@@ -56,6 +71,27 @@ export async function createQuestion(data: {
 
   if (!topic) {
     return { success: false, error: 'Topic not found' }
+  }
+
+  // Validate institution & exam year belong to this tenant
+  if (validated.institutionId) {
+    const institution = await prisma.examBoard.findFirst({
+      where: { id: validated.institutionId, tenantId },
+    })
+
+    if (!institution) {
+      return { success: false, error: 'Selected institution/board not found' }
+    }
+  }
+
+  if (validated.examYearId) {
+    const examYear = await prisma.examYear.findFirst({
+      where: { id: validated.examYearId, tenantId },
+    })
+
+    if (!examYear) {
+      return { success: false, error: 'Selected exam year not found' }
+    }
   }
 
   // Validate MCQ options
@@ -91,6 +127,8 @@ export async function createQuestion(data: {
       marks: validated.marks,
       negativeMarks: validated.negativeMarks || 0,
       sourceId: validated.sourceId,
+      institutionId: validated.institutionId,
+      examYearId: validated.examYearId,
       imageUrl: validated.imageUrl,
       status: 'ACTIVE',
     },
@@ -110,13 +148,15 @@ export async function updateQuestion(
     topicId?: string
     questionText?: string
     questionType?: 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'LONG_ANSWER' | 'FILL_BLANK' | 'MATCHING'
-    options?: { text: string; isCorrect: boolean }[]
+    options?: { text: string; isCorrect: boolean; explanation?: string }[]
     correctAnswer?: string
     explanation?: string
     difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT'
     marks?: number
     negativeMarks?: number
     sourceId?: string
+    institutionId?: string
+    examYearId?: string
     imageUrl?: string
     status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED'
   }
@@ -131,21 +171,26 @@ export async function updateQuestion(
   const schema = z.object({
     topicId: z.string().min(1).optional(),
     questionText: z.string().min(1).max(2000).optional(),
-    questionType: z.enum(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'FILL_BLANK', 'MATCHING']).optional(),
+    questionType: z
+      .enum(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'LONG_ANSWER', 'FILL_BLANK', 'MATCHING'])
+      .optional(),
     options: z
       .array(
         z.object({
           text: z.string().min(1).max(500),
           isCorrect: z.boolean(),
+          explanation: z.string().max(5000).optional(),
         })
       )
       .optional(),
     correctAnswer: z.string().max(2000).optional(),
-    explanation: z.string().max(1000).optional(),
+    explanation: z.string().max(10000).optional(),
     difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']).optional(),
     marks: z.number().min(0).max(100).optional(),
     negativeMarks: z.number().min(0).max(10).optional(),
     sourceId: z.string().optional(),
+    institutionId: z.string().optional(),
+    examYearId: z.string().optional(),
     imageUrl: z.string().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
   })
@@ -169,6 +214,27 @@ export async function updateQuestion(
 
     if (!topic) {
       return { success: false, error: 'Topic not found' }
+    }
+  }
+
+  // Validate institution & exam year belong to this tenant when updated
+  if (validated.institutionId) {
+    const institution = await prisma.examBoard.findFirst({
+      where: { id: validated.institutionId, tenantId },
+    })
+
+    if (!institution) {
+      return { success: false, error: 'Selected institution/board not found' }
+    }
+  }
+
+  if (validated.examYearId) {
+    const examYear = await prisma.examYear.findFirst({
+      where: { id: validated.examYearId, tenantId },
+    })
+
+    if (!examYear) {
+      return { success: false, error: 'Selected exam year not found' }
     }
   }
 
@@ -304,6 +370,8 @@ export async function getQuestions(filters?: {
           },
         },
         source: true,
+        institution: true,
+        examYear: true,
       },
       orderBy: { createdAt: 'desc' },
       skip,

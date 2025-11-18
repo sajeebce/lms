@@ -20,23 +20,57 @@ import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import { toast } from 'sonner'
 import { createQuestionSource, updateQuestionSource } from '@/lib/actions/question-source.actions'
 
-const formSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  type: z.enum(['BOARD_EXAM', 'TEXTBOOK', 'REFERENCE_BOOK', 'CUSTOM', 'PREVIOUS_YEAR', 'MOCK_TEST']),
+const baseSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  type: z.enum([
+    'BOARD_EXAM',
+    'TEXTBOOK',
+    'REFERENCE_BOOK',
+    'CUSTOM',
+    'PREVIOUS_YEAR',
+    'MOCK_TEST',
+  ]),
+  boardId: z.string().optional(),
   year: z.string().optional(),
-  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  description: z
+    .string()
+    .max(500, 'Description must be 500 characters or less')
+    .optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+})
+
+const formSchema = baseSchema.superRefine((value, ctx) => {
+  if (value.type === 'BOARD_EXAM') {
+    if (!value.boardId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['boardId'],
+        message: 'Board is required for board exam sources',
+      })
+    }
+    if (!value.year || !value.year.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['year'],
+        message: 'Year is required for board exam sources',
+      })
+    }
+  }
 })
 
 type FormData = z.infer<typeof formSchema>
 
 type Props = {
   initialData?: any
+  boards: { id: string; name: string }[]
   onSuccess: (source: any) => void
   onCancel: () => void
 }
 
-export default function SourceForm({ initialData, onSuccess, onCancel }: Props) {
+export default function SourceForm({ initialData, boards, onSuccess, onCancel }: Props) {
   const [saving, setSaving] = useState(false)
 
   const form = useForm<FormData>({
@@ -44,6 +78,7 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
     defaultValues: {
       name: initialData?.name || '',
       type: initialData?.type || 'CUSTOM',
+      boardId: initialData?.board?.id || '',
       year: initialData?.year?.toString() || '',
       description: initialData?.description || '',
       status: initialData?.status || 'ACTIVE',
@@ -57,7 +92,8 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
       const payload = {
         name: data.name,
         type: data.type,
-        year: data.year ? parseInt(data.year) : undefined,
+        boardId: data.boardId || undefined,
+        year: data.year ? parseInt(data.year, 10) : undefined,
         description: data.description,
         status: data.status,
       }
@@ -69,11 +105,13 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
         result = await createQuestionSource(payload)
       }
 
-      if (result.success) {
-        toast.success(initialData ? 'Question source updated successfully' : 'Question source created successfully')
-        
-        // Refresh to get updated data
-        window.location.reload()
+      if (result.success && result.data) {
+        toast.success(
+          initialData
+            ? 'Question source updated successfully'
+            : 'Question source created successfully',
+        )
+        onSuccess(result.data)
       } else {
         toast.error(result.error || 'Failed to save question source')
       }
@@ -87,6 +125,7 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Source Name */}
         <FormField
           control={form.control}
           name="name"
@@ -94,14 +133,21 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
             <FormItem>
               <FormLabel>Source Name *</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., SSC Board 2023" maxLength={100} {...field} />
+                <Input
+                  placeholder="e.g., SSC 2023 Main Set"
+                  maxLength={100}
+                  {...field}
+                />
               </FormControl>
-              <FormDescription>Enter the name of the question source (max 100 characters)</FormDescription>
+              <FormDescription>
+                Enter the source name (max 100 characters). Board/year are selected separately below.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Source Type */}
         <FormField
           control={form.control}
           name="type"
@@ -123,18 +169,51 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
                   placeholder="Select source type"
                 />
               </FormControl>
-              <FormDescription>Select the type of question source</FormDescription>
+              <FormDescription>
+                Select the type of question source.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Board */}
+        <FormField
+          control={form.control}
+          name="boardId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Board {form.watch('type') === 'BOARD_EXAM' ? '*' : '(Optional)'}
+              </FormLabel>
+              <FormControl>
+                <SearchableDropdown
+                  options={[
+                    { value: '', label: 'Select board' },
+                    ...boards.map((board) => ({ value: board.id, label: board.name })),
+                  ]}
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  placeholder="Select board"
+                />
+              </FormControl>
+              <FormDescription>
+                Choose the exam board. Required for Board Exam sources.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Year */}
         <FormField
           control={form.control}
           name="year"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Year (Optional)</FormLabel>
+              <FormLabel>
+                Year {form.watch('type') === 'BOARD_EXAM' ? '*' : '(Optional)'}
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -144,12 +223,15 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
                   {...field}
                 />
               </FormControl>
-              <FormDescription>Enter the year (e.g., 2023)</FormDescription>
+              <FormDescription>
+                Enter the year (e.g., 2023). Required for Board Exam sources.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Description */}
         <FormField
           control={form.control}
           name="description"
@@ -164,12 +246,15 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
                   {...field}
                 />
               </FormControl>
-              <FormDescription>Enter a description (max 500 characters)</FormDescription>
+              <FormDescription>
+                Enter a description (max 500 characters).
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Status (edit only) */}
         {initialData && (
           <FormField
             control={form.control}
@@ -200,7 +285,11 @@ export default function SourceForm({ initialData, onSuccess, onCancel }: Props) 
             disabled={saving}
             className="w-full bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
           >
-            {saving ? 'Saving...' : initialData ? 'Update Source' : 'Create Source'}
+            {saving
+              ? 'Saving...'
+              : initialData
+              ? 'Update Source'
+              : 'Create Source'}
           </Button>
         </div>
       </form>

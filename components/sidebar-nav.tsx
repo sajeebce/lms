@@ -104,9 +104,14 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
       icon: FileText,
     },
     {
-      href: '/question-bank/sources',
-      label: 'Question Sources',
-      icon: Database,
+      href: '/question-bank/institutions',
+      label: 'Institutions',
+      icon: Layers,
+    },
+    {
+      href: '/question-bank/years',
+      label: 'Exam Years',
+      icon: Calendar,
     },
     {
       href: '/question-bank/questions',
@@ -442,14 +447,18 @@ export function SidebarNav({ isCollapsed, onToggle }: SidebarNavProps) {
                 const gradients = [
                   'from-purple-400 to-violet-500',
                   'from-indigo-400 to-blue-500',
+                  'from-emerald-400 to-teal-500',
                   'from-amber-400 to-orange-500',
-                  'from-cyan-400 to-teal-500',
+                  'from-cyan-400 to-sky-500',
+                  'from-pink-400 to-rose-500',
                 ]
                 const hoverGradients = [
                   'from-purple-500 to-violet-600',
                   'from-indigo-500 to-blue-600',
+                  'from-emerald-500 to-teal-600',
                   'from-amber-500 to-orange-600',
-                  'from-cyan-500 to-teal-600',
+                  'from-cyan-500 to-sky-600',
+                  'from-pink-500 to-rose-600',
                 ]
 
                 return (

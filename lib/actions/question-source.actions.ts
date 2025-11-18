@@ -5,13 +5,61 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+const questionSourceBaseSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  type: z.enum([
+    'BOARD_EXAM',
+    'TEXTBOOK',
+    'REFERENCE_BOOK',
+    'CUSTOM',
+    'PREVIOUS_YEAR',
+    'MOCK_TEST',
+  ]),
+  boardId: z.string().min(1, 'Board is required').optional(),
+  year: z
+    .number()
+    .int()
+    .min(1900, 'Year must be 1900 or later')
+    .max(2100, 'Year must be 2100 or earlier')
+    .optional(),
+  description: z
+    .string()
+    .max(500, 'Description must be 500 characters or less')
+    .optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+})
+
+const createQuestionSourceSchema = questionSourceBaseSchema.superRefine((value, ctx) => {
+  if (value.type === 'BOARD_EXAM') {
+    if (!value.boardId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['boardId'],
+        message: 'Board is required for board exam sources',
+      })
+    }
+    if (value.year == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['year'],
+        message: 'Year is required for board exam sources',
+      })
+    }
+  }
+})
+
+const updateQuestionSourceSchema = questionSourceBaseSchema.partial()
+
+type CreateQuestionSourceInput = z.infer<typeof createQuestionSourceSchema>
+
+type UpdateQuestionSourceInput = z.infer<typeof updateQuestionSourceSchema>
+
+
 // Create Question Source
-export async function createQuestionSource(data: {
-  name: string
-  type: 'BOARD_EXAM' | 'TEXTBOOK' | 'REFERENCE_BOOK' | 'CUSTOM' | 'PREVIOUS_YEAR' | 'MOCK_TEST'
-  year?: number
-  description?: string
-}) {
+export async function createQuestionSource(data: CreateQuestionSourceInput) {
   // 1. ROLE GUARD
   await requireRole(['ADMIN', 'TEACHER'])
 
@@ -19,53 +67,80 @@ export async function createQuestionSource(data: {
   const tenantId = await getTenantId()
 
   // 3. ZOD VALIDATION
-  const schema = z.object({
-    name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-    type: z.enum(['BOARD_EXAM', 'TEXTBOOK', 'REFERENCE_BOOK', 'CUSTOM', 'PREVIOUS_YEAR', 'MOCK_TEST']),
-    year: z.number().min(1900).max(2100).optional(),
-    description: z.string().max(500, 'Description must be 500 characters or less').optional(),
-  })
+  const validated = createQuestionSourceSchema.parse(data)
 
-  const validated = schema.parse(data)
+  const isBoardBased = validated.type === 'BOARD_EXAM'
 
-  // Check duplicate
-  const existing = await prisma.questionSource.findFirst({
-    where: {
-      tenantId,
-      name: validated.name,
-    },
-  })
+  // 4. Uniqueness checks
+  if (isBoardBased) {
+    if (!validated.boardId || validated.year == null) {
+      return {
+        success: false,
+        error: 'Board and year are required for board exam sources',
+      }
+    }
 
-  if (existing) {
-    return { success: false, error: 'Question source with this name already exists' }
+    const existing = await prisma.questionSource.findFirst({
+      where: {
+        tenantId,
+        boardId: validated.boardId,
+        year: validated.year,
+      },
+    })
+
+    if (existing) {
+      return {
+        success: false,
+        error: 'A source for this board and year already exists',
+      }
+    }
+  } else {
+    const existing = await prisma.questionSource.findFirst({
+      where: {
+        tenantId,
+        name: validated.name,
+        type: validated.type,
+        year: validated.year ?? null,
+      },
+    })
+
+    if (existing) {
+      return {
+        success: false,
+        error: 'Question source with this name, type and year already exists',
+      }
+    }
   }
 
-  // 4. TENANT ISOLATION
+  // 5. Create source (tenant-scoped)
   const source = await prisma.questionSource.create({
     data: {
-      ...validated,
+      name: validated.name,
+      type: validated.type,
+      boardId: isBoardBased ? validated.boardId : null,
+      year: validated.year ?? null,
+      description: validated.description ?? null,
+      status: validated.status ?? 'ACTIVE',
       tenantId,
-      status: 'ACTIVE',
+    },
+    include: {
+      board: true,
+      _count: {
+        select: { questions: true },
+      },
     },
   })
 
-  // 5. REVALIDATE PATH
+  // 6. REVALIDATE PATH
   revalidatePath('/question-bank/sources')
 
-  // 6. RETURN CONSISTENT FORMAT
-  return { success: true, sourceId: source.id }
+  return { success: true, data: source }
 }
 
 // Update Question Source
 export async function updateQuestionSource(
   id: string,
-  data: {
-    name?: string
-    type?: 'BOARD_EXAM' | 'TEXTBOOK' | 'REFERENCE_BOOK' | 'CUSTOM' | 'PREVIOUS_YEAR' | 'MOCK_TEST'
-    year?: number
-    description?: string
-    status?: 'ACTIVE' | 'INACTIVE'
-  }
+  data: UpdateQuestionSourceInput,
 ) {
   // 1. ROLE GUARD
   await requireRole(['ADMIN', 'TEACHER'])
@@ -74,15 +149,7 @@ export async function updateQuestionSource(
   const tenantId = await getTenantId()
 
   // 3. ZOD VALIDATION
-  const schema = z.object({
-    name: z.string().min(1).max(100).optional(),
-    type: z.enum(['BOARD_EXAM', 'TEXTBOOK', 'REFERENCE_BOOK', 'CUSTOM', 'PREVIOUS_YEAR', 'MOCK_TEST']).optional(),
-    year: z.number().min(1900).max(2100).optional(),
-    description: z.string().max(500).optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-  })
-
-  const validated = schema.parse(data)
+  const validated = updateQuestionSourceSchema.parse(data)
 
   // 4. OWNERSHIP CHECK
   const source = await prisma.questionSource.findFirst({
@@ -93,32 +160,79 @@ export async function updateQuestionSource(
     return { success: false, error: 'Question source not found' }
   }
 
-  // Check duplicate name if name is being updated
-  if (validated.name && validated.name !== source.name) {
+  const target = {
+    name: validated.name ?? source.name,
+    type: validated.type ?? source.type,
+    boardId:
+      validated.boardId !== undefined ? validated.boardId : source.boardId,
+    year:
+      validated.year !== undefined ? validated.year : source.year,
+  }
+
+  if (target.type === 'BOARD_EXAM') {
+    if (!target.boardId || target.year == null) {
+      return {
+        success: false,
+        error: 'Board and year are required for board exam sources',
+      }
+    }
+
     const existing = await prisma.questionSource.findFirst({
       where: {
         tenantId,
-        name: validated.name,
+        boardId: target.boardId,
+        year: target.year,
         id: { not: id },
       },
     })
 
     if (existing) {
-      return { success: false, error: 'Question source with this name already exists' }
+      return {
+        success: false,
+        error: 'A source for this board and year already exists',
+      }
+    }
+  } else {
+    const existing = await prisma.questionSource.findFirst({
+      where: {
+        tenantId,
+        name: target.name,
+        type: target.type,
+        year: target.year ?? null,
+        id: { not: id },
+      },
+    })
+
+    if (existing) {
+      return {
+        success: false,
+        error: 'Question source with this name, type and year already exists',
+      }
     }
   }
 
-  // Update
-  await prisma.questionSource.update({
+  const updated = await prisma.questionSource.update({
     where: { id },
-    data: validated,
+    data: {
+      name: target.name,
+      type: target.type,
+      boardId: target.type === 'BOARD_EXAM' ? target.boardId : null,
+      year: target.year ?? null,
+      description: validated.description ?? source.description,
+      status: validated.status ?? source.status,
+    },
+    include: {
+      board: true,
+      _count: {
+        select: { questions: true },
+      },
+    },
   })
 
   // 5. REVALIDATE PATH
   revalidatePath('/question-bank/sources')
 
-  // 6. RETURN CONSISTENT FORMAT
-  return { success: true }
+  return { success: true, data: updated }
 }
 
 // Delete Question Source
@@ -186,6 +300,7 @@ export async function getQuestionSources(filters?: {
         : undefined,
     },
     include: {
+      board: true,
       _count: {
         select: { questions: true },
       },

@@ -7,12 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Package } from 'lucide-react'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -25,7 +19,6 @@ import {
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import { toast } from 'sonner'
 import { deleteQuestion } from '@/lib/actions/question.actions'
-import QuestionForm from './question-form'
 import { Check, X } from 'lucide-react'
 
 type Question = {
@@ -45,6 +38,8 @@ type Question = {
     }
   }
   source: { name: string } | null
+  institution: { name: string } | null
+  examYear: { year: number; label: string | null } | null
 }
 
 type Props = {
@@ -60,6 +55,8 @@ type Props = {
   chapters: any[]
   topics: any[]
   sources: any[]
+  institutions: any[]
+  examYears: any[]
 }
 
 const DIFFICULTY_COLORS = {
@@ -86,6 +83,8 @@ export default function QuestionsClient({
   chapters,
   topics,
   sources,
+  institutions,
+  examYears,
 }: Props) {
   const router = useRouter()
   const [questions, setQuestions] = useState(initialQuestions)
@@ -96,8 +95,8 @@ export default function QuestionsClient({
   const [filterTopic, setFilterTopic] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState('')
   const [filterType, setFilterType] = useState('')
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
+  const [filterInstitution, setFilterInstitution] = useState('')
+  const [filterYear, setFilterYear] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null)
 
@@ -110,6 +109,10 @@ export default function QuestionsClient({
     const matchesTopic = !filterTopic || q.topic.name === filterTopic
     const matchesDifficulty = !filterDifficulty || q.difficulty === filterDifficulty
     const matchesType = !filterType || q.questionType === filterType
+    const matchesInstitution =
+      !filterInstitution || (q.institution && q.institution.name === filterInstitution)
+    const matchesYear =
+      !filterYear || (q.examYear && String(q.examYear.year) === filterYear)
 
     return (
       matchesSearch &&
@@ -118,13 +121,14 @@ export default function QuestionsClient({
       matchesChapter &&
       matchesTopic &&
       matchesDifficulty &&
-      matchesType
+      matchesType &&
+      matchesInstitution &&
+      matchesYear
     )
   })
 
   const handleEdit = (question: Question) => {
-    setEditingQuestion(question)
-    setFormOpen(true)
+    router.push(`/question-bank/questions/${question.id}/edit`)
   }
 
   const handleDelete = async () => {
@@ -141,12 +145,6 @@ export default function QuestionsClient({
 
     setDeleteDialogOpen(false)
     setQuestionToDelete(null)
-  }
-
-  const handleFormSuccess = () => {
-    setFormOpen(false)
-    setEditingQuestion(null)
-    window.location.reload()
   }
 
   const getDifficultyBadge = (difficulty: string) => {
@@ -196,7 +194,7 @@ export default function QuestionsClient({
         </div>
 
         {/* Row 2: Filters Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <SearchableDropdown
             options={[
               { value: '', label: 'All Subjects' },
@@ -242,6 +240,29 @@ export default function QuestionsClient({
             onChange={setFilterType}
             placeholder="All Types"
           />
+
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Institutions' },
+              ...institutions.map((inst) => ({ value: inst.name, label: inst.name })),
+            ]}
+            value={filterInstitution}
+            onChange={setFilterInstitution}
+            placeholder="All Institutions"
+          />
+
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Years' },
+              ...examYears.map((year) => ({
+                value: String(year.year),
+                label: year.label ? `${year.year} – ${year.label}` : String(year.year),
+              })),
+            ]}
+            value={filterYear}
+            onChange={setFilterYear}
+            placeholder="All Years"
+          />
         </div>
       </div>
 
@@ -251,16 +272,34 @@ export default function QuestionsClient({
           <div className="text-center py-12 border rounded-lg dark:border-slate-700 bg-card dark:bg-slate-800/30">
             <Package className="h-16 w-16 mx-auto text-muted-foreground dark:text-slate-500 mb-4" />
             <h3 className="text-lg font-medium mb-2 dark:text-slate-200">
-              {searchQuery || filterSubject || filterClass || filterDifficulty || filterType
+              {searchQuery ||
+              filterSubject ||
+              filterClass ||
+              filterDifficulty ||
+              filterType ||
+              filterInstitution ||
+              filterYear
                 ? 'No questions found'
                 : 'No questions yet'}
             </h3>
             <p className="text-muted-foreground dark:text-slate-400 mb-4">
-              {searchQuery || filterSubject || filterClass || filterDifficulty || filterType
-                ? 'Try adjusting your filters to find what you\'re looking for'
+              {searchQuery ||
+              filterSubject ||
+              filterClass ||
+              filterDifficulty ||
+              filterType ||
+              filterInstitution ||
+              filterYear
+                ? "Try adjusting your filters to find what you're looking for"
                 : 'Add your first question to get started!'}
             </p>
-            {!searchQuery && !filterSubject && !filterClass && !filterDifficulty && !filterType && (
+            {!searchQuery &&
+              !filterSubject &&
+              !filterClass &&
+              !filterDifficulty &&
+              !filterType &&
+              !filterInstitution &&
+              !filterYear && (
               <Button
                 onClick={() => router.push('/question-bank/questions/new')}
                 className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
@@ -285,23 +324,57 @@ export default function QuestionsClient({
 
                   {/* Badges */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
+                    >
                       📚 {question.topic.chapter.subject.name}
                     </Badge>
-                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800"
+                    >
                       🎓 {question.topic.chapter.class.name}
                     </Badge>
-                    <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800"
+                    >
                       📖 {question.topic.chapter.name}
                     </Badge>
-                    <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800"
+                    >
                       📝 {question.topic.name}
                     </Badge>
                     {getTypeBadge(question.questionType)}
                     {getDifficultyBadge(question.difficulty)}
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                    <Badge
+                      variant="outline"
+                      className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
+                    >
                       ⭐ {question.marks} marks
                     </Badge>
+                    {question.institution && (
+                      <Badge
+                        variant="outline"
+                        className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800"
+                      >
+                        🏫 {question.institution.name}
+                      </Badge>
+                    )}
+                    {question.examYear && (
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                      >
+                        📅{' '}
+                        {question.examYear.label
+                          ? `${question.examYear.year} – ${question.examYear.label}`
+                          : question.examYear.year}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* MCQ Options Preview */}
@@ -350,28 +423,6 @@ export default function QuestionsClient({
           ))
         )}
       </div>
-
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingQuestion ? 'Edit Question' : 'Add Question'}</DialogTitle>
-          </DialogHeader>
-          <QuestionForm
-            subjects={subjects}
-            classes={classes}
-            chapters={chapters}
-            topics={topics}
-            sources={sources}
-            initialData={editingQuestion}
-            onSuccess={handleFormSuccess}
-            onCancel={() => {
-              setFormOpen(false)
-              setEditingQuestion(null)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -48,13 +48,22 @@ type QuestionSource = {
   year: number | null
   description: string | null
   status: string
+  board: {
+    id: string
+    name: string
+  } | null
   _count: {
     questions: number
   }
 }
 
+type ExamBoard = Awaited<
+  ReturnType<typeof import('@/lib/actions/exam-board.actions').getExamBoards>
+>[number]
+
 type Props = {
   initialSources: QuestionSource[]
+  boards: ExamBoard[]
 }
 
 const SOURCE_TYPE_ICONS = {
@@ -75,11 +84,12 @@ const SOURCE_TYPE_LABELS = {
   MOCK_TEST: 'Mock Test',
 }
 
-export default function SourcesClient({ initialSources }: Props) {
+export default function SourcesClient({ initialSources, boards }: Props) {
   const [sources, setSources] = useState(initialSources)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [filterBoardId, setFilterBoardId] = useState('')
   const [formOpen, setFormOpen] = useState(false)
   const [editingSource, setEditingSource] = useState<QuestionSource | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -90,7 +100,8 @@ export default function SourcesClient({ initialSources }: Props) {
     const matchesSearch = source.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesType = !filterType || source.type === filterType
     const matchesStatus = !filterStatus || source.status === filterStatus
-    return matchesSearch && matchesType && matchesStatus
+    const matchesBoard = !filterBoardId || source.board?.id === filterBoardId
+    return matchesSearch && matchesType && matchesStatus && matchesBoard
   })
 
   const handleEdit = (source: QuestionSource) => {
@@ -167,7 +178,7 @@ export default function SourcesClient({ initialSources }: Props) {
     <div className="space-y-4 md:space-y-6">
       {/* Filters - Responsive Grid */}
       <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto_auto] gap-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -207,6 +218,18 @@ export default function SourcesClient({ initialSources }: Props) {
             placeholder="All Status"
           />
 
+          {/* Board Filter */}
+          <SearchableDropdown
+            options={[
+              { value: '', label: 'All Boards' },
+              ...boards.map((board) => ({ value: board.id, label: board.name })),
+            ]}
+            value={filterBoardId}
+            onChange={setFilterBoardId}
+            placeholder="All Boards"
+          />
+
+
           {/* Add Button */}
           <Button
             onClick={() => {
@@ -228,8 +251,9 @@ export default function SourcesClient({ initialSources }: Props) {
           <TableHeader>
             <TableRow className="bg-muted/50 dark:bg-slate-800/50">
               <TableHead className="dark:text-slate-300">Source Name</TableHead>
-              <TableHead className="dark:text-slate-300">Type</TableHead>
+              <TableHead className="dark:text-slate-300">Board</TableHead>
               <TableHead className="dark:text-slate-300">Year</TableHead>
+              <TableHead className="dark:text-slate-300">Type</TableHead>
               <TableHead className="dark:text-slate-300">Questions</TableHead>
               <TableHead className="dark:text-slate-300">Status</TableHead>
               <TableHead className="text-right dark:text-slate-300">Actions</TableHead>
@@ -238,10 +262,10 @@ export default function SourcesClient({ initialSources }: Props) {
           <TableBody>
             {filteredSources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={7} className="text-center py-12">
                   <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground dark:text-slate-400">
-                    {searchQuery || filterType || filterStatus
+                    {searchQuery || filterType || filterStatus || filterBoardId
                       ? 'No sources found matching your filters'
                       : 'No question sources yet. Add your first source to get started!'}
                   </p>
@@ -260,8 +284,11 @@ export default function SourcesClient({ initialSources }: Props) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{getTypeBadge(source.type)}</TableCell>
+                  <TableCell className="dark:text-slate-300">
+                    {source.board ? source.board.name : '-'}
+                  </TableCell>
                   <TableCell className="dark:text-slate-300">{source.year || '-'}</TableCell>
+                  <TableCell>{getTypeBadge(source.type)}</TableCell>
                   <TableCell>
                     <span className="text-sm font-medium dark:text-slate-300">{source._count.questions}</span>
                   </TableCell>
@@ -296,7 +323,7 @@ export default function SourcesClient({ initialSources }: Props) {
           <Card className="p-8 text-center dark:bg-slate-800/50 dark:border-slate-700">
             <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground dark:text-slate-400 text-sm">
-              {searchQuery || filterType || filterStatus
+              {searchQuery || filterType || filterStatus || filterBoardId
                 ? 'No sources found matching your filters'
                 : 'No question sources yet. Add your first source to get started!'}
             </p>
@@ -339,6 +366,12 @@ export default function SourcesClient({ initialSources }: Props) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs">
+                {source.board && (
+                  <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
+                    {source.board.name}
+                  </Badge>
+                )}
+
                 {getTypeBadge(source.type)}
                 {source.year && (
                   <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
@@ -364,6 +397,7 @@ export default function SourcesClient({ initialSources }: Props) {
           </DialogHeader>
           <SourceForm
             initialData={editingSource}
+            boards={boards}
             onSuccess={handleFormSuccess}
             onCancel={() => {
               setFormOpen(false)

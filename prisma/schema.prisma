@@ -58,6 +58,8 @@ model Tenant {
   subjects            Subject[]
   chapters            Chapter[]
   topics              Topic[]
+  examBoards          ExamBoard[]
+  examYears           ExamYear[]
   questionSources     QuestionSource[]
   questions           Question[]
 
@@ -925,10 +927,29 @@ enum TopicStatus {
   INACTIVE
 }
 
-// QuestionSource Model - Track question origins
+// ExamBoard Model - Master list of exam institutions (boards, colleges, universities) per tenant
+model ExamBoard {
+  id        String       @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String?
+  status    SourceStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  questionSources QuestionSource[]
+  questions       Question[]
+
+  @@unique([tenantId, name])
+  @@map("exam_boards")
+}
+
+// QuestionSource Model - Track legacy question origins (board exams, textbooks, etc.)
 model QuestionSource {
   id          String       @id @default(cuid())
   tenantId    String
+  boardId     String?
   name        String
   type        SourceType   @default(CUSTOM)
   year        Int?
@@ -938,11 +959,32 @@ model QuestionSource {
   updatedAt   DateTime     @updatedAt
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  board     ExamBoard? @relation(fields: [boardId], references: [id], onDelete: SetNull)
   questions Question[]
 
-  @@unique([tenantId, name])
+  // For board exam sources, uniqueness is (tenantId, boardId, year).
+  // For non-board sources (boardId null), uniqueness is (tenantId, name, type, year).
+  @@unique([tenantId, boardId, year])
+  @@unique([tenantId, name, type, year])
   @@index([tenantId, type])
   @@map("question_sources")
+}
+
+// ExamYear Model - Master list of exam years per tenant
+model ExamYear {
+  id        String       @id @default(cuid())
+  tenantId  String
+  year      Int
+  label     String?
+  status    SourceStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@unique([tenantId, year])
+  @@map("exam_years")
 }
 
 enum SourceType {
@@ -961,29 +1003,35 @@ enum SourceStatus {
 
 // Question Model - Individual questions
 model Question {
-  id             String         @id @default(cuid())
+  id             String          @id @default(cuid())
   tenantId       String
   topicId        String
   sourceId       String?
+  institutionId  String?
+  examYearId     String?
   questionText   String
-  questionType   QuestionType   @default(MCQ)
+  questionType   QuestionType    @default(MCQ)
   options        String?
   correctAnswer  String?
   explanation    String?
   difficulty     DifficultyLevel @default(MEDIUM)
-  marks          Float          @default(1)
-  negativeMarks  Float          @default(0)
+  marks          Float           @default(1)
+  negativeMarks  Float           @default(0)
   imageUrl       String?
-  status         QuestionStatus @default(ACTIVE)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  status         QuestionStatus  @default(ACTIVE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
-  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  topic  Topic           @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  source QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  topic       Topic           @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  source      QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  institution ExamBoard?      @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  examYear    ExamYear?       @relation(fields: [examYearId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, topicId])
   @@index([tenantId, sourceId])
+  @@index([tenantId, institutionId])
+  @@index([tenantId, examYearId])
   @@index([tenantId, difficulty])
   @@index([tenantId, questionType])
   @@map("questions")

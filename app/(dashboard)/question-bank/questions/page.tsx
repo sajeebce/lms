@@ -6,6 +6,8 @@ import { getClasses } from '@/lib/actions/class.actions'
 import { getChapters } from '@/lib/actions/chapter.actions'
 import { getTopics } from '@/lib/actions/topic.actions'
 import { getQuestionSources } from '@/lib/actions/question-source.actions'
+import { getExamBoards } from '@/lib/actions/exam-board.actions'
+import { getExamYears } from '@/lib/actions/exam-year.actions'
 import QuestionsClient from './questions-client'
 
 export const metadata = {
@@ -14,14 +16,17 @@ export const metadata = {
 }
 
 export default async function QuestionsPage() {
-  const [questionsData, subjects, classes, chapters, topics, sources] = await Promise.all([
-    getQuestions(),
-    getSubjects(),
-    getClasses(),
-    getChapters(),
-    getTopics(),
-    getQuestionSources(),
-  ])
+  const [questionsData, subjects, classes, chapters, topics, sources, institutions, examYears] =
+    await Promise.all([
+      getQuestions(),
+      getSubjects(),
+      getClasses(),
+      getChapters(),
+      getTopics(),
+      getQuestionSources(),
+      getExamBoards({ status: 'ACTIVE' }),
+      getExamYears({ status: 'ACTIVE' }),
+    ])
 
   return (
     <div className="space-y-6">
@@ -40,6 +45,8 @@ export default async function QuestionsPage() {
         chapters={chapters}
         topics={topics}
         sources={sources}
+        institutions={institutions}
+        examYears={examYears}
       />
     </div>
   )
