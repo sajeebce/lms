@@ -15,7 +15,7 @@ export default function SettingsTab({ data, onChange }: Props) {
     <div className="space-y-6">
       {/* Status */}
       <div className="space-y-2">
-        <Label>Course Status</Label>
+        <Label>Course Status *</Label>
         <SearchableDropdown
           options={[
             { value: 'DRAFT', label: '📝 Draft (Not visible to students)' },
@@ -24,7 +24,10 @@ export default function SettingsTab({ data, onChange }: Props) {
             { value: 'PRIVATE', label: '🔒 Private (Invite only)' },
           ]}
           value={data.status}
-          onChange={(value) => onChange({ status: value as any })}
+          onChange={(value) => {
+            if (!value) return
+            onChange({ status: value as CourseFormData['status'] })
+          }}
           placeholder="Select status"
         />
       </div>

@@ -60,6 +60,29 @@ export default function SeoTab({ data, onChange }: Props) {
         </p>
       </div>
 
+      {/* Fake Enrollment Count */}
+      <div className="space-y-2">
+        <Label htmlFor="fakeEnrollmentCount">Fake Enrollment Count (Optional)</Label>
+        <Input
+          id="fakeEnrollmentCount"
+          type="number"
+          placeholder="e.g., 250"
+          value={data.fakeEnrollmentCount ?? ''}
+          onChange={(e) => {
+            const value = e.target.value
+            onChange({
+              fakeEnrollmentCount:
+                value === '' ? undefined : Number.parseInt(value, 10),
+            })
+          }}
+          min={0}
+          max={9999}
+        />
+        <p className="text-xs text-neutral-500">
+          Optional social proof shown as students enrolled on public course cards. Leave empty to use real enrollments.
+        </p>
+      </div>
+
       {/* SEO Preview */}
       <div className="border rounded-lg p-4 space-y-2 bg-neutral-50 dark:bg-neutral-900">
         <div className="flex items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">

@@ -76,12 +76,14 @@ export type CourseFormData = {
   // Media
   featuredImage?: string
   introVideoUrl?: string
-  
+  introVideoAutoplay: boolean
+
   // SEO
   metaTitle?: string
   metaDescription?: string
   metaKeywords?: string
-  
+  fakeEnrollmentCount?: number
+
   // Settings
   status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'PRIVATE'
   publishedAt?: Date
@@ -91,7 +93,7 @@ export type CourseFormData = {
   certificateEnabled: boolean
   
   // FAQ
-  faqs: Array<{ question: string; answer: string }>
+  faqs: Array<{ id?: string; clientId?: string; question: string; answer: string }>
 }
 
 export default function SingleCourseForm({ categories, subjects, classes, streams }: Props) {
@@ -109,6 +111,7 @@ export default function SingleCourseForm({ categories, subjects, classes, stream
     isFeatured: false,
     allowComments: true,
     certificateEnabled: false,
+    introVideoAutoplay: false,
     faqs: [],
   })
 

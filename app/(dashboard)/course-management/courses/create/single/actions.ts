@@ -5,60 +5,128 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
-const courseSchema = z.object({
-  // Basic Info
-  title: z.string().min(1, 'Title is required').max(200),
-  slug: z.string().min(1, 'Slug is required').max(200),
-  categoryId: z.string().optional(),
-  description: z.string().optional(),
-  shortDescription: z.string().max(500).optional(),
+const courseSchema = z
+  .object({
+    // Basic Info
+    title: z.string().min(1, 'Title is required').max(200),
+    slug: z.string().min(1, 'Slug is required').max(200),
+    categoryId: z.string().optional(),
+    description: z.string().optional(),
+    shortDescription: z.string().max(500).optional(),
 
-  // Academic Integration (Optional)
-  classId: z.string().optional(),
-  subjectId: z.string().optional(),
-  streamId: z.string().optional(),
+    // Academic Integration (Optional)
+    classId: z.string().optional(),
+    subjectId: z.string().optional(),
+    streamId: z.string().optional(),
 
-  // Pricing
-  paymentType: z.enum(['FREE', 'ONE_TIME', 'SUBSCRIPTION']),
-  invoiceTitle: z.string().max(200).optional(),
-  regularPrice: z.number().optional(),
-  offerPrice: z.number().optional(),
-  currency: z.string().default('BDT'),
-  subscriptionDuration: z.number().optional(),
-  subscriptionType: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']).optional(),
-  autoGenerateInvoice: z.boolean().default(true),
-  
-  // Media
-  featuredImage: z.string().optional(),
-  introVideoUrl: z.string().optional(),
-  
-  // SEO
-  metaTitle: z.string().max(200).optional(),
-  metaDescription: z.string().max(500).optional(),
-  metaKeywords: z.string().max(500).optional(),
-  
-  // Settings
-  status: z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED', 'PRIVATE']),
-  publishedAt: z.date().optional(),
-  scheduledAt: z.date().optional(),
-  isFeatured: z.boolean().default(false),
-  allowComments: z.boolean().default(true),
-  certificateEnabled: z.boolean().default(false),
-  
-  // FAQ
-  faqs: z.array(z.object({
-    question: z.string(),
-    answer: z.string(),
-  })).optional(),
-})
+    // Pricing
+    paymentType: z.enum(['FREE', 'ONE_TIME', 'SUBSCRIPTION']),
+    invoiceTitle: z.string().max(200).optional(),
+    regularPrice: z.number().min(0).optional(),
+    offerPrice: z.number().min(0).optional(),
+    currency: z.string().default('BDT'),
+    subscriptionDuration: z.number().min(1).optional(),
+    subscriptionType: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']).optional(),
+    autoGenerateInvoice: z.boolean().default(true),
+
+    // Media
+    featuredImage: z.string().optional(),
+    introVideoUrl: z.string().optional(),
+    introVideoAutoplay: z.boolean().default(false),
+
+    // SEO
+    metaTitle: z.string().max(200).optional(),
+    metaDescription: z.string().max(500).optional(),
+    metaKeywords: z.string().max(500).optional(),
+    fakeEnrollmentCount: z
+      .number()
+      .int()
+      .min(0, 'Fake enrollment count cannot be negative')
+      .max(9999, 'Fake enrollment count must be 9999 or less')
+      .optional(),
+
+    // Settings
+    status: z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED', 'PRIVATE']),
+    publishedAt: z.date().optional(),
+    scheduledAt: z.date().optional(),
+    isFeatured: z.boolean().default(false),
+    allowComments: z.boolean().default(true),
+    certificateEnabled: z.boolean().default(false),
+
+    // FAQ
+    faqs: z
+      .array(
+        z.object({
+          question: z.string(),
+          answer: z.string(),
+        })
+      )
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Regular price required for paid (ONE_TIME or SUBSCRIPTION)
+    if (data.paymentType !== 'FREE' && (data.regularPrice === undefined || Number.isNaN(data.regularPrice))) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['regularPrice'],
+        message: 'Regular price is required for paid courses',
+      })
+    }
+
+    // Offer price cannot exceed regular price
+    if (
+      data.offerPrice !== undefined &&
+      data.regularPrice !== undefined &&
+      data.offerPrice > data.regularPrice
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['offerPrice'],
+        message: 'Offer price cannot be greater than regular price',
+      })
+    }
+
+    // Subscription-specific rules
+    if (data.paymentType === 'SUBSCRIPTION') {
+      if (!data.subscriptionType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['subscriptionType'],
+          message: 'Subscription type is required for subscription pricing',
+        })
+      }
+
+      if (
+        data.subscriptionType === 'CUSTOM' &&
+        (!data.subscriptionDuration || data.subscriptionDuration < 1)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['subscriptionDuration'],
+          message: 'Subscription duration is required for custom subscription',
+        })
+      }
+    }
+  })
 
 export async function createSingleCourse(data: z.infer<typeof courseSchema>) {
   try {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
 
+    // Normalize subscription fields so Zod enum doesn't break on empty strings
+    const normalizedData: z.infer<typeof courseSchema> = {
+      ...data,
+      subscriptionType:
+        data.paymentType === 'SUBSCRIPTION' && data.subscriptionType
+          ? data.subscriptionType
+          : undefined,
+      subscriptionDuration:
+        data.paymentType === 'SUBSCRIPTION' ? data.subscriptionDuration : undefined,
+    }
+
     // Validate
-    const validated = courseSchema.parse(data)
+    const validated = courseSchema.parse(normalizedData)
 
     // Check slug uniqueness
     const existing = await prisma.course.findFirst({
@@ -96,12 +164,14 @@ export async function createSingleCourse(data: z.infer<typeof courseSchema>) {
         autoGenerateInvoice: validated.autoGenerateInvoice,
         featuredImage: validated.featuredImage,
         introVideoUrl: validated.introVideoUrl,
+        introVideoAutoplay: validated.introVideoAutoplay,
         status: validated.status,
         publishedAt: validated.status === 'PUBLISHED' ? new Date() : validated.publishedAt,
         scheduledAt: validated.scheduledAt,
         metaTitle: validated.metaTitle,
         metaDescription: validated.metaDescription,
         metaKeywords: validated.metaKeywords,
+        fakeEnrollmentCount: validated.fakeEnrollmentCount ?? null,
         isFeatured: validated.isFeatured,
         allowComments: validated.allowComments,
         certificateEnabled: validated.certificateEnabled,
@@ -121,7 +191,11 @@ export async function createSingleCourse(data: z.infer<typeof courseSchema>) {
   } catch (error) {
     console.error('Create course error:', error)
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
+      const firstIssue = error.issues?.[0]
+      return {
+        success: false,
+        error: firstIssue?.message || 'Validation failed',
+      }
     }
     return { success: false, error: 'Failed to create course' }
   }

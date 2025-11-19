@@ -106,8 +106,10 @@ export default async function CourseDetailsPage({ params }: Props) {
                 <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Students</p>
-                <p className="text-2xl font-bold">{course._count.enrollments}</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">Students (Displayed)</p>
+                <p className="text-2xl font-bold">
+                  {(course.fakeEnrollmentCount ?? course._count.enrollments).toLocaleString()}
+                </p>
               </div>
             </div>
           </CardContent>

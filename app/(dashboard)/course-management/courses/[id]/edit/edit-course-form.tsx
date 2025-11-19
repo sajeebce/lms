@@ -71,9 +71,11 @@ type Course = {
   autoGenerateInvoice: boolean
   featuredImage: string | null
   introVideoUrl: string | null
+  introVideoAutoplay: boolean
   metaTitle: string | null
   metaDescription: string | null
   metaKeywords: string | null
+  fakeEnrollmentCount: number | null
   status: string
   publishedAt: Date | null
   scheduledAt: Date | null
@@ -105,26 +107,29 @@ export default function EditCourseForm({ course, categories, subjects, classes, 
     classId: course.classId || undefined,
     subjectId: course.subjectId || undefined,
     streamId: course.streamId || undefined,
-    paymentType: course.paymentType as any,
+    paymentType: course.paymentType as 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION',
     invoiceTitle: course.invoiceTitle || undefined,
     regularPrice: course.regularPrice || undefined,
     offerPrice: course.offerPrice || undefined,
     currency: course.currency,
     subscriptionDuration: course.subscriptionDuration || undefined,
-    subscriptionType: course.subscriptionType as any,
+    subscriptionType: course.subscriptionType as 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM',
     autoGenerateInvoice: course.autoGenerateInvoice,
     featuredImage: course.featuredImage || undefined,
     introVideoUrl: course.introVideoUrl || undefined,
+    introVideoAutoplay: course.introVideoAutoplay ?? false,
     metaTitle: course.metaTitle || undefined,
     metaDescription: course.metaDescription || undefined,
     metaKeywords: course.metaKeywords || undefined,
-    status: course.status as any,
+    fakeEnrollmentCount: course.fakeEnrollmentCount ?? undefined,
+    status: course.status as 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'PRIVATE',
     publishedAt: course.publishedAt || undefined,
     scheduledAt: course.scheduledAt || undefined,
     isFeatured: course.isFeatured,
     allowComments: course.allowComments,
     certificateEnabled: course.certificateEnabled,
     faqs: course.faqs.map((faq) => ({
+      id: faq.id,
       question: faq.question,
       answer: faq.answer,
     })),
@@ -211,7 +216,7 @@ export default function EditCourseForm({ course, categories, subjects, classes, 
               </TabsContent>
 
               <TabsContent value="media">
-                <MediaTab data={formData} onChange={updateFormData} />
+                <MediaTab data={formData} onChange={updateFormData} courseId={course.id} />
               </TabsContent>
 
               <TabsContent value="seo">

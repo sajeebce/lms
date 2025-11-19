@@ -24,7 +24,18 @@ export default function PricingTab({ data, onChange }: Props) {
             { value: 'SUBSCRIPTION', label: '🔄 Subscription' },
           ]}
           value={data.paymentType}
-          onChange={(value) => onChange({ paymentType: value as 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION' })}
+          onChange={(value) => {
+            if (!value) return
+            const paymentType = value as 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
+
+            // When switching away from SUBSCRIPTION, clear subscription-specific fields
+            const resetSubscriptionFields =
+              paymentType !== 'SUBSCRIPTION'
+                ? { subscriptionType: undefined, subscriptionDuration: undefined }
+                : {}
+
+            onChange({ paymentType, ...resetSubscriptionFields })
+          }}
           placeholder="Select payment type"
         />
       </div>
@@ -64,13 +75,16 @@ export default function PricingTab({ data, onChange }: Props) {
           {/* Pricing */}
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="regularPrice">Regular Price</Label>
+              <Label htmlFor="regularPrice">Regular Price *</Label>
               <Input
                 id="regularPrice"
                 type="number"
                 placeholder="e.g., 5000"
-                value={data.regularPrice || ''}
-                onChange={(e) => onChange({ regularPrice: parseFloat(e.target.value) || undefined })}
+                value={data.regularPrice ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value
+                  onChange({ regularPrice: value === '' ? undefined : Number(value) })
+                }}
                 min={0}
               />
             </div>
@@ -81,8 +95,11 @@ export default function PricingTab({ data, onChange }: Props) {
                 id="offerPrice"
                 type="number"
                 placeholder="e.g., 3500"
-                value={data.offerPrice || ''}
-                onChange={(e) => onChange({ offerPrice: parseFloat(e.target.value) || undefined })}
+                value={data.offerPrice ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value
+                  onChange({ offerPrice: value === '' ? undefined : Number(value) })
+                }}
                 min={0}
               />
               <p className="text-xs text-neutral-500">Leave empty if no discount</p>
@@ -93,7 +110,7 @@ export default function PricingTab({ data, onChange }: Props) {
           {data.paymentType === 'SUBSCRIPTION' && (
             <>
               <div className="space-y-2">
-                <Label>Subscription Type</Label>
+                <Label>Subscription Type *</Label>
                 <SearchableDropdown
                   options={[
                     { value: 'MONTHLY', label: '📅 Monthly' },
@@ -102,20 +119,30 @@ export default function PricingTab({ data, onChange }: Props) {
                     { value: 'CUSTOM', label: '⚙️ Custom Duration' },
                   ]}
                   value={data.subscriptionType || ''}
-                  onChange={(value) => onChange({ subscriptionType: value as any })}
+                  onChange={(value) =>
+                    onChange({
+                      subscriptionType: (value || undefined) as CourseFormData['subscriptionType'],
+                    })
+                  }
                   placeholder="Select subscription type"
                 />
               </div>
 
               {data.subscriptionType === 'CUSTOM' && (
                 <div className="space-y-2">
-                  <Label htmlFor="subscriptionDuration">Subscription Duration (Days)</Label>
+                  <Label htmlFor="subscriptionDuration">Subscription Duration (Days) *</Label>
                   <Input
                     id="subscriptionDuration"
                     type="number"
                     placeholder="e.g., 90"
-                    value={data.subscriptionDuration || ''}
-                    onChange={(e) => onChange({ subscriptionDuration: parseInt(e.target.value) || undefined })}
+                    value={data.subscriptionDuration ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      onChange({
+                        subscriptionDuration:
+                          value === '' ? undefined : Number.parseInt(value, 10),
+                      })
+                    }}
                     min={1}
                   />
                 </div>

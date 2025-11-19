@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import type { CourseFormData } from '../single-course-form'
+import RichTextEditor from '@/components/ui/rich-text-editor'
 
 type Props = {
   data: CourseFormData
@@ -20,8 +20,10 @@ export default function FaqTab({ data, onChange }: Props) {
   const addFaq = () => {
     if (!newQuestion.trim() || !newAnswer.trim()) return
 
+    const clientId = `faq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
     onChange({
-      faqs: [...data.faqs, { question: newQuestion, answer: newAnswer }],
+      faqs: [...data.faqs, { clientId, question: newQuestion, answer: newAnswer }],
     })
     setNewQuestion('')
     setNewAnswer('')
@@ -33,14 +35,14 @@ export default function FaqTab({ data, onChange }: Props) {
     })
   }
 
-  const moveFaq = (index: number, direction: 'up' | 'down') => {
-    const newFaqs = [...data.faqs]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-    
-    if (targetIndex < 0 || targetIndex >= newFaqs.length) return
-    
-    ;[newFaqs[index], newFaqs[targetIndex]] = [newFaqs[targetIndex], newFaqs[index]]
-    onChange({ faqs: newFaqs })
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return
+
+    const items = Array.from(data.faqs)
+    const [moved] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, moved)
+
+    onChange({ faqs: items })
   }
 
   return (
@@ -49,50 +51,74 @@ export default function FaqTab({ data, onChange }: Props) {
       {data.faqs.length > 0 && (
         <div className="space-y-4">
           <h3 className="font-medium">Existing FAQs ({data.faqs.length})</h3>
-          {data.faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="border rounded-lg p-4 space-y-2 bg-neutral-50 dark:bg-neutral-900"
-            >
-              <div className="flex items-start gap-2">
-                <div className="flex flex-col gap-1 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => moveFaq(index, 'up')}
-                    disabled={index === 0}
-                    className="text-neutral-400 hover:text-neutral-600 disabled:opacity-30"
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
-                      Question {index + 1}:
-                    </p>
-                    <p className="text-sm">{faq.question}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
-                      Answer:
-                    </p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                      {faq.answer}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFaq(index)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="faqs">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="space-y-3"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+                  {data.faqs.map((faq, index) => {
+                    const faqId = faq.id ?? faq.clientId ?? `${index}`
+
+                    return (
+                      <Draggable key={faqId} draggableId={faqId} index={index}>
+                        {(dragProvided) => (
+                          <div
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            className="border rounded-lg p-4 space-y-2 bg-neutral-50 dark:bg-neutral-900"
+                          >
+                            <div className="flex items-start gap-2">
+                              <button
+                                type="button"
+                                className="mt-1 text-neutral-400 hover:text-neutral-600 cursor-grab active:cursor-grabbing"
+                                aria-label="Drag to reorder FAQ"
+                                {...dragProvided.dragHandleProps}
+                              >
+                                <GripVertical className="h-4 w-4" />
+                              </button>
+                              <div className="flex-1 space-y-2">
+                                <div>
+                                  <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                    Question {index + 1}:
+                                  </p>
+                                  <div
+                                    className="prose prose-sm dark:prose-invert max-w-none text-sm"
+                                    dangerouslySetInnerHTML={{ __html: faq.question }}
+                                  />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                    Answer:
+                                  </p>
+                                  <div
+                                    className="prose prose-sm dark:prose-invert max-w-none text-sm text-neutral-600 dark:text-neutral-400"
+                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFaq(index)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    )
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
       )}
 
@@ -104,24 +130,22 @@ export default function FaqTab({ data, onChange }: Props) {
         </h3>
 
         <div className="space-y-2">
-          <Label htmlFor="newQuestion">Question</Label>
-          <Input
-            id="newQuestion"
-            placeholder="e.g., What are the prerequisites for this course?"
+          <Label>Question</Label>
+          <RichTextEditor
             value={newQuestion}
-            onChange={(e) => setNewQuestion(e.target.value)}
-            maxLength={500}
+            onChange={setNewQuestion}
+            placeholder="e.g., What are the prerequisites for this course?"
+            minHeight="120px"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="newAnswer">Answer</Label>
-          <Textarea
-            id="newAnswer"
-            placeholder="Provide a clear and helpful answer..."
+          <Label>Answer</Label>
+          <RichTextEditor
             value={newAnswer}
-            onChange={(e) => setNewAnswer(e.target.value)}
-            rows={4}
+            onChange={setNewAnswer}
+            placeholder="Provide a clear and helpful answer..."
+            minHeight="150px"
           />
         </div>
 
@@ -143,7 +167,7 @@ export default function FaqTab({ data, onChange }: Props) {
           <li>• Answer common questions students might have</li>
           <li>• Keep answers clear and concise</li>
           <li>• Include prerequisites, duration, and requirements</li>
-          <li>• You can reorder FAQs by dragging</li>
+          <li>• Drag the handle on the left to reorder FAQs</li>
         </ul>
       </div>
     </div>

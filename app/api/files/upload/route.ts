@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024
+    // Validate file size (100MB max - frontend enforces smaller limits per type)
+    const maxSize = 100 * 1024 * 1024
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File size exceeds 10MB limit' },
+        { error: 'File size exceeds 100MB limit' },
         { status: 400 }
       )
     }
@@ -105,11 +105,49 @@ export async function POST(request: NextRequest) {
           description: description || undefined,
           duration: audioDuration,
         }
-        const result = await storageService.uploadQuestionAudio(entityId, fileToUpload, audioMetadata)
+        const result = await storageService.uploadQuestionAudio(
+          entityId,
+          fileToUpload,
+          audioMetadata
+        )
         url = result.url
         id = result.id
         // Store duration for response
         optimizationInfo = { duration: audioDuration }
+        break
+      }
+
+      case 'course_featured_image': {
+        const result = await storageService.uploadCourseFeaturedImage(
+          entityId,
+          fileToUpload,
+          metadata
+        )
+        url = result.url
+        id = result.id
+        break
+      }
+
+      case 'course_intro_video': {
+        const durationStr = formData.get('duration')
+        const videoDuration = durationStr ? parseInt(durationStr as string, 10) : 0
+        console.log('[API Upload] Intro video duration received:', {
+          durationStr,
+          videoDuration,
+        })
+        const videoMetadata = {
+          author: author || undefined,
+          description: description || undefined,
+          duration: videoDuration,
+        }
+        const result = await storageService.uploadCourseIntroVideo(
+          entityId,
+          fileToUpload,
+          videoMetadata
+        )
+        url = result.url
+        id = result.id
+        optimizationInfo = { duration: videoDuration }
         break
       }
 

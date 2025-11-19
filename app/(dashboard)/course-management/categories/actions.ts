@@ -16,6 +16,7 @@ const categorySchema = z.object({
   icon: z.string().max(50, 'Icon must be 50 characters or less').optional(),
   color: z.string().max(20, 'Color must be 20 characters or less').optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+  parentId: z.string().optional().nullable(),
 })
 
 // ============================================
@@ -29,6 +30,7 @@ export async function createCategory(data: {
   icon?: string
   color?: string
   status?: string
+  parentId?: string | null
 }) {
   try {
     await requireRole('ADMIN')
@@ -89,6 +91,7 @@ export async function updateCategory(
     icon?: string
     color?: string
     status?: string
+    parentId?: string | null
   }
 ) {
   try {
@@ -137,12 +140,12 @@ export async function deleteCategory(id: string) {
     await requireRole('ADMIN')
     const tenantId = await getTenantId()
 
-    // Check if category has courses
+    // Check if category has courses or children
     const category = await prisma.courseCategory.findFirst({
       where: { id, tenantId },
       include: {
         _count: {
-          select: { courses: true },
+          select: { courses: true, children: true },
         },
       },
     })
@@ -156,6 +159,15 @@ export async function deleteCategory(id: string) {
         success: false,
         error: `Cannot delete: This category has ${category._count.courses} course${
           category._count.courses > 1 ? 's' : ''
+        }. Please reassign or delete them first.`,
+      }
+    }
+
+    if (category._count.children > 0) {
+      return {
+        success: false,
+        error: `Cannot delete: This category has ${category._count.children} subcategor${
+          category._count.children > 1 ? 'ies' : 'y'
         }. Please reassign or delete them first.`,
       }
     }

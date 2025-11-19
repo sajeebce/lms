@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEffect } from 'react'
+import { SearchableDropdown, SearchableDropdownOption } from '@/components/ui/searchable-dropdown'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -35,19 +36,23 @@ const formSchema = z.object({
   icon: z.string().max(50, 'Icon must be 50 characters or less').optional(),
   color: z.string().max(20, 'Color must be 20 characters or less').optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+  parentId: z.string().optional().nullable(),
 })
 
 type FormData = z.infer<typeof formSchema>
 
 type Props = {
   initialData?: {
+    id?: string
     name: string
     slug: string
     description: string | null
     icon: string | null
     color: string | null
     status: string
+    parentId?: string | null
   } | null
+  parentOptions: SearchableDropdownOption[]
   onSubmit: (data: FormData) => Promise<void>
   onCancel: () => void
 }
@@ -67,7 +72,7 @@ const COLORS = [
 // Predefined icons (emojis)
 const ICONS = ['📚', '🎓', '💻', '🔬', '🎨', '🎵', '⚽', '🌍', '📊', '🚀', '💡', '🏆']
 
-export default function CategoryForm({ initialData, onSubmit, onCancel }: Props) {
+export default function CategoryForm({ initialData, parentOptions, onSubmit, onCancel }: Props) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -77,6 +82,7 @@ export default function CategoryForm({ initialData, onSubmit, onCancel }: Props)
       icon: initialData?.icon || '📚',
       color: initialData?.color || '#8b5cf6',
       status: (initialData?.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+      parentId: initialData?.parentId || null,
     },
   })
 
@@ -242,6 +248,36 @@ export default function CategoryForm({ initialData, onSubmit, onCancel }: Props)
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        {/* Parent Category */}
+        <FormField
+          control={form.control}
+          name="parentId"
+          render={({ field }) => {
+            const options = initialData?.id
+              ? parentOptions.filter((option) => option.value !== initialData.id)
+              : parentOptions
+
+            return (
+              <FormItem>
+                <FormLabel>Parent category</FormLabel>
+                <FormControl>
+                  <SearchableDropdown
+                    options={options}
+                    value={field.value || ''}
+                    onChange={(value) => field.onChange(value || null)}
+                    placeholder="No parent (top-level category)"
+                    emptyMessage="No categories found"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Optional parent to build an unlimited nested category tree
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
 
         {/* Actions */}

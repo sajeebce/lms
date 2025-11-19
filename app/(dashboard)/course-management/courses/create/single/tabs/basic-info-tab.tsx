@@ -3,9 +3,9 @@
 import { useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import type { CourseFormData } from '../single-course-form'
+import RichTextEditor from '@/components/ui/rich-text-editor'
 
 type Category = {
   id: string
@@ -184,28 +184,33 @@ export default function BasicInfoTab({ data, categories, subjects, classes, stre
       {/* Short Description */}
       <div className="space-y-2">
         <Label htmlFor="shortDescription">Short Description</Label>
-        <Textarea
-          id="shortDescription"
-          placeholder="Brief overview of the course (shown in course cards)"
-          value={data.shortDescription || ''}
-          onChange={(e) => onChange({ shortDescription: e.target.value })}
-          maxLength={500}
-          rows={3}
-        />
-        <p className="text-xs text-neutral-500">Max 500 characters</p>
+        <div className="border rounded-md">
+          <RichTextEditor
+            value={data.shortDescription || ''}
+            onChange={(value) => onChange({ shortDescription: value })}
+            placeholder="Brief overview of the course (shown in course cards)"
+            minHeight="120px"
+          />
+        </div>
+        <p className="text-xs text-neutral-500">
+          Use a concise summary. Rich text, images, and basic formatting are supported.
+        </p>
       </div>
 
       {/* Full Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Full Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Detailed course description (supports markdown)"
-          value={data.description || ''}
-          onChange={(e) => onChange({ description: e.target.value })}
-          rows={8}
-        />
-        <p className="text-xs text-neutral-500">Supports markdown formatting</p>
+        <div className="border rounded-md">
+          <RichTextEditor
+            value={data.description || ''}
+            onChange={(value) => onChange({ description: value })}
+            placeholder="Detailed course description, syllabus, and marketing copy"
+            minHeight="250px"
+          />
+        </div>
+        <p className="text-xs text-neutral-500">
+          This content will appear on the course detail page and supports rich text, images, and math.
+        </p>
       </div>
     </div>
   )

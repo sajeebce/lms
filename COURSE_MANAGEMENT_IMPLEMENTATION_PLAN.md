@@ -75,23 +75,31 @@ npx prisma migrate dev --name course_management_init
 
 ```prisma
 model CourseCategory {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String   // "Science", "Mathematics", "Programming"
-  slug        String   // "science", "mathematics", "programming"
-  description String?  @db.Text
-  icon        String?  // Icon name or emoji
-  color       String?  // Hex color for UI theming
-  order       Int      @default(0) // Display order
-  status      Status   @default(ACTIVE)
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String   // "Science", "Mathematics", "Programming"
+  slug      String   // "science", "mathematics", "programming"
+  description String?
+  icon      String?  // Icon name or emoji
+  color     String?  // Hex color for UI theming
+  order     Int      @default(0) // Display order among siblings
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
 
-  courses     Course[]
+  // Self-relation for unlimited parent-child hierarchy
+  parentId  String?
+  parent    CourseCategory? @relation("CourseCategoryToParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children  CourseCategory[] @relation("CourseCategoryToParent")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Relations
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  courses   Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([tenantId, slug])
   @@index([tenantId, status])
+  @@index([tenantId, parentId])
 }
 ```
 
@@ -591,7 +599,7 @@ app/(dashboard)/
 3. ✅ Create server actions for categories
 4. ✅ Build category list page
 5. ✅ Build category CRUD modals
-6. ✅ Add drag-and-drop reordering
+6. ✅ Implement collapsible tree/outline view for hierarchical categories (no drag-and-drop)
 7. ✅ Add color picker
 8. ✅ Add icon selector
 9. ✅ Test dark mode
@@ -616,6 +624,17 @@ app/(dashboard)/
 6. ✅ Add rich text editor
 7. ✅ Create course list page with filters
 8. ✅ Test all form validations
+
+**Additional Sprint 2 implementation details (Single Course form):**
+
+- Replace short/full description and FAQ question/answer textareas with the shared **Question Bank rich text editor**, including the full image dialog (tabs: `Upload`, `Server Files`, `Recent`, `URL`).
+- Implement Featured Image as a real upload via `StorageService` (tenant-scoped), with the picker mirroring Question Bank options: `Upload`, `Server Files`, `Recent`, `URL`.
+- Add Published date/time and Scheduled publish date/time controls to the Settings tab and persist them to `publishedAt` / `scheduledAt` in the Course model.
+- Implement Author name + Instructor selector (backed by `Teacher` from Academic Setup) as part of this sprint (no deferral).
+- Extend FAQ UX to support **Add / Edit / Delete / Reorder** with helper text that matches the actual interaction (drag-and-drop or move buttons).
+- Add optional **fakeEnrollmentCount** integer to the Course model + form + list rendering for social proof.
+- Refactor the single course form to use **React Hook Form + Zod + shadcn Form** instead of raw `useState`, following the global form standards (character limits, `FormMessage`, toast errors, etc.).
+
 
 **Deliverables:**
 
@@ -675,7 +694,7 @@ app/(dashboard)/
 - [ ] Create category
 - [ ] Edit category
 - [ ] Delete category (with guard)
-- [ ] Reorder categories
+- [ ] Tree view shows correct parent–child hierarchy (indentation and expand/collapse)
 - [ ] Change category color
 - [ ] Select category icon
 - [ ] Test dark mode
@@ -966,6 +985,11 @@ enum EnrollmentStatus {
 ---
 
 ## 🎨 UI/UX Design Patterns
+
+### Theme & Button Styling (Step 1 – done)
+
+- All primary/secondary CTA buttons and important actions in the Course Management module must take their colors from the **tenant theme variables** (e.g. CSS vars like `--theme-button-from` / `--theme-button-to`, `--theme-active-from` / `--theme-active-to`), not from hard-coded hex values.
+- Status/type/freemium chips should also reuse the shared theme palette (success/warning/info) instead of inventing new colors per screen, so the whole dashboard feels consistent and tenant-branded.
 
 ### Course List Page (Your Screenshot Style)
 

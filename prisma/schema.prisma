@@ -534,23 +534,30 @@ model StudentDocument {
 
 // Course Category
 model CourseCategory {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  slug        String
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  slug      String
   description String?
-  icon        String?
-  color       String?
-  order       Int      @default(0)
-  status      String   @default("ACTIVE") // ACTIVE, INACTIVE
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  icon      String?
+  color     String?
+  order     Int      @default(0)
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  courses     Course[]
+  // Self-relation for unlimited parent-child hierarchy
+  parentId  String?
+  parent    CourseCategory? @relation("CourseCategoryToParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children  CourseCategory[] @relation("CourseCategoryToParent")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  courses   Course[]
 
   @@unique([tenantId, slug])
   @@index([tenantId, status])
+  @@index([tenantId, parentId])
   @@map("course_categories")
 }
 
@@ -595,6 +602,7 @@ model Course {
   // Media
   featuredImage        String?
   introVideoUrl        String?
+  introVideoAutoplay   Boolean  @default(false)
 
   // Visibility & Status
   status               String   @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, PRIVATE
@@ -605,6 +613,7 @@ model Course {
   metaTitle            String?
   metaDescription      String?
   metaKeywords         String?
+  fakeEnrollmentCount  Int?     // Optional fake enrollment count for marketing/social proof
 
   // Settings
   isFeatured           Boolean  @default(false)

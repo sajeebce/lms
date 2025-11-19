@@ -15,7 +15,7 @@
 - Supported lesson types include **YouTube**, **Vimeo**, **local video**, **Google Drive video**, **documents**, **text lessons**, and **iframe embeds**.
 - The system integrates with the exam/quiz module for **online exams and practice quizzes**.
 - **Student enrollments** are tracked with progress, status, and certificate information.
-- **Flexible pricing**: one-time payment, subscription (future), or free.
+- **Flexible pricing**: one-time payment, subscription, or free.
 - Optional **auto invoice generation** when a student is enrolled in a paid course.
 - Support for **SEO & marketing**: featured courses, meta tags, and optional fake enrollment count.
 
@@ -32,21 +32,26 @@
   - **Description**.
   - **Icon** (emoji or icon library).
   - **Color** (used for UI theming chips/badges).
-  - **Order** (for manual sorting).
+  - **Order** (for manual sorting among siblings).
   - **Status**: `Active` / `Inactive`.
+  - **Parent category** (optional) – supports an **unlimited-depth parent–child tree** of categories; top-level categories have no parent.
 - Category list page features:
-  - **Table** listing categories with at least: name, description, color, icon, status, and course count.
-  - **Drag-and-drop reordering** of categories.
+  - **Collapsible tree / outline view** of categories showing the full parent–child hierarchy with indentation and expand/collapse for parents.
+  - Each row shows: name, description, color, icon, status, course count, and parent information (via indentation and optional "Parent: X › Y" text).
+  - Sibling categories are sorted by their `order` field (then by name); manual reordering via drag-and-drop is **not** required in this phase.
   - **Color picker** for changing category color.
   - **Icon selector** for choosing an icon.
-  - **Create / Edit** category modal.
+  - **Create / Edit** category modal (includes parent category selector).
   - **Delete** with guard:
     - If category is used by courses, show warning: _"This category has X courses. Please reassign or delete them first."_
+    - If category has subcategories, show warning: _"This category has X subcategories. Please reassign or delete them first."_
 
 ### 2.2 Testing/UX Notes
 
 - Dark mode support for the whole page.
 - Categories respect the global dashboard visual style (chips, badges, modern table).
+- Hierarchical categories (parent/child) are displayed with clear context (e.g., indentation or "Parent: X" chips) while still feeling like a modern dashboard list.
+- All buttons in this module (primary, secondary, ghost) must use the tenant theme colors from the global design system (e.g. theme accent variables), not hard-coded hex values per screen.
 
 ---
 
@@ -63,34 +68,37 @@
     - Short description text.
     - Primary button: **"+ Add Bundle Course"**.
 
-### 3.2 Single Course Form (Create/Edit)
 
+### 3.2 Single Course Form (Create/Edit)
 > The single course form is organized into multiple tabs (6 sections). Below are the feature-level fields available to the user.
 
 - **Basic information**
   - Field: **Title** (course name).
   - Field: **Slug** (auto-generated from title; editable if needed).
-  - Field: **Short description** (summary shown in lists/cards).
-  - Field: **Full description** (rich text editor).
+  - Field: **Short description** – summary shown in lists/cards, using the **same rich text editor component used in the Question Bank** (lightweight formatting + image support).
+  - Field: **Full description** – detailed syllabus/marketing copy using the **Question Bank rich text editor** with the **Insert Image** dialog (tabs: `Upload`, `Server Files`, `Recent`, `URL`).
 - **Category & type**
   - Field: **Category** (dropdown of course categories).
-  - Field: **Course type** – `Single` or `Bundle`.
+  - Field: **Course type** – `Single` or `Bundle` (determined by route but still part of the conceptual model).
 - **Author & instructor**
   - Field: **Author name** (display text on course cards).
-  - Field: **Instructor** (linked teacher/user selector).
+  - Field: **Instructor** (linked teacher/user selector backed by the `Teacher` model from Academic Setup).
 - **Pricing & payment**
-  - Field: **Payment type** – `One-time`, `Subscription` (future), or `Free`.
+  - Field: **Payment type** – `One-time`, `Subscription`, or `Free`.
+    - When **Subscription** is selected, extra fields appear:
+      - **Subscription duration** (e.g., number of months/days of access, depending on implementation).
+      - **Subscription plan type** – `Monthly`, `Quarterly`, `Yearly`, or `Custom`.
   - Field: **Invoice title** (used on generated invoices).
   - Fields: **Regular price** and **Offer price**.
   - Field: **Currency** (default BDT but shown in UI for clarity).
   - Toggle: **Auto-generate invoice on enrollment**.
 - **Media**
-  - Field: **Featured image** upload.
+  - Field: **Featured image** upload using the shared **StorageService**. The image picker supports the same options as the Question Bank editor: `Upload`, `Server Files`, `Recent`, and `URL`.
   - Field: **Intro video URL** (YouTube/Vimeo/local/drive-compatible input).
 - **Visibility & status**
   - Field: **Status** – `Draft`, `Published`, `Scheduled`, `Private`.
   - Field: **Published date/time** (displayed in course list).
-  - Field: **Scheduled publish date/time**.
+  - Field: **Scheduled publish date/time** (used when status = `Scheduled`).
   - Toggle: **Featured course** (show in highlighted sections).
   - Toggle: **Allow comments**.
   - Toggle: **Certificate enabled** (course awards certificate on completion).
@@ -98,13 +106,25 @@
   - Field: **Meta title**.
   - Field: **Meta description**.
   - Field: **Meta keywords**.
-  - Optional: **Fake enrollment count** (social proof on catalog cards).
+  - Optional field: **Fake enrollment count** (social proof on catalog cards; shown as students enrolled).
+    - **Display logic:** wherever a course shows a "students enrolled" count in the **public catalog**, use `displayedEnrollment = fakeEnrollmentCount ?? realEnrollmentCount`.
+    - **Admin UI:** grid cards and top summary stats may use the same displayed value; detailed tables can still show real enrollments if needed, but this behaviour must be explicitly documented when implemented.
 - **FAQs**
   - Section for **Course FAQs**:
-    - Field: **Question**.
-    - Field: **Answer**.
+    - Field: **Question** – uses the same rich text editor as the Question Bank.
+    - Field: **Answer** – uses the same rich text editor as the Question Bank (so answers can include formatted text and images via `Upload` / `Server Files` / `Recent` / `URL`).
     - Field: **Order** for FAQ sorting.
     - Buttons per FAQ: `Add`, `Edit`, `Delete`, `Reorder`.
+
+#### 3.2.1 Single Course – Implementation Notes (Rich Text, Media & Forms)
+
+- The **short description**, **full description**, and **FAQ question/answer** fields must all use the **existing rich text editor from the Question Bank module**, not plain textareas.
+- The rich text editor’s **image dialog** must always expose the four sources: **`Upload`**, **`Server Files`**, **`Recent`**, and **`URL`**, matching the Question Bank UX (including drag-and-drop and max-size messages).
+- The **Featured image** field in the Media tab must be implemented as a real file upload using `StorageService` (tenant-scoped public path). The URL textbox can remain as an advanced option, but the primary path is upload.
+- When **status = `Scheduled`**, the form must require a **Scheduled publish date/time** and show it with the same control in both Create and Edit flows.
+- **Author & Instructor** fields are mandatory to implement once the `Teacher` model is available; they should not be deferred as “future”.
+- FAQ UX must support **Add / Edit / Delete / Reorder** properly. The helper text should either match the chosen interaction (e.g. “You can reorder FAQs using the move controls”) or true drag-and-drop must be implemented.
+- The **course creation forms** should be progressively refactored to use the global **React Hook Form + Zod + shadcn Form** pattern instead of plain `useState`, for consistent validation, accessibility, and error handling.
 
 ### 3.3 Bundle Course Form
 
@@ -211,10 +231,10 @@
   - `Document` (PDF, DOC, PPT, etc.).
   - `Text` lesson (rich text article).
   - `Iframe` embed.
-- Per lesson row:
-  - Shows icon, lesson title, and (for videos) **duration**.
-  - Buttons: `Edit`, `Delete`, `Preview`.
-  - Drag handle to **reorder lessons**.
+- Per lesson or activity row:
+  - Shows icon, title, and (for videos) **duration** where applicable.
+  - Buttons: `Edit`, `Delete`, `Preview`; for assessments (online exams/quizzes, assignments) there can also be **"View Results"** / **"View Submissions"** shortcuts that open the relevant reporting page.
+  - Drag handle to **reorder lessons and activities** within a topic.
 - Lesson-level settings:
   - Access control: `Public`, `Password`, `Enrolled only`.
   - Password field (when password-protected).
@@ -222,6 +242,13 @@
   - Attachments list (e.g., PDFs, images, links) with `Add` / `Remove` controls.
   - Toggle: **"Allow download"**.
   - Toggle: **"Mark as preview"** (free sample lesson).
+- Content protection / viewing behaviour (best effort, non-DRM):
+  - **Document lessons** default to a **protected view-only mode**:
+    - Students normally see a **"View"** button that opens the document in a secure viewer instead of getting a raw file link.
+    - The **"Allow download"** toggle explicitly controls whether a separate **"Download"** action is shown for that lesson.
+  - Document viewer and video player screens overlay a subtle, per-student **watermark** (e.g., name, code, timestamp) to discourage casual leaks and make the source traceable.
+  - Locally hosted / Drive-proxied videos are played through a streaming player rather than a simple direct file download, and YouTube embeds use a **restricted UI** (no obvious "Watch on YouTube" / share buttons) to make copying harder.
+  - The system does **not** promise 100% prevention against advanced screen recording or download tools, but is designed to make copying significantly harder for normal users.
 
 ### 5.4 Activities & Resources (Add Activity/Resource Modal)
 
@@ -365,7 +392,7 @@
   - Lesson title and duration.
   - Lesson description/body content.
   - Navigation buttons: **"Previous Lesson"**, **"Mark Complete"**, **"Next"**.
-  - Attachments section with file links and **"Download"** actions.
+  - Attachments section with file links and **"Download"** actions; for protected document lessons, students instead see a dedicated viewer (with watermark) unless the teacher has explicitly allowed downloads.
 - Behaviour:
   - Completing lessons updates the **progress percentage**.
   - When all required lessons/activities are completed and certificate is enabled, the course can mark the student as **Completed** and expose the certificate download/link.

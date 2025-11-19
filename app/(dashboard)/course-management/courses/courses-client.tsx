@@ -38,6 +38,7 @@ type Course = {
   class: { id: string; name: string; alias: string | null } | null
   subject: { id: string; name: string; icon: string | null } | null
   stream: { id: string; name: string } | null
+  fakeEnrollmentCount: number | null
   _count: {
     enrollments: number
     topics: number
@@ -266,9 +267,14 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground dark:text-slate-400">Total Enrollments</p>
+            <p className="text-xs text-muted-foreground dark:text-slate-400">Total Enrollments (Displayed)</p>
             <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
-              {courses.reduce((sum, c) => sum + c._count.enrollments, 0)}
+              {courses
+                .reduce(
+                  (sum, c) => sum + (c.fakeEnrollmentCount ?? c._count.enrollments),
+                  0,
+                )
+                .toLocaleString()}
             </p>
           </div>
         </div>
@@ -380,8 +386,8 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
 
                 {/* Stats */}
                 <div className="flex gap-4 text-sm text-muted-foreground dark:text-slate-400">
-                  <span>{course._count.topics} Topics</span>
-                  <span>{course._count.enrollments} Students</span>
+                  <span>{course._count.topics.toLocaleString()} Topics</span>
+                  <span>{(course.fakeEnrollmentCount ?? course._count.enrollments).toLocaleString()} Students</span>
                 </div>
 
                 {/* Actions */}
@@ -398,13 +404,12 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
                     </Button>
                   </Link>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     onClick={() => {
                       setCourseToDelete(course)
                       setDeleteDialogOpen(true)
                     }}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:border-slate-600 dark:hover:bg-red-950/50"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -501,15 +506,14 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
                         </Button>
                       </Link>
                       <Button
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         onClick={() => {
                           setCourseToDelete(course)
                           setDeleteDialogOpen(true)
                         }}
-                        className="dark:hover:bg-red-950/50"
                       >
-                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -535,7 +539,7 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
             <AlertDialogCancel className="dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-600">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
             </AlertDialogAction>

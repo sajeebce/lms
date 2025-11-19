@@ -88,7 +88,7 @@ export class StorageService {
     const storage = await this.getStorageAdapter()
     const extension = file.name.split('.').pop()
     const key = await this.generateKey('students', `documents/${studentId}/${documentType}.${extension}`)
-    
+
     const result = await storage.upload({
       key,
       file,
@@ -119,7 +119,7 @@ export class StorageService {
       'assignments',
       `${assignmentId}/submissions/${studentId}/submission_v${version}.${extension}`
     )
-    
+
     const result = await storage.upload({
       key,
       file,
@@ -151,7 +151,7 @@ export class StorageService {
       'courses',
       `${courseId}/materials/${materialType}_${timestamp}.${extension}`
     )
-    
+
     const result = await storage.upload({
       key,
       file,
@@ -168,16 +168,125 @@ export class StorageService {
   }
 
   /**
+   * Upload course featured image (with database tracking)
+   */
+  async uploadCourseFeaturedImage(
+    courseId: string,
+    file: File,
+    options?: {
+      author?: string
+      description?: string
+      altText?: string
+      width?: number
+      height?: number
+    }
+  ): Promise<{ url: string; id: string }> {
+    const storage = await this.getStorageAdapter()
+    const tenantId = await getTenantId()
+
+    const extension = file.name.split('.').pop()
+    const timestamp = Date.now()
+    const key = await this.generateKey('courses', `${courseId}/featured/${timestamp}.${extension}`)
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        courseId,
+        role: 'featured_image',
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: true, // Featured images are public
+    })
+
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        tenantId,
+        key,
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        category: 'course_featured_image',
+        entityType: 'course',
+        entityId: courseId,
+        isPublic: true,
+        author: options?.author,
+        description: options?.description,
+        altText: options?.altText,
+        width: options?.width,
+        height: options?.height,
+      },
+    })
+
+    return { url: result.url, id: uploadedFile.id }
+  }
+
+  /**
+   * Upload course intro video (with database tracking)
+   */
+  async uploadCourseIntroVideo(
+    courseId: string,
+    file: File,
+    options?: {
+      author?: string
+      description?: string
+      duration?: number
+    }
+  ): Promise<{ url: string; id: string }> {
+    const storage = await this.getStorageAdapter()
+    const tenantId = await getTenantId()
+
+    const extension = file.name.split('.').pop()
+    const timestamp = Date.now()
+    const key = await this.generateKey('courses', `${courseId}/intro-video/${timestamp}.${extension}`)
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        courseId,
+        role: 'intro_video',
+        duration: options?.duration?.toString() || '0',
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: true, // Intro videos are public marketing assets
+    })
+
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        tenantId,
+        key,
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        category: 'course_intro_video',
+        entityType: 'course',
+        entityId: courseId,
+        isPublic: true,
+        author: options?.author,
+        description: options?.description,
+      },
+    })
+
+    return { url: result.url, id: uploadedFile.id }
+  }
+
+
+  /**
    * Delete student files (cascade delete)
    */
   async deleteStudentFiles(studentId: string): Promise<void> {
     const storage = await this.getStorageAdapter()
     const tenantId = await getTenantId()
-    
+
     // List all files for this student
     const photoPrefix = `tenants/${tenantId}/students/photos/${studentId}/`
     const docPrefix = `tenants/${tenantId}/students/documents/${studentId}/`
-    
+
     const [photos, documents] = await Promise.all([
       storage.list(photoPrefix),
       storage.list(docPrefix),
@@ -197,7 +306,7 @@ export class StorageService {
     const storage = await this.getStorageAdapter()
     const tenantId = await getTenantId()
     const prefix = `tenants/${tenantId}/assignments/${assignmentId}/submissions/${studentId}/`
-    
+
     const files = await storage.list(prefix)
     const keys = files.map(obj => obj.key)
 
@@ -213,7 +322,7 @@ export class StorageService {
     const storage = await this.getStorageAdapter()
     const tenantId = await getTenantId()
     const prefix = `tenants/${tenantId}/assignments/${assignmentId}/`
-    
+
     const files = await storage.list(prefix)
     const keys = files.map(obj => obj.key)
 
@@ -229,7 +338,7 @@ export class StorageService {
     const storage = await this.getStorageAdapter()
     const tenantId = await getTenantId()
     const prefix = `tenants/${tenantId}/courses/${courseId}/`
-    
+
     const files = await storage.list(prefix)
     const keys = files.map(obj => obj.key)
 

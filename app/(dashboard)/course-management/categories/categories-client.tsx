@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Edit, GripVertical, Lock } from 'lucide-react'
+import { Plus, Trash2, Edit, Lock, ChevronRight, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { createCategory, updateCategory, deleteCategory, reorderCategories } from './actions'
+import { createCategory, updateCategory, deleteCategory } from './actions'
 import CategoryForm from './category-form'
 
 type Category = {
@@ -27,9 +27,16 @@ type Category = {
   color: string | null
   status: string
   order: number
+  parentId: string | null
   _count: {
     courses: number
   }
+}
+
+type TreeNode = {
+  category: Category
+  depth: number
+  hasChildren: boolean
 }
 
 type Props = {
@@ -38,11 +45,75 @@ type Props = {
 
 export default function CategoriesClient({ initialCategories }: Props) {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const initial = new Set<string>()
+    initialCategories.forEach((category) => {
+      if (initialCategories.some((child) => child.parentId === category.id)) {
+        initial.add(category.id)
+      }
+    })
+    return initial
+  })
+
+  const hasChildren = (categoryId: string) =>
+    categories.some((category) => category.parentId === categoryId)
+
+  const getSortedChildren = (parentId: string | null) =>
+    categories
+      .filter((category) => category.parentId === parentId)
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order
+        return a.name.localeCompare(b.name)
+      })
+
+  const buildTreeNodes = (): TreeNode[] => {
+    const result: TreeNode[] = []
+
+    const traverse = (parentId: string | null, depth: number) => {
+      const children = getSortedChildren(parentId)
+      children.forEach((child) => {
+        const childHasChildren = hasChildren(child.id)
+        result.push({ category: child, depth, hasChildren: childHasChildren })
+        if (childHasChildren && expandedIds.has(child.id)) {
+          traverse(child.id, depth + 1)
+        }
+      })
+    }
+
+    traverse(null, 0)
+    return result
+  }
+
+  const toggleExpand = (categoryId: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
+
+  const buildCategoryPath = (category: Category, all: Category[]): string => {
+    const names: string[] = [category.name]
+    let currentParentId = category.parentId
+
+    while (currentParentId) {
+      const parent = all.find((cat) => cat.id === currentParentId)
+      if (!parent) break
+      names.unshift(parent.name)
+      currentParentId = parent.parentId
+    }
+
+    return names.join(' › ')
+  }
+
   const [formOpen, setFormOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   // Handle create/update
   const handleSubmit = async (data: {
@@ -52,24 +123,48 @@ export default function CategoriesClient({ initialCategories }: Props) {
     icon?: string
     color?: string
     status?: string
+    parentId?: string | null
   }) => {
+    const newParentId = data.parentId ?? null
+
     if (editingCategory) {
-      const result = await updateCategory(editingCategory.id, data)
+      const previousParentId = editingCategory.parentId
+      const result = await updateCategory(editingCategory.id, { ...data, parentId: newParentId })
       if (result.success) {
         toast.success('Category updated successfully')
         setCategories((prev) =>
-          prev.map((cat) => (cat.id === editingCategory.id ? { ...cat, ...data } : cat))
+          prev.map((cat) =>
+            cat.id === editingCategory.id ? { ...cat, ...data, parentId: newParentId } : cat
+          )
         )
+
+        if (newParentId && newParentId !== previousParentId) {
+          setExpandedIds((prev) => {
+            const next = new Set(prev)
+            next.add(newParentId)
+            return next
+          })
+        }
+
         setFormOpen(false)
         setEditingCategory(null)
       } else {
         toast.error(result.error || 'Failed to update category')
       }
     } else {
-      const result = await createCategory(data)
+      const result = await createCategory({ ...data, parentId: newParentId })
       if (result.success && result.data) {
         toast.success('Category created successfully 🎉')
         setCategories((prev) => [...prev, { ...result.data, _count: { courses: 0 } }])
+
+        if (newParentId) {
+          setExpandedIds((prev) => {
+            const next = new Set(prev)
+            next.add(newParentId)
+            return next
+          })
+        }
+
         setFormOpen(false)
       } else {
         toast.error(result.error || 'Failed to create category')
@@ -92,39 +187,7 @@ export default function CategoriesClient({ initialCategories }: Props) {
     setCategoryToDelete(null)
   }
 
-  // Drag and drop handlers
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index)
-  }
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault()
-    if (draggedIndex === null || draggedIndex === index) return
-
-    const newCategories = [...categories]
-    const draggedItem = newCategories[draggedIndex]
-    newCategories.splice(draggedIndex, 1)
-    newCategories.splice(index, 0, draggedItem)
-
-    setCategories(newCategories)
-    setDraggedIndex(index)
-  }
-
-  const handleDragEnd = async () => {
-    if (draggedIndex === null) return
-
-    // Save new order to backend
-    const categoryIds = categories.map((cat) => cat.id)
-    const result = await reorderCategories(categoryIds)
-
-    if (result.success) {
-      toast.success('Category order updated')
-    } else {
-      toast.error('Failed to update order')
-    }
-
-    setDraggedIndex(null)
-  }
+  const treeNodes = buildTreeNodes()
 
   return (
     <div className="space-y-6">
@@ -159,17 +222,29 @@ export default function CategoriesClient({ initialCategories }: Props) {
           </div>
         ) : (
           <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {categories.map((category, index) => (
+            {treeNodes.map(({ category, depth, hasChildren }) => (
               <div
                 key={category.id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className="flex items-center gap-4 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-move"
+                className="flex items-center gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+                style={{ paddingLeft: `${depth * 16 + 12}px` }}
               >
-                {/* Drag Handle */}
-                <GripVertical className="h-5 w-5 text-neutral-400" />
+                {/* Tree toggle */}
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(category.id)}
+                    className="flex h-5 w-5 items-center justify-center rounded hover:bg-neutral-200/70 dark:hover:bg-neutral-700/70 transition-colors"
+                    aria-label={expandedIds.has(category.id) ? 'Collapse category' : 'Expand category'}
+                  >
+                    {expandedIds.has(category.id) ? (
+                      <ChevronDown className="h-3 w-3 text-neutral-500" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 text-neutral-500" />
+                    )}
+                  </button>
+                ) : (
+                  <span className="h-5 w-5" />
+                )}
 
                 {/* Icon */}
                 <div
@@ -195,6 +270,16 @@ export default function CategoriesClient({ initialCategories }: Props) {
                       {category.status}
                     </span>
                   </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+                    {category.parentId ? (
+                      <span>
+                        Parent{' '}
+                        <span className="font-medium">{buildCategoryPath(category, categories)}</span>
+                      </span>
+                    ) : (
+                      <span className="italic">Top-level category</span>
+                    )}
+                  </p>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
                     {category.description || 'No description'}
                   </p>
@@ -230,7 +315,7 @@ export default function CategoriesClient({ initialCategories }: Props) {
                     </Button>
                   ) : (
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       onClick={() => {
                         setCategoryToDelete(category)
@@ -238,7 +323,7 @@ export default function CategoriesClient({ initialCategories }: Props) {
                       }}
                       title="Delete category"
                     >
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -256,6 +341,10 @@ export default function CategoriesClient({ initialCategories }: Props) {
           </DialogHeader>
           <CategoryForm
             initialData={editingCategory}
+            parentOptions={categories.map((category) => ({
+              value: category.id,
+              label: buildCategoryPath(category, categories),
+            }))}
             onSubmit={handleSubmit}
             onCancel={() => {
               setFormOpen(false)
@@ -279,7 +368,7 @@ export default function CategoriesClient({ initialCategories }: Props) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
             </AlertDialogAction>
