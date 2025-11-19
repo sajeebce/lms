@@ -299,6 +299,65 @@ export class StorageService {
 
     return { url: result.url, id: uploadedFile.id };
   }
+  /**
+   * Upload course scheduled (coming soon) image (PRIVATE, with database tracking)
+   * Used for SCHEDULED courses only; URL must not be public.
+   */
+  async uploadCourseScheduledImage(
+    courseId: string,
+    file: File,
+    options?: {
+      author?: string;
+      description?: string;
+      altText?: string;
+      width?: number;
+      height?: number;
+    }
+  ): Promise<{ url: string; id: string }> {
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
+
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const key = await this.generateKey(
+      "courses",
+      `${courseId}/scheduled/${timestamp}.${extension}`
+    );
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        courseId,
+        role: "scheduled_image",
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: false, // Scheduled images must be private (non-public URL)
+    });
+
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        tenantId,
+        key,
+        url: result.url,
+        fileName: file.name,
+        fileSize: result.size,
+        mimeType: file.type,
+        category: "course_scheduled_image",
+        entityType: "course",
+        entityId: courseId,
+        isPublic: false,
+        author: options?.author,
+        description: options?.description,
+        altText: options?.altText,
+        width: options?.width,
+        height: options?.height,
+      },
+    });
+
+    return { url: result.url, id: uploadedFile.id };
+  }
 
   /**
    * Delete student files (cascade delete)

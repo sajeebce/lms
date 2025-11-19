@@ -280,6 +280,30 @@ export async function createSingleCourse(data: z.infer<typeof courseSchema>) {
       },
     });
 
+    // Re-associate scheduled image uploads created with temporary entityId
+    if (validated.comingSoonImage) {
+      try {
+        await prisma.uploadedFile.updateMany({
+          where: {
+            tenantId,
+            category: "course_scheduled_image",
+            entityType: "course",
+            entityId: "temp",
+            url: validated.comingSoonImage,
+          },
+          data: {
+            entityId: course.id,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to re-associate scheduled course image", {
+          tenantId,
+          courseId: course.id,
+          error,
+        });
+      }
+    }
+
     revalidatePath("/course-management/courses");
     return { success: true, data: course };
   } catch (error) {

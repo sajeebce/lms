@@ -83,6 +83,10 @@
 - **Author & instructor**
   - Field: **Author name** (display text on course cards).
   - Field: **Instructor** (linked teacher/user selector backed by the `Teacher` model from Academic Setup).
+- **Academic integration (optional)**
+  - Fields: **Class**, **Stream**, **Subject** – all optional dropdowns backed by Academic Setup / Question Bank (`Class`, `Stream`, `Subject` models) using the global `SearchableDropdown` pattern.
+  - Behaviour: linking a course to Class/Stream/Subject does **not** auto-enroll or auto-invoice any students. These fields are used for academic tagging, filters, and “recommended for your class” sections only.
+  - Example display: course cards can show small chips like `Class 8 · Science · Mathematics` so admins, teachers, and students instantly see which academic track the course targets.
 - **Pricing & payment**
   - Field: **Payment type** – `One-time`, `Subscription`, or `Free`.
     - When **Subscription** is selected, extra fields appear:
@@ -163,6 +167,23 @@
 - **Author & Instructor** fields are mandatory to implement once the `Teacher` model is available; they should not be deferred as “future”.
 - FAQ UX must support **Add / Edit / Delete / Reorder** properly. The helper text should either match the chosen interaction (e.g. “You can reorder FAQs using the move controls”) or true drag-and-drop must be implemented.
 - The **course creation forms** should be progressively refactored to use the global **React Hook Form + Zod + shadcn Form** pattern instead of plain `useState`, for consistent validation, accessibility, and error handling.
+
+#### 3.2.2 Academic Integration – Behaviour & Examples
+
+- **Purpose:** clarify what happens (and what does _not_ happen) when admins fill the optional **Class / Stream / Subject** fields on a course.
+- **Baseline rule:** academic fields behave as **metadata and targeting**, not as hard enrollment rules:
+  - They power **admin filters**, **badges** on course cards, and **recommended sections** in the student catalog.
+  - They do **not** auto-create `CourseEnrollment` records or invoices.
+- **Internal academic course example (tagged only):**
+  - Admin creates **"Class 8 – Mathematics (Full Syllabus)"** and sets `Class = Class 8`, `Stream = Science`, `Subject = Mathematics`.
+  - Students in Class 8 Science may see this under a **"Recommended for your class"** area in `/courses`, but they still need to enroll (manually or via catalog) to get access.
+  - Auto invoice is triggered only when an enrollment is created (per course settings), not when academic fields are saved.
+- **Public/marketing course example:**
+  - Admin creates **"Spoken English Bootcamp"** with only Category set (no Class/Stream/Subject).
+  - Course appears in general catalog and marketing pages, but is **not tied** to any specific class, and is never auto-pushed to academic enrollments.
+- **Corner cases / future safety:**
+  - Because academic tags alone do not enroll students, changing a student’s Class/Stream or moving them between Sections does **not** silently create or cancel course enrollments.
+  - Any future "auto academic enrollment" feature (e.g. assign this course to Section A and auto-enroll/invoice everyone) must be designed as a **separate, explicit module** so that admins clearly understand the financial and enrollment impact.
 
 ### 3.3 Bundle Course Form
 
@@ -446,6 +467,7 @@
   - Category create/edit/delete/reorder, color/icon selection.
   - Single/bundle course creation, featured image upload, intro video, pricing, and FAQs.
   - Course list filters and search.
+  - Academic integration: creating courses with and without Class/Stream/Subject tags, verifying admin filters and badges, testing student catalog Recommended for your class sections, and confirming that no students are auto-enrolled or auto-invoiced just from tagging.
   - Topic and lesson CRUD, lesson types, access control, scheduling, attachments, and reorder.
   - Enrollment management, auto invoice generation, and progress tracking.
   - Student catalog browsing, enrollment, content viewing, completion, and progress tracking.

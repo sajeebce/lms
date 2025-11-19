@@ -2,8 +2,38 @@
 
 import { requireRole, getTenantId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getStorageService } from "@/lib/storage/storage-service";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
+async function cleanupCourseScheduledImagesForTenantCourse(
+  tenantId: string,
+  courseId: string
+) {
+  const storageService = getStorageService();
+
+  const files = await prisma.uploadedFile.findMany({
+    where: {
+      tenantId,
+      category: "course_scheduled_image",
+      entityType: "course",
+      entityId: courseId,
+    },
+  });
+
+  for (const file of files) {
+    try {
+      await storageService.deleteUploadedFile(file.id);
+    } catch (error) {
+      console.error("Failed to delete scheduled course image", {
+        fileId: file.id,
+        courseId,
+        tenantId,
+        error,
+      });
+    }
+  }
+}
 
 export async function deleteCourse(id: string) {
   try {
@@ -61,12 +91,17 @@ export async function publishCourse(id: string) {
       return { success: true, alreadyPublished: true };
     }
 
+    if (course.comingSoonImage) {
+      await cleanupCourseScheduledImagesForTenantCourse(tenantId, id);
+    }
+
     await prisma.course.update({
       where: { id },
       data: {
         status: "PUBLISHED",
         publishedAt: course.publishedAt ?? new Date(),
         scheduledAt: null,
+        comingSoonImage: null,
       },
     });
 
@@ -111,6 +146,10 @@ export async function updateCourseStatus(
       };
     }
 
+    if (status === "PUBLISHED" && course.comingSoonImage) {
+      await cleanupCourseScheduledImagesForTenantCourse(tenantId, id);
+    }
+
     await prisma.course.update({
       where: { id },
       data: {
@@ -119,6 +158,7 @@ export async function updateCourseStatus(
           ? {
               publishedAt: course.publishedAt ?? new Date(),
               scheduledAt: null,
+              comingSoonImage: null,
             }
           : {}),
       },

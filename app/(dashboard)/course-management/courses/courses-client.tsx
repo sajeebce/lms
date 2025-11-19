@@ -92,6 +92,7 @@ type Course = {
   subject: { id: string; name: string; icon: string | null } | null;
   stream: { id: string; name: string } | null;
   featuredImage: string | null;
+  comingSoonImage: string | null;
   authorName: string | null;
   instructor: { id: string; name: string } | null;
   paymentType: string;
@@ -168,6 +169,12 @@ const getDisplayedEnrollmentCount = (course: Course) => {
     course._count.enrollments
   );
 };
+const getCourseDisplayImage = (course: Course) => {
+  if (course.status === "SCHEDULED" && course.comingSoonImage) {
+    return course.comingSoonImage;
+  }
+  return course.featuredImage;
+};
 
 const getCourseMetaLine = (course: Course) => {
   const topics =
@@ -198,7 +205,7 @@ export default function CoursesClient({
   const [filterClass, setFilterClass] = useState("");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterStream, setFilterStream] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
   const [duplicatingCourseId, setDuplicatingCourseId] = useState<string | null>(
@@ -678,18 +685,6 @@ export default function CoursesClient({
             {/* View Toggle */}
             <div className="flex gap-1 border border-border dark:border-slate-600 rounded-lg p-1 bg-muted/30 dark:bg-slate-800/50">
               <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-                className={
-                  viewMode === "grid"
-                    ? undefined
-                    : "text-muted-foreground dark:text-slate-400"
-                }
-              >
-                <Grid3x3 className="h-4 w-4" />
-              </Button>
-              <Button
                 variant={viewMode === "table" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("table")}
@@ -700,6 +695,18 @@ export default function CoursesClient({
                 }
               >
                 <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className={
+                  viewMode === "grid"
+                    ? undefined
+                    : "text-muted-foreground dark:text-slate-400"
+                }
+              >
+                <Grid3x3 className="h-4 w-4" />
               </Button>
             </div>
             {/* Create Course Button */}
@@ -962,23 +969,29 @@ export default function CoursesClient({
                         <TableCell className="align-top">
                           <div className="flex gap-3">
                             <div className="h-12 w-12 rounded-md overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 border border-border/60 dark:border-slate-700 flex items-center justify-center">
-                              {course.featuredImage ? (
-                                <Image
-                                  src={course.featuredImage}
-                                  alt={course.title}
-                                  width={48}
-                                  height={48}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center h-full w-full text-xs text-muted-foreground dark:text-slate-400">
-                                  {course.courseType === "BUNDLE" ? (
-                                    <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                                  ) : (
-                                    <BookOpen className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                                  )}
-                                </div>
-                              )}
+                              {(() => {
+                                const imageUrl = getCourseDisplayImage(course);
+                                if (imageUrl) {
+                                  return (
+                                    <Image
+                                      src={imageUrl}
+                                      alt={course.title}
+                                      width={48}
+                                      height={48}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  );
+                                }
+                                return (
+                                  <div className="flex items-center justify-center h-full w-full text-xs text-muted-foreground dark:text-slate-400">
+                                    {course.courseType === "BUNDLE" ? (
+                                      <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                    ) : (
+                                      <BookOpen className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <div className="space-y-1 min-w-0">
                               <div className="flex items-center gap-2">

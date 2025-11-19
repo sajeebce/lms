@@ -2,8 +2,38 @@
 
 import { requireRole, getTenantId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getStorageService } from "@/lib/storage/storage-service";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
+async function cleanupCourseScheduledImagesForTenantCourse(
+  tenantId: string,
+  courseId: string
+) {
+  const storageService = getStorageService();
+
+  const files = await prisma.uploadedFile.findMany({
+    where: {
+      tenantId,
+      category: "course_scheduled_image",
+      entityType: "course",
+      entityId: courseId,
+    },
+  });
+
+  for (const file of files) {
+    try {
+      await storageService.deleteUploadedFile(file.id);
+    } catch (error) {
+      console.error("Failed to delete scheduled course image", {
+        fileId: file.id,
+        courseId,
+        tenantId,
+        error,
+      });
+    }
+  }
+}
 
 const courseSchema = z
   .object({
@@ -224,6 +254,14 @@ export async function updateCourse(
       };
     }
 
+    const becomesPublished = validated.status === "PUBLISHED";
+    const scheduledImageManuallyCleared =
+      !validated.comingSoonImage && !!existing.comingSoonImage;
+
+    if (becomesPublished || scheduledImageManuallyCleared) {
+      await cleanupCourseScheduledImagesForTenantCourse(tenantId, id);
+    }
+
     // Delete existing FAQs and create new ones
     await prisma.courseFAQ.deleteMany({
       where: { courseId: id },
@@ -239,6 +277,9 @@ export async function updateCourse(
         subjectId: validated.subjectId || null,
         streamId: validated.streamId || null,
         fakeEnrollmentCount: validated.fakeEnrollmentCount ?? null,
+        comingSoonImage: becomesPublished
+          ? null
+          : validated.comingSoonImage ?? null,
         scheduledAt:
           validated.status === "PUBLISHED" ? null : validated.scheduledAt,
         publishedAt:

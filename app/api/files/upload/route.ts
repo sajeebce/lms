@@ -147,6 +147,17 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "course_scheduled_image": {
+        const result = await storageService.uploadCourseScheduledImage(
+          entityId,
+          fileToUpload,
+          metadata
+        );
+        url = result.url;
+        id = result.id;
+        break;
+      }
+
       case "course_intro_video": {
         const durationStr = formData.get("duration");
         const videoDuration = durationStr

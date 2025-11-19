@@ -137,6 +137,15 @@ model Course {
   category          CourseCategory? @relation(fields: [categoryId], references: [id])
   courseType        CourseType    @default(SINGLE) // SINGLE, BUNDLE
 
+  // Academic Integration (optional)
+  classId           String?
+  subjectId         String?
+  streamId          String?
+
+  class             Class?         @relation(fields: [classId], references: [id])
+  subject           Subject?       @relation(fields: [subjectId], references: [id])
+  stream            Stream?        @relation(fields: [streamId], references: [id])
+
   // Author/Instructor
   authorName        String?       // "Dr. Nabil Rahman"
   instructorId      String?       // Link to Teacher/User
@@ -205,6 +214,7 @@ model Course {
   @@unique([tenantId, slug])
   @@index([tenantId, status])
   @@index([categoryId])
+  @@index([tenantId, classId, streamId, subjectId])
 }
 ```
 
@@ -217,6 +227,7 @@ model Course {
 - ✅ Certificate support
 - ✅ Auto-computed statistics
 - ✅ Rich status & access model (draft/live + visibility + schedule + enrollment settings)
+- ✅ Optional academic integration fields (Class/Stream/Subject) used for tagging, admin filters, question bank mapping, and **recommended courses** – but they never auto-create enrollments or invoices on their own.
 
 **Character Limits:**
 
@@ -748,6 +759,13 @@ app/(dashboard)/
 - [ ] Progress tracking
 - [ ] View enrolled students
 - [ ] Test dark mode
+
+### Academic Integration & Recommendations
+
+- [ ] Create courses with and without Class/Stream/Subject tags and verify that badges and admin filters behave as expected.
+- [ ] Log in as a student with a known `StudentEnrollment` (Class/Stream) and verify a **"Recommended for your class"** section only shows courses tagged for that Class/Stream.
+- [ ] Confirm that adding or editing academic tags on a course does **not** automatically create `CourseEnrollment` rows or invoices.
+- [ ] Change a students academic Class/Stream and verify that the recommended list updates, without silently enrolling/unenrolling them from any courses.
 
 ### Student Experience
 
@@ -1483,6 +1501,14 @@ When the teacher clicks `+ Add Lesson` or `+ Add Activity` inside a topic, open 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Academic-aware sections (internal students):**
+
+- For a logged-in student who has an active `StudentEnrollment` in Academic Setup, the catalog can show an extra strip such as **"Recommended for your Class/Stream"**.
+- Implementation uses the courses `classId` / `streamId` tags to filter courses where:
+  - `course.classId` matches the students current academic `classId`, and
+  - if both sides have a `streamId`, they must match.
+- These are **recommendations only**: students still have to enroll explicitly; no `CourseEnrollment` records or invoices are created automatically from this list.
+
 ### Student Course Player
 
 **Route:** `/my-courses/[id]/learn`
@@ -1874,6 +1900,8 @@ export async function enrollStudent(
   };
 }
 ```
+
+> **Academic integration note:** this enrollment hook is only triggered by explicit actions (manual enrollment, self-enrollment from catalog, or a future dedicated assign course to section feature). Simply setting `classId` / `streamId` / `subjectId` on a course does **not** call this action and does **not** auto-enroll or auto-invoice any students.
 
 #### **Duplicate Course Hook (Deep Clone)**
 

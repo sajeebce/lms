@@ -284,7 +284,11 @@ export default function EditCourseForm({
               </TabsContent>
 
               <TabsContent value="settings">
-                <SettingsTab data={formData} onChange={updateFormData} />
+                <SettingsTab
+                  data={formData}
+                  onChange={updateFormData}
+                  courseId={course.id}
+                />
               </TabsContent>
 
               <TabsContent value="faq">

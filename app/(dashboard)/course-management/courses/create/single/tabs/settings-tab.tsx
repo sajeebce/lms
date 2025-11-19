@@ -4,14 +4,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
+import { Button } from "@/components/ui/button";
+import { FileUploadButton } from "@/components/ui/file-upload-button";
+import { Image as ImageIcon, Trash2 } from "lucide-react";
 import type { CourseFormData } from "../single-course-form";
 
 type Props = {
   data: CourseFormData;
   onChange: (data: Partial<CourseFormData>) => void;
+  courseId?: string;
 };
 
-export default function SettingsTab({ data, onChange }: Props) {
+export default function SettingsTab({ data, onChange, courseId }: Props) {
   // Derive display values from explicit UI fields first, then fallback to scheduledAt
   const baseLocal = data.scheduledAt ? new Date(data.scheduledAt) : null;
 
@@ -27,9 +31,32 @@ export default function SettingsTab({ data, onChange }: Props) {
         baseLocal.getMinutes()
       ).padStart(2, "0")}`
     : "";
+  const entityId = courseId || "temp";
 
   const scheduledDateValue = data.scheduledDate ?? fallbackDate;
   const scheduledTimeValue = data.scheduledTime ?? fallbackTime;
+
+  const visibilityDescriptions: Record<CourseFormData["visibility"], string> = {
+    PUBLIC:
+      "Public courses are listed in catalog and searchable by all eligible learners.",
+    UNLISTED:
+      "Unlisted courses do not appear in catalog/search. Learners need the direct link.",
+    PRIVATE:
+      "Private courses are hidden. Only learners you manually enroll or invite can access.",
+    INTERNAL_ONLY:
+      "Internal-only courses are visible only to users inside your organization, not external guests.",
+  };
+
+  const statusDescriptions: Record<CourseFormData["status"], string> = {
+    DRAFT:
+      "Draft courses are only visible to admins and instructors and cannot be enrolled in.",
+    PUBLISHED:
+      "Published courses are live and visible to learners based on visibility and enrollment settings.",
+    SCHEDULED:
+      "Scheduled courses will automatically publish at the selected date and time.",
+    PRIVATE:
+      "Private status keeps this course hidden; only directly enrolled or invited learners can access.",
+  };
 
   const updateSchedule = (nextDate?: string, nextTime?: string) => {
     const date = nextDate !== undefined ? nextDate : scheduledDateValue;
@@ -87,7 +114,8 @@ export default function SettingsTab({ data, onChange }: Props) {
           placeholder="Select visibility"
         />
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          Visibility controls who can discover this course in catalog/search.
+          {visibilityDescriptions[data.visibility] ??
+            "Visibility controls who can discover this course in catalog/search."}
         </p>
       </div>
 
@@ -108,6 +136,10 @@ export default function SettingsTab({ data, onChange }: Props) {
           }}
           placeholder="Select status"
         />
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          {statusDescriptions[data.status] ??
+            "Status controls whether learners can see and enroll in this course."}
+        </p>
 
         {/* Schedule (when status = Scheduled) */}
         {data.status === "SCHEDULED" && (
@@ -171,6 +203,73 @@ export default function SettingsTab({ data, onChange }: Props) {
                     }
                   />
                 </div>
+              </div>
+
+              {/* Scheduled featured image (coming soon cover) */}
+              <div className="mt-4 space-y-2 rounded-xl border border-dashed border-sky-300/70 bg-sky-50/60 p-3 dark:border-sky-500/50 dark:bg-sky-950/30">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <Label className="flex items-center gap-1.5 text-xs font-semibold">
+                      <ImageIcon className="h-4 w-4 text-sky-500" />
+                      <span>Scheduled featured image (coming soon cover)</span>
+                    </Label>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                      This image is shown while the course is scheduled. After
+                      publish it is removed and the Media tab featured image is
+                      used again.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileUploadButton
+                      category="course_scheduled_image"
+                      entityType="course"
+                      entityId={entityId}
+                      accept="image/*"
+                      maxSize={5 * 1024 * 1024}
+                      buttonText={
+                        data.comingSoonImage
+                          ? "Change image"
+                          : "Upload scheduled image"
+                      }
+                      buttonVariant="outline"
+                      showImageProperties={false}
+                      className="whitespace-nowrap text-xs"
+                      onUploadComplete={(url) =>
+                        onChange({ comingSoonImage: url })
+                      }
+                    />
+                    {data.comingSoonImage && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => onChange({ comingSoonImage: undefined })}
+                        aria-label="Remove scheduled image"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {data.comingSoonImage && (
+                  <div className="mt-2 rounded-lg border bg-neutral-50/80 p-2 dark:bg-neutral-900/60">
+                    <p className="mb-1 text-[11px] font-medium text-neutral-700 dark:text-neutral-200">
+                      Scheduled cover preview
+                    </p>
+                    <div className="relative aspect-video w-full overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800">
+                      <img
+                        src={data.comingSoonImage}
+                        alt="Scheduled featured"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
