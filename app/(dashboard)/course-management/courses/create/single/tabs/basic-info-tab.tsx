@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import type { CourseFormData } from '../single-course-form'
 import RichTextEditor from '@/components/ui/rich-text-editor'
 
@@ -13,6 +14,7 @@ type Category = {
   slug: string
   icon: string | null
   color: string | null
+  parentId: string | null
 }
 
 type Subject = {
@@ -41,6 +43,31 @@ type Props = {
   classes: Class[]
   streams: Stream[]
   onChange: (data: Partial<CourseFormData>) => void
+}
+
+const placeholderAuthors = [
+  { value: 'author_primary', label: 'Primary author (placeholder)' },
+  { value: 'author_co', label: 'Co-author (placeholder)' },
+]
+
+const placeholderInstructors = [
+  { value: 'instructor_primary', label: 'Primary instructor (placeholder)' },
+  { value: 'instructor_support', label: 'Support instructor (placeholder)' },
+  { value: 'instructor_guest', label: 'Guest instructor (placeholder)' },
+]
+
+const getCategoryDepth = (category: Category, all: Category[]): number => {
+  let depth = 0
+  let currentParentId = category.parentId
+
+  while (currentParentId) {
+    const parent = all.find((cat) => cat.id === currentParentId)
+    if (!parent) break
+    depth += 1
+    currentParentId = parent.parentId
+  }
+
+  return depth
 }
 
 export default function BasicInfoTab({ data, categories, subjects, classes, streams, onChange }: Props) {
@@ -92,6 +119,7 @@ export default function BasicInfoTab({ data, categories, subjects, classes, stre
           options={categories.map((cat) => ({
             value: cat.id,
             label: `${cat.icon || '📚'} ${cat.name}`,
+            depth: getCategoryDepth(cat, categories),
           }))}
           value={data.categoryId || ''}
           onChange={(value) => onChange({ categoryId: value })}
@@ -179,6 +207,41 @@ export default function BasicInfoTab({ data, categories, subjects, classes, stre
             </p>
           </div>
         )}
+      </div>
+
+      {/* Teaching Team (UI stub) */}
+      <div className="space-y-4 p-4 border rounded-lg bg-gradient-to-r from-sky-50 to-emerald-50 dark:from-sky-950/20 dark:to-emerald-950/20 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-1 bg-gradient-to-b from-sky-500 to-emerald-500 rounded-full" />
+          <div>
+            <h3 className="font-semibold text-sm bg-gradient-to-r from-sky-600 to-emerald-500 bg-clip-text text-transparent">
+              Teaching Team (Authors & Instructors)
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Select one or more authors and instructors. This is a UI-only stub; selections are not yet linked to Teacher profiles.
+            </p>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="authors">Authors</Label>
+            <MultiSelectDropdown
+              options={placeholderAuthors}
+              value={data.authors || []}
+              onChange={(value) => onChange({ authors: value })}
+              placeholder="Select authors (placeholder)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="instructors">Instructors</Label>
+            <MultiSelectDropdown
+              options={placeholderInstructors}
+              value={data.instructors || []}
+              onChange={(value) => onChange({ instructors: value })}
+              placeholder="Select instructors (placeholder)"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Short Description */}

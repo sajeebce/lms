@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Eye, Edit, Trash2, Package, BookOpen, Grid3x3, List } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash2, Package, BookOpen, Grid3x3, List, Copy, Rocket } from 'lucide-react'
 import Link from 'next/link'
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
 import {
@@ -25,7 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
-import { deleteCourse } from './actions'
+import { deleteCourse, duplicateCourse, publishCourse } from './actions'
 
 type Course = {
   id: string
@@ -77,6 +78,7 @@ type Props = {
 }
 
 export default function CoursesClient({ courses: initialCourses, categories, subjects, classes, streams }: Props) {
+  const router = useRouter()
   const [courses, setCourses] = useState(initialCourses)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -88,6 +90,8 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
+  const [duplicatingCourseId, setDuplicatingCourseId] = useState<string | null>(null)
+  const [publishingCourseId, setPublishingCourseId] = useState<string | null>(null)
 
   // Filter courses
   const filteredCourses = courses.filter((course) => {
@@ -113,6 +117,53 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
     }
     setDeleteDialogOpen(false)
     setCourseToDelete(null)
+  }
+
+  const handleDuplicate = async (course: Course) => {
+    setDuplicatingCourseId(course.id)
+    try {
+      const result = await duplicateCourse(course.id)
+      if (result.success) {
+        toast.success('Course duplicated as draft')
+        router.refresh()
+      } else {
+        toast.error(result.error || 'Failed to duplicate course')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to duplicate course')
+    } finally {
+      setDuplicatingCourseId(null)
+    }
+  }
+
+  const handlePublish = async (course: Course) => {
+    if (course.status === 'PUBLISHED') {
+      toast.info('Course is already published')
+      return
+    }
+
+    setPublishingCourseId(course.id)
+    try {
+      const result = await publishCourse(course.id)
+      if (result.success) {
+        setCourses((prev) =>
+          prev.map((c) => (c.id === course.id ? { ...c, status: 'PUBLISHED' } : c))
+        )
+        if (result.alreadyPublished) {
+          toast.success('Course is already published')
+        } else {
+          toast.success('Course published successfully')
+        }
+      } else {
+        toast.error(result.error || 'Failed to publish course')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to publish course')
+    } finally {
+      setPublishingCourseId(null)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -393,16 +444,44 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
                   <Link href={`/course-management/courses/${course.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       View
                     </Button>
                   </Link>
                   <Link href={`/course-management/courses/${course.id}/edit`}>
-                    <Button variant="outline" size="sm" className="dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                   </Link>
+                  {course.status !== 'PUBLISHED' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="dark:border-emerald-500/60 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                      disabled={publishingCourseId === course.id}
+                      onClick={() => handlePublish(course)}
+                    >
+                      <Rocket className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                    disabled={duplicatingCourseId === course.id}
+                    onClick={() => handleDuplicate(course)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="destructive"
                     size="sm"
@@ -496,15 +575,43 @@ export default function CoursesClient({ courses: initialCourses, categories, sub
                   <TableCell>
                     <div className="flex justify-end gap-2">
                       <Link href={`/course-management/courses/${course.id}`}>
-                        <Button variant="ghost" size="sm" className="dark:text-slate-300 dark:hover:bg-slate-700">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                       </Link>
                       <Link href={`/course-management/courses/${course.id}/edit`}>
-                        <Button variant="ghost" size="sm" className="dark:text-slate-300 dark:hover:bg-slate-700">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
+                      {course.status !== 'PUBLISHED' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                          disabled={publishingCourseId === course.id}
+                          onClick={() => handlePublish(course)}
+                        >
+                          <Rocket className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="dark:text-slate-300 dark:hover:bg-slate-700"
+                        disabled={duplicatingCourseId === course.id}
+                        onClick={() => handleDuplicate(course)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="destructive"
                         size="sm"

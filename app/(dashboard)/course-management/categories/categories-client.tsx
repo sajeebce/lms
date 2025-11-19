@@ -189,28 +189,52 @@ export default function CategoriesClient({ initialCategories }: Props) {
 
   const treeNodes = buildTreeNodes()
 
+  const expandableIds = categories.filter((cat) => hasChildren(cat.id)).map((cat) => cat.id)
+  const allExpanded = expandableIds.length > 0 && expandableIds.every((id) => expandedIds.has(id))
+
+  const handleToggleAll = () => {
+    if (allExpanded) {
+      setExpandedIds(new Set())
+    } else {
+      setExpandedIds(new Set(expandableIds))
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[var(--theme-active-from)] to-[var(--theme-active-to)] bg-clip-text text-transparent">
             Course Categories
           </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+          <p className="mt-1 text-neutral-600 dark:text-neutral-400">
             Organize your courses into categories
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingCategory(null)
-            setFormOpen(true)
-          }}
-          className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Category
-        </Button>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {expandableIds.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleToggleAll}
+              className="hidden rounded-full border-violet-200 bg-violet-50/60 text-xs font-medium text-violet-700 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200 dark:hover:bg-violet-900/60 sm:inline-flex"
+            >
+              {allExpanded ? 'Collapse all' : 'Expand all'}
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setEditingCategory(null)
+              setFormOpen(true)
+            }}
+            className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] text-white hover:opacity-90"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
+          </Button>
+        </div>
       </div>
 
       {/* Categories List */}
@@ -225,30 +249,35 @@ export default function CategoriesClient({ initialCategories }: Props) {
             {treeNodes.map(({ category, depth, hasChildren }) => (
               <div
                 key={category.id}
-                className="flex items-center gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                className="relative flex items-center gap-3 p-4 transition-colors hover:bg-violet-50/60 dark:hover:bg-violet-950/40"
+                style={{ paddingLeft: `${depth * 18 + 14}px` }}
               >
+                {/* Depth guide line for children */}
+                {depth > 0 && (
+                  <span className="pointer-events-none absolute left-6 top-1 bottom-1 w-px bg-gradient-to-b from-violet-200 to-indigo-200 dark:from-violet-800 dark:to-indigo-800" />
+                )}
+
                 {/* Tree toggle */}
                 {hasChildren ? (
                   <button
                     type="button"
                     onClick={() => toggleExpand(category.id)}
-                    className="flex h-5 w-5 items-center justify-center rounded hover:bg-neutral-200/70 dark:hover:bg-neutral-700/70 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm hover:bg-violet-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-violet-950/60 transition-colors"
                     aria-label={expandedIds.has(category.id) ? 'Collapse category' : 'Expand category'}
                   >
                     {expandedIds.has(category.id) ? (
-                      <ChevronDown className="h-3 w-3 text-neutral-500" />
+                      <ChevronDown className="h-4 w-4 text-violet-600 dark:text-violet-300" />
                     ) : (
-                      <ChevronRight className="h-3 w-3 text-neutral-500" />
+                      <ChevronRight className="h-4 w-4 text-violet-600 dark:text-violet-300" />
                     )}
                   </button>
                 ) : (
-                  <span className="h-5 w-5" />
+                  <span className="h-7 w-7" />
                 )}
 
                 {/* Icon */}
                 <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10"
                   style={{ backgroundColor: category.color || '#6366f1' }}
                 >
                   {category.icon || '📚'}
@@ -270,20 +299,24 @@ export default function CategoriesClient({ initialCategories }: Props) {
                       {category.status}
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-0.5">
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-neutral-500 dark:text-neutral-500">
                     {category.parentId ? (
-                      <span>
-                        Parent{' '}
+                      <>
+                        <span className="rounded-full bg-violet-50 px-2 py-[1px] text-[10px] font-medium uppercase tracking-wide text-violet-700 dark:bg-violet-950/60 dark:text-violet-300">
+                          Hierarchy
+                        </span>
                         <span className="font-medium">{buildCategoryPath(category, categories)}</span>
-                      </span>
+                      </>
                     ) : (
-                      <span className="italic">Top-level category</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-[1px] text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        Top-level category
+                      </span>
                     )}
                   </p>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                  <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
                     {category.description || 'No description'}
                   </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
                     {category._count.courses} course{category._count.courses !== 1 ? 's' : ''}
                   </p>
                 </div>
@@ -335,7 +368,7 @@ export default function CategoriesClient({ initialCategories }: Props) {
 
       {/* Create/Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCategory ? 'Edit Category' : 'Create Category'}</DialogTitle>
           </DialogHeader>

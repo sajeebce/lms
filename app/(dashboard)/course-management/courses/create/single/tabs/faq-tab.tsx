@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Pencil } from 'lucide-react'
 import type { CourseFormData } from '../single-course-form'
 import RichTextEditor from '@/components/ui/rich-text-editor'
 
@@ -16,6 +16,10 @@ type Props = {
 export default function FaqTab({ data, onChange }: Props) {
   const [newQuestion, setNewQuestion] = useState('')
   const [newAnswer, setNewAnswer] = useState('')
+
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingQuestion, setEditingQuestion] = useState('')
+  const [editingAnswer, setEditingAnswer] = useState('')
 
   const addFaq = () => {
     if (!newQuestion.trim() || !newAnswer.trim()) return
@@ -29,10 +33,43 @@ export default function FaqTab({ data, onChange }: Props) {
     setNewAnswer('')
   }
 
+  const startEdit = (index: number) => {
+    const faq = data.faqs[index]
+    setEditingIndex(index)
+    setEditingQuestion(faq.question)
+    setEditingAnswer(faq.answer)
+  }
+
+  const cancelEdit = () => {
+    setEditingIndex(null)
+    setEditingQuestion('')
+    setEditingAnswer('')
+  }
+
+  const saveEdit = () => {
+    if (editingIndex === null) return
+    if (!editingQuestion.trim() || !editingAnswer.trim()) return
+
+    const updatedFaqs = data.faqs.map((faq, index) =>
+      index === editingIndex ? { ...faq, question: editingQuestion, answer: editingAnswer } : faq
+    )
+
+    onChange({ faqs: updatedFaqs })
+    cancelEdit()
+  }
+
   const removeFaq = (index: number) => {
     onChange({
       faqs: data.faqs.filter((_, i) => i !== index),
     })
+
+    if (editingIndex !== null) {
+      if (index === editingIndex) {
+        cancelEdit()
+      } else if (index < editingIndex) {
+        setEditingIndex(editingIndex - 1)
+      }
+    }
   }
 
   const handleDragEnd = (result: DropResult) => {
@@ -43,6 +80,7 @@ export default function FaqTab({ data, onChange }: Props) {
     items.splice(result.destination.index, 0, moved)
 
     onChange({ faqs: items })
+    setEditingIndex(null)
   }
 
   return (
@@ -79,35 +117,99 @@ export default function FaqTab({ data, onChange }: Props) {
                               >
                                 <GripVertical className="h-4 w-4" />
                               </button>
-                              <div className="flex-1 space-y-2">
-                                <div>
-                                  <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
-                                    Question {index + 1}:
-                                  </p>
-                                  <div
-                                    className="prose prose-sm dark:prose-invert max-w-none text-sm"
-                                    dangerouslySetInnerHTML={{ __html: faq.question }}
-                                  />
-                                </div>
-                                <div>
-                                  <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
-                                    Answer:
-                                  </p>
-                                  <div
-                                    className="prose prose-sm dark:prose-invert max-w-none text-sm text-neutral-600 dark:text-neutral-400"
-                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
-                                  />
-                                </div>
+                              <div className="flex-1 space-y-3">
+                                {editingIndex === index ? (
+                                  <>
+                                    <div className="space-y-2">
+                                      <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                        Edit Question {index + 1}
+                                      </p>
+                                      <RichTextEditor
+                                        value={editingQuestion}
+                                        onChange={setEditingQuestion}
+                                        placeholder="Update the question..."
+                                        minHeight="120px"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                        Edit Answer
+                                      </p>
+                                      <RichTextEditor
+                                        value={editingAnswer}
+                                        onChange={setEditingAnswer}
+                                        placeholder="Update the answer..."
+                                        minHeight="150px"
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div>
+                                      <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                        Question {index + 1}:
+                                      </p>
+                                      <div
+                                        className="prose prose-sm dark:prose-invert max-w-none text-sm"
+                                        dangerouslySetInnerHTML={{ __html: faq.question }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-sm text-neutral-600 dark:text-neutral-400">
+                                        Answer:
+                                      </p>
+                                      <div
+                                        className="prose prose-sm dark:prose-invert max-w-none text-sm text-neutral-600 dark:text-neutral-400"
+                                        dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                      />
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeFaq(index)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex flex-col gap-2 ml-2">
+                                {editingIndex === index ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={saveEdit}
+                                      disabled={!editingQuestion.trim() || !editingAnswer.trim()}
+                                      className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white"
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={cancelEdit}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => startEdit(index)}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeFaq(index)}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}

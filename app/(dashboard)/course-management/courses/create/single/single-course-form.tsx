@@ -22,6 +22,7 @@ type Category = {
   slug: string
   icon: string | null
   color: string | null
+  parentId: string | null
 }
 
 type Subject = {
@@ -63,6 +64,10 @@ export type CourseFormData = {
   subjectId?: string
   streamId?: string
 
+  // Authors & Instructors (UI-only stub, not yet persisted)
+  authors?: string[]
+  instructors?: string[]
+
   // Pricing
   paymentType: 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
   invoiceTitle?: string
@@ -72,7 +77,7 @@ export type CourseFormData = {
   subscriptionDuration?: number
   subscriptionType?: 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM'
   autoGenerateInvoice: boolean
-  
+
   // Media
   featuredImage?: string
   introVideoUrl?: string
@@ -91,7 +96,7 @@ export type CourseFormData = {
   isFeatured: boolean
   allowComments: boolean
   certificateEnabled: boolean
-  
+
   // FAQ
   faqs: Array<{ id?: string; clientId?: string; question: string; answer: string }>
 }
@@ -112,6 +117,8 @@ export default function SingleCourseForm({ categories, subjects, classes, stream
     allowComments: true,
     certificateEnabled: false,
     introVideoAutoplay: false,
+    authors: [],
+    instructors: [],
     faqs: [],
   })
 

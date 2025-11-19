@@ -21,6 +21,8 @@ import {
 export interface SearchableDropdownOption {
   value: string
   label: string
+  description?: string
+  depth?: number
 }
 
 interface SearchableDropdownProps {
@@ -86,10 +88,17 @@ export function SearchableDropdown({
                       onChange(currentValue === value ? '' : currentValue)
                       setOpen(false)
                     }}
-                    className="flex items-center justify-between cursor-pointer"
+                    className="flex items-center justify-between cursor-pointer gap-2"
                   >
-                    <span>{option.label}</span>
-                    {isSelected && <Check className="ml-2 h-4 w-4 text-primary" />}
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span
+                        className="truncate"
+                        style={option.depth ? { paddingLeft: option.depth * 12 } : undefined}
+                      >
+                        {option.label}
+                      </span>
+                    </div>
+                    {isSelected && <Check className="ml-2 h-4 w-4 text-primary flex-shrink-0" />}
                   </CommandItem>
                 )
               })}

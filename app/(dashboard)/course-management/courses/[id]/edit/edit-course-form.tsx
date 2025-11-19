@@ -23,6 +23,7 @@ type Category = {
   slug: string
   icon: string | null
   color: string | null
+  parentId: string | null
 }
 
 type Subject = {
@@ -128,6 +129,8 @@ export default function EditCourseForm({ course, categories, subjects, classes, 
     isFeatured: course.isFeatured,
     allowComments: course.allowComments,
     certificateEnabled: course.certificateEnabled,
+    authors: [],
+    instructors: [],
     faqs: course.faqs.map((faq) => ({
       id: faq.id,
       question: faq.question,

@@ -195,6 +195,7 @@
   - Line 1: thumbnail, title, status pill, kebab menu.
   - Line 2: category, type pill, price/free pill.
   - Line 3: meta (`Topics · Lessons · Assignments`) and enrollments count.
+- **QA note (small laptop screens):** Verify that tall dialogs like **Course Category create/edit**, **Course Enrollment dialog**, and other large shadcn Dialog forms (e.g. Branches, Academic Years, Subjects, Chapters, Sections) keep header + primary action visible by using an internal scroll area (`max-height` + `overflow-y-auto`) when content exceeds viewport height.
 
 ---
 
