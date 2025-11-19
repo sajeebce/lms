@@ -371,6 +371,172 @@ model CourseLesson {
 
 ---
 
+### 🔐 Lesson Content Security & Anti‑Download Strategy (Documents & Video)
+
+**Goal:** Course lesson (PDF/DOC/PPT, local video, YouTube, etc.) jate:
+
+- Direct download easily na kora jae (specially DOCUMENT lessons).
+- Sensitive content (exam materials, paid content) browser theke casually save/share na kora jae.
+- Kono paid SaaS tool chara **best‑effort protection** deya hoy.
+
+> ⚠️ **Important reality check:** 100% download/screenshot prevent kora **pure web technology diye possible na**.
+>
+> - Browser/OS level screen recorder or network sniffer stop kora jabe na.
+> - YouTube er moto 3rd‑party host theke 100% no‑download guarantee kora jabe na.
+>   E section‑er design **copy‑expense high kore**, strong watermark/log diye misuse discourage korar jonno.
+
+---
+
+#### 5.1 DOCUMENT Lessons (PDF / DOC / PPT)
+
+**LessonType: `DOCUMENT`** + `allowDownload` field use kore 2 mode:
+
+1. **Protected View‑Only (default)**
+
+   - `lessonType = DOCUMENT`, `allowDownload = false` (default).
+   - Behaviour:
+     - Student ke **direct file URL** deya hobe na.
+     - Instead, server‑side e PDF/DOC → per‑page image/HTML render kore **SecureDocumentViewer** e show kora hobe.
+
+2. **Allowed Download (non‑sensitive resources)**
+   - Teacher jodi chae student file download korte parse, tokhon `allowDownload = true` set korbe.
+   - Student UI e explicitly `Download` button dekhano hobe (public resource er moto).
+
+**Storage & serving pattern (align with FILE_UPLOAD_FINAL_PLAN + MEDIA_SECURITY_IMPLEMENTATION_PLAN):**
+
+- All DOCUMENT files **private** folder e save hobe:
+  - Path: `tenants/{tenantId}/courses/{courseId}/lessons/{lessonId}/documents/...` (via `StorageService`).
+- Student side `SecureDocumentViewer` page/page‑image load korbe ei route diye:
+  - `/api/media/lessons/{lessonId}/document/page/{pageNo}`
+- Ei API route:
+  - `getTenantId()` diye tenant verify korbe.
+  - Current user + `CourseEnrollment` check korbe (`ENROLLED_ONLY`/`PASSWORD` respect kore).
+  - `Content-Disposition` header‑e `inline` use korbe, `attachment` na.
+  - `Cache-Control` korte hobe short TTL + `no-store` jate offline cache kom thake.
+- Signed URL / token:
+  - Per request short‑lived token (e.g., JWT) use kora jabe:
+    - `lessonId`, `studentId`, `tenantId`, `expiresAt` embed kore.
+    - URL guess/reshare korle o token expire howar por kaj korbe na.
+
+**UI hardening (best‑effort):**
+
+- `SecureDocumentViewer`:
+  - Content canvas/image er upor **semi‑transparent watermark** overlay:
+    - `Student Name`, `Student Code`, `Tenant`, `timestamp` diagonal repeat.
+    - This discourages camera‑screenshot, ar leak hole source traceable.
+  - Disable:
+    - Browser default context menu (`onContextMenu` prevent).
+    - Text selection (`user-select: none`), drag‑and‑drop.
+    - `window.print()` trigger (print dialog) ke override kore custom message dibe.
+- Screen capture **hard stop** technically possible na:
+  - Browser JavaScript diye PrintScreen / OS screen recorder detect reliable na.
+  - True "screen goes black while recording" behaviour er jonno **DRM/EME (e.g., Widevine)** integration dorkar, ja later dedicated media security phase e consider kora jabe.
+
+**Student Player (`/my-courses/[id]/learn`) behaviour:**
+
+- Attachments section e 2 type:
+  - **Protected lesson docs** (DOCUMENT, `allowDownload = false`):
+    - Show `View` button → opens SecureDocumentViewer.
+    - `Download` option dekhabe na.
+  - **Optional downloadable resources** (attachments or DOCUMENT with `allowDownload = true`):
+    - Show `Download` button (same storage rules, but `Content-Disposition: attachment`).
+
+---
+
+#### 5.2 Local Video Lessons (VIDEO_LOCAL / VIDEO_GDRIVE proxy)
+
+**Goal:** Local upload (or future server‑side cached video) jate:
+
+- Single static `.mp4` URL expose na hoy.
+- Basic browser `Save video as…` / simple downloader extension diye easily grab kora jabe na.
+
+**Storage & streaming pattern:**
+
+- Video store: `tenants/{tenantId}/courses/{courseId}/lessons/{lessonId}/videos/...` (private, via `StorageService`).
+- Transcode to **HLS (HTTP Live Streaming)** segments (e.g., ffmpeg pipeline):
+  - Output: `.m3u8` playlist + `.ts`/`.mp4` segments.
+  - Optional: AES‑128 encryption with per‑tenant/per‑course key.
+- Student player stream URL will be API proxied:
+  - Manifest: `/api/media/lessons/{lessonId}/video/manifest.m3u8`.
+  - Segments: `/api/media/lessons/{lessonId}/video/segment/{segmentId}`.
+- API route responsibilities:
+  - `getTenantId()` + enrollment check (`CourseEnrollment` + `AccessType`).
+  - Short TTL token validation (similar to document).
+  - Response headers: `Cache-Control: private, max-age=0, no-store`.
+
+**Player implementation (no paid tools):**
+
+- Use open‑source player library:
+  - `hls.js` or `Shaka Player` → HLS playback, optional EME integration future‑e.
+- `<video>` tag e:
+  - Custom controls use kora (no native context menu / download attribute).
+  - Right‑click disable, picture‑in‑picture optional disable.
+- Overlay watermark (same pattern as document):
+  - Student info + timestamp subtle overlay, position randomize/animate korte parbo.
+
+**Limitations (must be documented):**
+
+- Network‑level sniffing (DevTools → Network tab, advanced download extensions) completely block kora possible na.
+- HLS + tokenization + encryption **download cost baray** and unauthorised share harder kore, but:
+  - Technically skilled user still segment moge offline stitch korte parbe.
+- OS‑level screen recorder ke web app diye stop kora jabe na.
+
+---
+
+#### 5.3 YouTube Lessons (VIDEO_YOUTUBE) – Safe Embed Strategy
+
+**Requirement (practical view):**
+
+- Student normal UI theke YouTube URL easily na pabe, share button na thake.
+- Browser extension jeno directly YouTube URL detect korte na pare – **full guarantee possible na**, but cost barano jabe.
+
+**Data model:**
+
+- `lessonType = VIDEO_YOUTUBE`, `contentUrl` e YouTube watch/embed URL or just `videoId` store kora jabe.
+- `videoProvider = "youtube"`.
+
+**Embed strategy:**
+
+- Use YouTube IFrame API with **restricted UI**:
+  - `controls=0`, `disablekb=1`, `rel=0`, `modestbranding=1`, `fs=0`, `iv_load_policy=3`.
+  - `origin` param set to LMS domain (future multi‑tenant domains handle korte hobe).
+- Student UI:
+  - No YouTube logo link / title / "Watch on YouTube" button visible.
+  - Player container er upor transparent div overlay keep kore right‑click + easy link copy prevent kora.
+
+**YouTube URL exposure & download risk:**
+
+- Browser DevTools → Network tab e technically **video segment/manifest URL show hobe** – eta prevent kora jabe na.
+- Third‑party download extension jodi full network access ney, web app er moddheo eta block kora possible na.
+- Tai:
+  - Highly sensitive / paid content jodi 100% control chai, **YouTube use na kore local HLS pipeline** use korar recommendation.
+  - YouTube lessons ke primarily **marketing / low‑sensitivity** content hishebe treat kora uchit.
+
+**Additional mitigations:**
+
+- YouTube side settings (instructor guideline):
+  - Videos `Unlisted`/`Private with domain restriction` rakha.
+  - Embedding allow but direct listing/search disable.
+- LMS side logging:
+  - Lesson play events + seek pattern audit log e store kore rakhle suspicious behaviour track kora jabe (e.g., abnormal concurrent sessions).
+
+---
+
+#### 5.4 Summary – What We Can & Cannot Guarantee
+
+- ✅ **We can do:**
+
+  - Direct file download hide for protected DOCUMENT lessons (`allowDownload = false`).
+  - Only enrolled students ke short‑lived token diye document/video serve.
+  - HLS + per‑tenant path + private storage diye **raw file exposure onekta komano**.
+  - Strong per‑student watermarking (document + video) + audit logging diye leak traceable kora.
+
+- ⚠️ **We cannot fully do (browser limitations):**
+  - OS/driver‑level screen recording or camera diye screenshot complete block.
+  - Advanced browser extensions ke 100% stop (especially YouTube / HLS sniffers).
+
+E limitation gulo explicitly plan e thakbe jate future implementation time expectation right set kora jae, ar truly high‑stakes content er jonne proyojon hole dedicated DRM/EME phase plan kora jae.
+
 ## 📁 File Structure
 
 ```
