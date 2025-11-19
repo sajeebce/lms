@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, ShieldAlert, Lock } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from "react";
+import { Plus, Pencil, Trash2, ShieldAlert, Lock } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,14 +14,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,8 +31,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -41,130 +41,141 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from 'sonner'
-import { createBranch, updateBranch, deleteBranch } from './actions'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import { createBranch, updateBranch, deleteBranch } from "./actions";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 
 // Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string()
-    .min(1, 'Branch name is required')
-    .max(100, 'Branch name must be 100 characters or less'),
-  code: z.string()
-    .max(20, 'Code must be 20 characters or less')
+  name: z
+    .string()
+    .min(1, "Branch name is required")
+    .max(100, "Branch name must be 100 characters or less"),
+  code: z.string().max(20, "Code must be 20 characters or less").optional(),
+  address: z
+    .string()
+    .max(200, "Address must be 200 characters or less")
     .optional(),
-  address: z.string()
-    .max(200, 'Address must be 200 characters or less')
-    .optional(),
-  phone: z.string()
-    .max(20, 'Phone must be 20 characters or less')
-    .optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']),
-})
+  phone: z.string().max(20, "Phone must be 20 characters or less").optional(),
+  status: z.enum(["ACTIVE", "INACTIVE"]),
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 type Branch = {
-  id: string
-  name: string
-  code: string | null
-  phone: string | null
-  status: 'ACTIVE' | 'INACTIVE'
+  id: string;
+  name: string;
+  code: string | null;
+  phone: string | null;
+  status: "ACTIVE" | "INACTIVE";
   _count: {
-    cohorts: number
-  }
-}
+    cohorts: number;
+  };
+};
 
 export function BranchesClient({ branches }: { branches: Branch[] }) {
-  const [open, setOpen] = useState(false)
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null)
+  const [open, setOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null);
 
   // React Hook Form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      code: '',
-      address: '',
-      phone: '',
-      status: 'ACTIVE',
+      name: "",
+      code: "",
+      address: "",
+      phone: "",
+      status: "ACTIVE",
     },
-  })
+  });
 
   const onSubmit = async (values: FormValues) => {
     const result = editingBranch
       ? await updateBranch(editingBranch.id, values)
-      : await createBranch(values)
+      : await createBranch(values);
 
     if (result.success) {
       toast.success(
-        editingBranch ? 'Branch updated successfully' : 'Branch created successfully'
-      )
-      setOpen(false)
-      resetForm()
+        editingBranch
+          ? "Branch updated successfully"
+          : "Branch created successfully"
+      );
+      setOpen(false);
+      resetForm();
     } else {
-      toast.error(result.error || 'An error occurred')
+      toast.error(result.error || "An error occurred");
     }
-  }
+  };
 
   const confirmDelete = async () => {
-    if (!branchToDelete) return
+    if (!branchToDelete) return;
 
-    const result = await deleteBranch(branchToDelete.id)
+    const result = await deleteBranch(branchToDelete.id);
     if (result.success) {
-      toast.success('Branch deleted successfully')
+      toast.success("Branch deleted successfully");
     } else {
-      toast.error(result.error || 'Failed to delete branch')
+      toast.error(result.error || "Failed to delete branch");
     }
-    setDeleteDialogOpen(false)
-    setBranchToDelete(null)
-  }
+    setDeleteDialogOpen(false);
+    setBranchToDelete(null);
+  };
 
   const handleEdit = (branch: Branch) => {
-    setEditingBranch(branch)
+    setEditingBranch(branch);
     form.reset({
       name: branch.name,
-      code: branch.code || '',
-      address: '',
-      phone: branch.phone || '',
+      code: branch.code || "",
+      address: "",
+      phone: branch.phone || "",
       status: branch.status,
-    })
-    setOpen(true)
-  }
+    });
+    setOpen(true);
+  };
 
   const resetForm = () => {
-    setEditingBranch(null)
+    setEditingBranch(null);
     form.reset({
-      name: '',
-      code: '',
-      address: '',
-      phone: '',
-      status: 'ACTIVE',
-    })
-  }
+      name: "",
+      code: "",
+      address: "",
+      phone: "",
+      status: "ACTIVE",
+    });
+  };
 
   return (
     <div className="bg-card rounded-lg border border-border">
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-card-foreground">All Branches</h2>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+        <h2 className="text-lg font-semibold text-card-foreground">
+          All Branches
+        </h2>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Branch
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingBranch ? 'Edit Branch' : 'Add New Branch'}
+                {editingBranch ? "Edit Branch" : "Add New Branch"}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 {/* Branch Name */}
                 <FormField
                   control={form.control}
@@ -264,8 +275,8 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                       <FormControl>
                         <SearchableDropdown
                           options={[
-                            { value: 'ACTIVE', label: '✅ Active' },
-                            { value: 'INACTIVE', label: '⏸️ Inactive' },
+                            { value: "ACTIVE", label: "✅ Active" },
+                            { value: "INACTIVE", label: "⏸️ Inactive" },
                           ]}
                           value={field.value}
                           onChange={field.onChange}
@@ -287,7 +298,11 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                     disabled={form.formState.isSubmitting}
                     className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
                   >
-                    {form.formState.isSubmitting ? 'Saving...' : editingBranch ? 'Update Branch' : 'Create Branch'}
+                    {form.formState.isSubmitting
+                      ? "Saving..."
+                      : editingBranch
+                      ? "Update Branch"
+                      : "Create Branch"}
                   </Button>
                 </div>
               </form>
@@ -299,37 +314,56 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead className="text-foreground dark:text-slate-200">Branch Name</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">Code</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">Status</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">Phone</TableHead>
-            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Branch Name
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Code
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Status
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Phone
+            </TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {branches.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground dark:text-slate-400 py-8">
+              <TableCell
+                colSpan={5}
+                className="text-center text-muted-foreground dark:text-slate-400 py-8"
+              >
                 No branches found. Create your first branch to get started.
               </TableCell>
             </TableRow>
           ) : (
             branches.map((branch) => (
               <TableRow key={branch.id} className="dark:border-slate-700">
-                <TableCell className="font-medium text-foreground dark:text-slate-200">{branch.name}</TableCell>
-                <TableCell className="text-foreground dark:text-slate-300">{branch.code || '-'}</TableCell>
+                <TableCell className="font-medium text-foreground dark:text-slate-200">
+                  {branch.name}
+                </TableCell>
+                <TableCell className="text-foreground dark:text-slate-300">
+                  {branch.code || "-"}
+                </TableCell>
                 <TableCell>
                   <Badge
                     className={
-                      branch.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/30 dark:text-neutral-400'
+                      branch.status === "ACTIVE"
+                        ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/30 dark:text-neutral-400"
                     }
                   >
                     {branch.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-foreground dark:text-slate-300">{branch.phone || '-'}</TableCell>
+                <TableCell className="text-foreground dark:text-slate-300">
+                  {branch.phone || "-"}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
@@ -344,16 +378,22 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
                       size="sm"
                       onClick={() => {
                         if (branch._count.cohorts > 0) {
-                          toast.error('Cannot Delete', {
+                          toast.error("Cannot Delete", {
                             description: `This branch has ${branch._count.cohorts} cohort(s) linked. Please remove them first.`,
-                          })
-                          return
+                          });
+                          return;
                         }
-                        setBranchToDelete(branch)
-                        setDeleteDialogOpen(true)
+                        setBranchToDelete(branch);
+                        setDeleteDialogOpen(true);
                       }}
                       disabled={branch._count.cohorts > 0}
-                      title={branch._count.cohorts > 0 ? `Locked (${branch._count.cohorts} cohort${branch._count.cohorts > 1 ? 's' : ''})` : 'Delete branch'}
+                      title={
+                        branch._count.cohorts > 0
+                          ? `Locked (${branch._count.cohorts} cohort${
+                              branch._count.cohorts > 1 ? "s" : ""
+                            })`
+                          : "Delete branch"
+                      }
                     >
                       {branch._count.cohorts > 0 ? (
                         <Lock className="h-4 w-4 text-amber-600" />
@@ -377,10 +417,16 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
                 <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
-              <AlertDialogTitle className="text-xl">Delete Branch</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl">
+                Delete Branch
+              </AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-base">
-              Are you sure you want to delete <span className="font-semibold text-foreground">{branchToDelete?.name}</span>? This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                {branchToDelete?.name}
+              </span>
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
@@ -395,5 +441,5 @@ export function BranchesClient({ branches }: { branches: Branch[] }) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

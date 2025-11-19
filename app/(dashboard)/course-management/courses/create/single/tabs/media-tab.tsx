@@ -1,27 +1,27 @@
-'use client'
+"use client";
 
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { FileUploadButton } from '@/components/ui/file-upload-button'
-import { Switch } from '@/components/ui/switch'
-import { Image, Trash2, Video } from 'lucide-react'
-import type { CourseFormData } from '../single-course-form'
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { FileUploadButton } from "@/components/ui/file-upload-button";
+import { Switch } from "@/components/ui/switch";
+import { Image, Trash2, Video } from "lucide-react";
+import type { CourseFormData } from "../single-course-form";
 
 type Props = {
-  data: CourseFormData
-  onChange: (data: Partial<CourseFormData>) => void
-  courseId?: string
-}
+  data: CourseFormData;
+  onChange: (data: Partial<CourseFormData>) => void;
+  courseId?: string;
+};
 
 export default function MediaTab({ data, onChange, courseId }: Props) {
-  const entityId = courseId || 'temp'
+  const entityId = courseId || "temp";
 
   const isInternalStorageUrl = (url?: string | null) =>
-    !!url && url.startsWith('/api/storage/')
+    !!url && url.startsWith("/api/storage/");
 
-  const isInternalFeatured = isInternalStorageUrl(data.featuredImage)
-  const isInternalVideo = isInternalStorageUrl(data.introVideoUrl)
+  const isInternalFeatured = isInternalStorageUrl(data.featuredImage);
+  const isInternalVideo = isInternalStorageUrl(data.introVideoUrl);
 
   return (
     <div className="space-y-6">
@@ -45,7 +45,9 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
               entityId={entityId}
               accept="image/*"
               maxSize={5 * 1024 * 1024}
-              buttonText={data.featuredImage ? 'Change image' : 'Upload / select image'}
+              buttonText={
+                data.featuredImage ? "Change image" : "Upload / select image"
+              }
               buttonVariant="outline"
               showImageProperties={false}
               className="whitespace-nowrap text-xs"
@@ -70,16 +72,20 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
         <Input
           id="featuredImage"
           placeholder={
-            isInternalFeatured ? 'Image stored securely in LMS storage' : 'https://example.com/image.jpg'
+            isInternalFeatured
+              ? "Image stored securely in LMS storage"
+              : "https://example.com/image.jpg"
           }
           value={
             isInternalFeatured
-              ? 'Image stored in LMS storage'
-              : data.featuredImage || ''
+              ? "Image stored in LMS storage"
+              : data.featuredImage || ""
           }
           readOnly={isInternalFeatured}
           onChange={
-            isInternalFeatured ? undefined : (e) => onChange({ featuredImage: e.target.value })
+            isInternalFeatured
+              ? undefined
+              : (e) => onChange({ featuredImage: e.target.value })
           }
           className="text-sm"
         />
@@ -97,8 +103,8 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
                 alt="Featured"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.currentTarget.src = ''
-                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.src = "";
+                  e.currentTarget.style.display = "none";
                 }}
               />
             </div>
@@ -115,7 +121,8 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
               <span>Intro Video</span>
             </Label>
             <p className="text-xs text-neutral-500">
-              Short teaser shown on the course landing page. YouTube URL is recommended.
+              Short teaser shown on the course landing page. YouTube URL is
+              recommended.
             </p>
           </div>
 
@@ -125,7 +132,9 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
             entityId={entityId}
             accept="video/*"
             maxSize={100 * 1024 * 1024}
-            buttonText={data.introVideoUrl ? 'Change video' : 'Upload / select video'}
+            buttonText={
+              data.introVideoUrl ? "Change video" : "Upload / select video"
+            }
             buttonVariant="outline"
             icon={<Video className="w-4 h-4" />}
             className="whitespace-nowrap text-xs"
@@ -137,17 +146,19 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
           id="introVideoUrl"
           placeholder={
             isInternalVideo
-              ? 'Video stored securely in LMS storage'
-              : 'https://www.youtube.com/watch?v=...'
+              ? "Video stored securely in LMS storage"
+              : "https://www.youtube.com/watch?v=..."
           }
           value={
             isInternalVideo
-              ? 'Video stored in LMS storage (URL hidden)'
-              : data.introVideoUrl || ''
+              ? "Video stored in LMS storage (URL hidden)"
+              : data.introVideoUrl || ""
           }
           readOnly={isInternalVideo}
           onChange={
-            isInternalVideo ? undefined : (e) => onChange({ introVideoUrl: e.target.value })
+            isInternalVideo
+              ? undefined
+              : (e) => onChange({ introVideoUrl: e.target.value })
           }
           className="text-sm"
         />
@@ -161,13 +172,16 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
               Autoplay intro video
             </p>
             <p className="text-[11px] text-neutral-500">
-              When enabled, the intro video will auto-play (muted) on supported browsers.
+              When enabled, the intro video will auto-play (muted) on supported
+              browsers.
             </p>
           </div>
           <Switch
             id="introVideoAutoplay"
             checked={data.introVideoAutoplay}
-            onCheckedChange={(value) => onChange({ introVideoAutoplay: !!value })}
+            onCheckedChange={(value) =>
+              onChange({ introVideoAutoplay: !!value })
+            }
           />
         </div>
       </div>
@@ -201,6 +215,5 @@ export default function MediaTab({ data, onChange, courseId }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

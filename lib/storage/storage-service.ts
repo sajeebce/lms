@@ -1,36 +1,48 @@
 // Storage Service - Business logic layer for file operations
 
-import { getStorage } from './storage-factory'
-import { getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getStorage } from "./storage-factory";
+import { getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export class StorageService {
   private async getStorageAdapter() {
-    return await getStorage()
+    return await getStorage();
   }
 
   /**
    * Generate storage key with tenant isolation
    */
   private async generateKey(
-    category: 'students' | 'teachers' | 'courses' | 'assignments' | 'exams' | 'library' | 'notices' | 'reports' | 'questions',
+    category:
+      | "students"
+      | "teachers"
+      | "courses"
+      | "assignments"
+      | "exams"
+      | "library"
+      | "notices"
+      | "reports"
+      | "questions",
     subPath: string
   ): Promise<string> {
-    const tenantId = await getTenantId()
-    return `tenants/${tenantId}/${category}/${subPath}`
+    const tenantId = await getTenantId();
+    return `tenants/${tenantId}/${category}/${subPath}`;
   }
 
   /**
    * Upload student photo (auto-replaces old photo)
    */
   async uploadStudentPhoto(studentId: string, file: File): Promise<string> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
-    const key = await this.generateKey('students', `photos/${studentId}/profile.jpg`)
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
+    const key = await this.generateKey(
+      "students",
+      `photos/${studentId}/profile.jpg`
+    );
 
     // ✅ Delete old file if exists
     if (await storage.exists(key)) {
-      await storage.delete(key)
+      await storage.delete(key);
     }
 
     // ✅ Upload new file
@@ -43,7 +55,7 @@ export class StorageService {
         uploadedAt: new Date().toISOString(),
       },
       isPublic: true, // Photos can be public
-    })
+    });
 
     // ✅ Track in database (upsert for fixed-name files)
     await prisma.uploadedFile.upsert({
@@ -60,8 +72,8 @@ export class StorageService {
         fileName: file.name,
         fileSize: result.size,
         mimeType: file.type,
-        category: 'student_photo',
-        entityType: 'student',
+        category: "student_photo",
+        entityType: "student",
         entityId: studentId,
         isPublic: true,
       },
@@ -72,9 +84,9 @@ export class StorageService {
         mimeType: file.type,
         uploadedAt: new Date(),
       },
-    })
+    });
 
-    return result.url
+    return result.url;
   }
 
   /**
@@ -82,12 +94,19 @@ export class StorageService {
    */
   async uploadStudentDocument(
     studentId: string,
-    documentType: 'birth_certificate' | 'transfer_certificate' | 'marksheet' | 'other',
+    documentType:
+      | "birth_certificate"
+      | "transfer_certificate"
+      | "marksheet"
+      | "other",
     file: File
   ): Promise<string> {
-    const storage = await this.getStorageAdapter()
-    const extension = file.name.split('.').pop()
-    const key = await this.generateKey('students', `documents/${studentId}/${documentType}.${extension}`)
+    const storage = await this.getStorageAdapter();
+    const extension = file.name.split(".").pop();
+    const key = await this.generateKey(
+      "students",
+      `documents/${studentId}/${documentType}.${extension}`
+    );
 
     const result = await storage.upload({
       key,
@@ -99,9 +118,9 @@ export class StorageService {
         uploadedAt: new Date().toISOString(),
       },
       isPublic: false, // Documents are private
-    })
+    });
 
-    return result.url
+    return result.url;
   }
 
   /**
@@ -113,12 +132,12 @@ export class StorageService {
     file: File,
     version: number = 1
   ): Promise<string> {
-    const storage = await this.getStorageAdapter()
-    const extension = file.name.split('.').pop()
+    const storage = await this.getStorageAdapter();
+    const extension = file.name.split(".").pop();
     const key = await this.generateKey(
-      'assignments',
+      "assignments",
       `${assignmentId}/submissions/${studentId}/submission_v${version}.${extension}`
-    )
+    );
 
     const result = await storage.upload({
       key,
@@ -131,9 +150,9 @@ export class StorageService {
         uploadedAt: new Date().toISOString(),
       },
       isPublic: false,
-    })
+    });
 
-    return result.url
+    return result.url;
   }
 
   /**
@@ -141,16 +160,16 @@ export class StorageService {
    */
   async uploadCourseMaterial(
     courseId: string,
-    materialType: 'notes' | 'syllabus' | 'video' | 'other',
+    materialType: "notes" | "syllabus" | "video" | "other",
     file: File
   ): Promise<string> {
-    const storage = await this.getStorageAdapter()
-    const extension = file.name.split('.').pop()
-    const timestamp = Date.now()
+    const storage = await this.getStorageAdapter();
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
     const key = await this.generateKey(
-      'courses',
+      "courses",
       `${courseId}/materials/${materialType}_${timestamp}.${extension}`
-    )
+    );
 
     const result = await storage.upload({
       key,
@@ -162,9 +181,9 @@ export class StorageService {
         uploadedAt: new Date().toISOString(),
       },
       isPublic: false,
-    })
+    });
 
-    return result.url
+    return result.url;
   }
 
   /**
@@ -174,19 +193,22 @@ export class StorageService {
     courseId: string,
     file: File,
     options?: {
-      author?: string
-      description?: string
-      altText?: string
-      width?: number
-      height?: number
+      author?: string;
+      description?: string;
+      altText?: string;
+      width?: number;
+      height?: number;
     }
   ): Promise<{ url: string; id: string }> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
 
-    const extension = file.name.split('.').pop()
-    const timestamp = Date.now()
-    const key = await this.generateKey('courses', `${courseId}/featured/${timestamp}.${extension}`)
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const key = await this.generateKey(
+      "courses",
+      `${courseId}/featured/${timestamp}.${extension}`
+    );
 
     const result = await storage.upload({
       key,
@@ -194,11 +216,11 @@ export class StorageService {
       contentType: file.type,
       metadata: {
         courseId,
-        role: 'featured_image',
+        role: "featured_image",
         uploadedAt: new Date().toISOString(),
       },
       isPublic: true, // Featured images are public
-    })
+    });
 
     const uploadedFile = await prisma.uploadedFile.create({
       data: {
@@ -208,8 +230,8 @@ export class StorageService {
         fileName: file.name,
         fileSize: result.size,
         mimeType: file.type,
-        category: 'course_featured_image',
-        entityType: 'course',
+        category: "course_featured_image",
+        entityType: "course",
         entityId: courseId,
         isPublic: true,
         author: options?.author,
@@ -218,9 +240,9 @@ export class StorageService {
         width: options?.width,
         height: options?.height,
       },
-    })
+    });
 
-    return { url: result.url, id: uploadedFile.id }
+    return { url: result.url, id: uploadedFile.id };
   }
 
   /**
@@ -230,17 +252,20 @@ export class StorageService {
     courseId: string,
     file: File,
     options?: {
-      author?: string
-      description?: string
-      duration?: number
+      author?: string;
+      description?: string;
+      duration?: number;
     }
   ): Promise<{ url: string; id: string }> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
 
-    const extension = file.name.split('.').pop()
-    const timestamp = Date.now()
-    const key = await this.generateKey('courses', `${courseId}/intro-video/${timestamp}.${extension}`)
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const key = await this.generateKey(
+      "courses",
+      `${courseId}/intro-video/${timestamp}.${extension}`
+    );
 
     const result = await storage.upload({
       key,
@@ -248,12 +273,12 @@ export class StorageService {
       contentType: file.type,
       metadata: {
         courseId,
-        role: 'intro_video',
-        duration: options?.duration?.toString() || '0',
+        role: "intro_video",
+        duration: options?.duration?.toString() || "0",
         uploadedAt: new Date().toISOString(),
       },
       isPublic: true, // Intro videos are public marketing assets
-    })
+    });
 
     const uploadedFile = await prisma.uploadedFile.create({
       data: {
@@ -263,55 +288,57 @@ export class StorageService {
         fileName: file.name,
         fileSize: result.size,
         mimeType: file.type,
-        category: 'course_intro_video',
-        entityType: 'course',
+        category: "course_intro_video",
+        entityType: "course",
         entityId: courseId,
         isPublic: true,
         author: options?.author,
         description: options?.description,
       },
-    })
+    });
 
-    return { url: result.url, id: uploadedFile.id }
+    return { url: result.url, id: uploadedFile.id };
   }
-
 
   /**
    * Delete student files (cascade delete)
    */
   async deleteStudentFiles(studentId: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
 
     // List all files for this student
-    const photoPrefix = `tenants/${tenantId}/students/photos/${studentId}/`
-    const docPrefix = `tenants/${tenantId}/students/documents/${studentId}/`
+    const photoPrefix = `tenants/${tenantId}/students/photos/${studentId}/`;
+    const docPrefix = `tenants/${tenantId}/students/documents/${studentId}/`;
 
     const [photos, documents] = await Promise.all([
       storage.list(photoPrefix),
       storage.list(docPrefix),
-    ])
+    ]);
 
-    const allKeys = [...photos, ...documents].map(obj => obj.key)
+    const allKeys = [...photos, ...documents].map((obj) => obj.key);
 
     if (allKeys.length > 0) {
-      await storage.deleteMany(allKeys)
+      await storage.deleteMany(allKeys);
     }
   }
 
   /**
    * Delete assignment submissions for a student
    */
-  async deleteAssignmentSubmissions(assignmentId: string, studentId: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
-    const prefix = `tenants/${tenantId}/assignments/${assignmentId}/submissions/${studentId}/`
+  async deleteAssignmentSubmissions(
+    assignmentId: string,
+    studentId: string
+  ): Promise<void> {
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
+    const prefix = `tenants/${tenantId}/assignments/${assignmentId}/submissions/${studentId}/`;
 
-    const files = await storage.list(prefix)
-    const keys = files.map(obj => obj.key)
+    const files = await storage.list(prefix);
+    const keys = files.map((obj) => obj.key);
 
     if (keys.length > 0) {
-      await storage.deleteMany(keys)
+      await storage.deleteMany(keys);
     }
   }
 
@@ -319,15 +346,15 @@ export class StorageService {
    * Delete all files for an assignment
    */
   async deleteAssignmentFiles(assignmentId: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
-    const prefix = `tenants/${tenantId}/assignments/${assignmentId}/`
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
+    const prefix = `tenants/${tenantId}/assignments/${assignmentId}/`;
 
-    const files = await storage.list(prefix)
-    const keys = files.map(obj => obj.key)
+    const files = await storage.list(prefix);
+    const keys = files.map((obj) => obj.key);
 
     if (keys.length > 0) {
-      await storage.deleteMany(keys)
+      await storage.deleteMany(keys);
     }
   }
 
@@ -335,15 +362,15 @@ export class StorageService {
    * Delete all files for a course
    */
   async deleteCourseFiles(courseId: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
-    const prefix = `tenants/${tenantId}/courses/${courseId}/`
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
+    const prefix = `tenants/${tenantId}/courses/${courseId}/`;
 
-    const files = await storage.list(prefix)
-    const keys = files.map(obj => obj.key)
+    const files = await storage.list(prefix);
+    const keys = files.map((obj) => obj.key);
 
     if (keys.length > 0) {
-      await storage.deleteMany(keys)
+      await storage.deleteMany(keys);
     }
   }
 
@@ -351,32 +378,34 @@ export class StorageService {
    * Get signed URL for private file
    */
   async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
-    const storage = await this.getStorageAdapter()
-    return await storage.getUrl(key, expiresIn)
+    const storage = await this.getStorageAdapter();
+    return await storage.getUrl(key, expiresIn);
   }
 
   /**
    * Delete file by key
    */
   async deleteFile(key: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    await storage.delete(key)
+    const storage = await this.getStorageAdapter();
+    await storage.delete(key);
   }
 
   /**
    * Check if file exists
    */
   async fileExists(key: string): Promise<boolean> {
-    const storage = await this.getStorageAdapter()
-    return await storage.exists(key)
+    const storage = await this.getStorageAdapter();
+    return await storage.exists(key);
   }
 
   /**
    * List files in a directory
    */
-  async listFiles(prefix: string): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
-    const storage = await this.getStorageAdapter()
-    return await storage.list(prefix)
+  async listFiles(
+    prefix: string
+  ): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
+    const storage = await this.getStorageAdapter();
+    return await storage.list(prefix);
   }
 
   /**
@@ -386,33 +415,36 @@ export class StorageService {
     questionId: string,
     file: File,
     options?: {
-      author?: string
-      description?: string
-      altText?: string
-      width?: number
-      height?: number
+      author?: string;
+      description?: string;
+      altText?: string;
+      width?: number;
+      height?: number;
     }
   ): Promise<{ url: string; id: string }> {
     try {
-      console.log('[StorageService] uploadQuestionImage called:', {
+      console.log("[StorageService] uploadQuestionImage called:", {
         questionId,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
         options,
-      })
+      });
 
-      const storage = await this.getStorageAdapter()
-      const tenantId = await getTenantId()
-      console.log('[StorageService] TenantId:', tenantId)
+      const storage = await this.getStorageAdapter();
+      const tenantId = await getTenantId();
+      console.log("[StorageService] TenantId:", tenantId);
 
-      const extension = file.name.split('.').pop()
-      const timestamp = Date.now()
-      const key = await this.generateKey('questions', `images/${questionId}/${timestamp}.${extension}`)
-      console.log('[StorageService] Generated key:', key)
+      const extension = file.name.split(".").pop();
+      const timestamp = Date.now();
+      const key = await this.generateKey(
+        "questions",
+        `images/${questionId}/${timestamp}.${extension}`
+      );
+      console.log("[StorageService] Generated key:", key);
 
       // ✅ Upload file
-      console.log('[StorageService] Starting file upload...')
+      console.log("[StorageService] Starting file upload...");
       const result = await storage.upload({
         key,
         file,
@@ -422,11 +454,11 @@ export class StorageService {
           uploadedAt: new Date().toISOString(),
         },
         isPublic: false, // Question images are private
-      })
-      console.log('[StorageService] File uploaded successfully:', result)
+      });
+      console.log("[StorageService] File uploaded successfully:", result);
 
       // ✅ Save to database with metadata
-      console.log('[StorageService] Saving to database...')
+      console.log("[StorageService] Saving to database...");
       const uploadedFile = await prisma.uploadedFile.create({
         data: {
           tenantId,
@@ -435,8 +467,8 @@ export class StorageService {
           fileName: file.name,
           fileSize: result.size,
           mimeType: file.type,
-          category: 'question_image',
-          entityType: 'question',
+          category: "question_image",
+          entityType: "question",
           entityId: questionId,
           isPublic: false,
           author: options?.author,
@@ -445,13 +477,13 @@ export class StorageService {
           width: options?.width,
           height: options?.height,
         },
-      })
-      console.log('[StorageService] Database record created:', uploadedFile.id)
+      });
+      console.log("[StorageService] Database record created:", uploadedFile.id);
 
-      return { url: result.url, id: uploadedFile.id }
+      return { url: result.url, id: uploadedFile.id };
     } catch (error) {
-      console.error('[StorageService] uploadQuestionImage failed:', error)
-      throw error
+      console.error("[StorageService] uploadQuestionImage failed:", error);
+      throw error;
     }
   }
 
@@ -462,46 +494,49 @@ export class StorageService {
     questionId: string,
     file: File,
     options?: {
-      author?: string
-      description?: string
-      duration?: number
+      author?: string;
+      description?: string;
+      duration?: number;
     }
   ): Promise<{ url: string; id: string }> {
     try {
-      console.log('[StorageService] uploadQuestionAudio called:', {
+      console.log("[StorageService] uploadQuestionAudio called:", {
         questionId,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
         options,
-      })
+      });
 
-      const storage = await this.getStorageAdapter()
-      const tenantId = await getTenantId()
-      console.log('[StorageService] TenantId:', tenantId)
+      const storage = await this.getStorageAdapter();
+      const tenantId = await getTenantId();
+      console.log("[StorageService] TenantId:", tenantId);
 
-      const extension = file.name.split('.').pop()
-      const timestamp = Date.now()
-      const key = await this.generateKey('questions', `audio/${questionId}/${timestamp}.${extension}`)
-      console.log('[StorageService] Generated key:', key)
+      const extension = file.name.split(".").pop();
+      const timestamp = Date.now();
+      const key = await this.generateKey(
+        "questions",
+        `audio/${questionId}/${timestamp}.${extension}`
+      );
+      console.log("[StorageService] Generated key:", key);
 
       // ✅ Upload file
-      console.log('[StorageService] Starting audio upload...')
+      console.log("[StorageService] Starting audio upload...");
       const result = await storage.upload({
         key,
         file,
         contentType: file.type,
         metadata: {
           questionId,
-          duration: options?.duration?.toString() || '0',
+          duration: options?.duration?.toString() || "0",
           uploadedAt: new Date().toISOString(),
         },
         isPublic: false, // Question audio is private
-      })
-      console.log('[StorageService] Audio uploaded successfully:', result)
+      });
+      console.log("[StorageService] Audio uploaded successfully:", result);
 
       // ✅ Save to database with metadata
-      console.log('[StorageService] Saving to database...')
+      console.log("[StorageService] Saving to database...");
       const uploadedFile = await prisma.uploadedFile.create({
         data: {
           tenantId,
@@ -510,20 +545,20 @@ export class StorageService {
           fileName: file.name,
           fileSize: result.size,
           mimeType: file.type,
-          category: 'question_audio',
-          entityType: 'question',
+          category: "question_audio",
+          entityType: "question",
           entityId: questionId,
           isPublic: false,
           author: options?.author,
           description: options?.description,
         },
-      })
-      console.log('[StorageService] Database record created:', uploadedFile.id)
+      });
+      console.log("[StorageService] Database record created:", uploadedFile.id);
 
-      return { url: result.url, id: uploadedFile.id }
+      return { url: result.url, id: uploadedFile.id };
     } catch (error) {
-      console.error('[StorageService] uploadQuestionAudio failed:', error)
-      throw error
+      console.error("[StorageService] uploadQuestionAudio failed:", error);
+      throw error;
     }
   }
 
@@ -531,29 +566,29 @@ export class StorageService {
    * Delete question files (with database cleanup)
    */
   async deleteQuestionFiles(questionId: string): Promise<void> {
-    const storage = await this.getStorageAdapter()
-    const tenantId = await getTenantId()
+    const storage = await this.getStorageAdapter();
+    const tenantId = await getTenantId();
 
     // ✅ Get all files for this question from database
     const files = await prisma.uploadedFile.findMany({
       where: {
         tenantId,
-        entityType: 'question',
+        entityType: "question",
         entityId: questionId,
       },
-    })
+    });
 
     // ✅ Delete from storage
-    await Promise.all(files.map(f => storage.delete(f.key)))
+    await Promise.all(files.map((f) => storage.delete(f.key)));
 
     // ✅ Delete from database
     await prisma.uploadedFile.deleteMany({
       where: {
         tenantId,
-        entityType: 'question',
+        entityType: "question",
         entityId: questionId,
       },
-    })
+    });
   }
 
   /**
@@ -563,26 +598,28 @@ export class StorageService {
     category?: string,
     entityType?: string,
     entityId?: string
-  ): Promise<Array<{
-    id: string
-    key: string
-    url: string
-    fileName: string
-    fileSize: number
-    mimeType: string
-    category: string
-    entityType: string
-    entityId: string
-    isPublic: boolean
-    uploadedAt: Date
-    // Metadata fields
-    author?: string | null
-    description?: string | null
-    altText?: string | null
-    width?: number | null
-    height?: number | null
-  }>> {
-    const tenantId = await getTenantId()
+  ): Promise<
+    Array<{
+      id: string;
+      key: string;
+      url: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      category: string;
+      entityType: string;
+      entityId: string;
+      isPublic: boolean;
+      uploadedAt: Date;
+      // Metadata fields
+      author?: string | null;
+      description?: string | null;
+      altText?: string | null;
+      width?: number | null;
+      height?: number | null;
+    }>
+  > {
+    const tenantId = await getTenantId();
 
     return await prisma.uploadedFile.findMany({
       where: {
@@ -592,16 +629,16 @@ export class StorageService {
         ...(entityId && { entityId }),
       },
       orderBy: {
-        uploadedAt: 'desc',
+        uploadedAt: "desc",
       },
-    })
+    });
   }
 
   /**
    * Delete uploaded file by ID
    */
   async deleteUploadedFile(fileId: string): Promise<void> {
-    const tenantId = await getTenantId()
+    const tenantId = await getTenantId();
 
     // Get file record
     const file = await prisma.uploadedFile.findFirst({
@@ -609,32 +646,31 @@ export class StorageService {
         id: fileId,
         tenantId,
       },
-    })
+    });
 
     if (!file) {
-      throw new Error('File not found')
+      throw new Error("File not found");
     }
 
     // Delete from storage
-    const storage = await this.getStorageAdapter()
-    await storage.delete(file.key)
+    const storage = await this.getStorageAdapter();
+    await storage.delete(file.key);
 
     // Delete from database
     await prisma.uploadedFile.delete({
       where: {
         id: fileId,
       },
-    })
+    });
   }
 }
 
 // Singleton instance
-let serviceInstance: StorageService | null = null
+let serviceInstance: StorageService | null = null;
 
 export function getStorageService(): StorageService {
   if (!serviceInstance) {
-    serviceInstance = new StorageService()
+    serviceInstance = new StorageService();
   }
-  return serviceInstance
+  return serviceInstance;
 }
-

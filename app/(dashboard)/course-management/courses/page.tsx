@@ -1,19 +1,19 @@
-import { getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { getSubjects } from '@/lib/actions/subject.actions'
-import { getClasses } from '@/lib/actions/class.actions'
-import { getStreams } from '@/lib/actions/stream.actions'
-import CoursesClient from './courses-client'
-import { PageHeader } from '@/components/page-header'
-import { BookOpen } from 'lucide-react'
+import { getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getSubjects } from "@/lib/actions/subject.actions";
+import { getClasses } from "@/lib/actions/class.actions";
+import { getStreams } from "@/lib/actions/stream.actions";
+import CoursesClient from "./courses-client";
+import { PageHeader } from "@/components/page-header";
+import { BookOpen } from "lucide-react";
 
 export const metadata = {
-  title: 'Courses | LMS',
-  description: 'Manage courses',
-}
+  title: "Courses | LMS",
+  description: "Manage courses",
+};
 
 export default async function CoursesPage() {
-  const tenantId = await getTenantId()
+  const tenantId = await getTenantId();
 
   const [courses, categories, subjects, classes, streams] = await Promise.all([
     prisma.course.findMany({
@@ -23,6 +23,7 @@ export default async function CoursesPage() {
         class: true,
         subject: true,
         stream: true,
+        instructor: true,
         _count: {
           select: {
             enrollments: true,
@@ -30,16 +31,16 @@ export default async function CoursesPage() {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.courseCategory.findMany({
-      where: { tenantId, status: 'ACTIVE' },
-      orderBy: { order: 'asc' },
+      where: { tenantId, status: "ACTIVE" },
+      orderBy: { order: "asc" },
     }),
-    getSubjects({ status: 'ACTIVE' }),
+    getSubjects({ status: "ACTIVE" }),
     getClasses(),
     getStreams(),
-  ])
+  ]);
 
   return (
     <div className="space-y-6">
@@ -58,6 +59,5 @@ export default async function CoursesPage() {
         streams={streams}
       />
     </div>
-  )
+  );
 }
-

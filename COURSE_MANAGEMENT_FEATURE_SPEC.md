@@ -68,8 +68,8 @@
     - Short description text.
     - Primary button: **"+ Add Bundle Course"**.
 
-
 ### 3.2 Single Course Form (Create/Edit)
+
 > The single course form is organized into multiple tabs (6 sections). Below are the feature-level fields available to the user.
 
 - **Basic information**
@@ -95,13 +95,51 @@
 - **Media**
   - Field: **Featured image** upload using the shared **StorageService**. The image picker supports the same options as the Question Bank editor: `Upload`, `Server Files`, `Recent`, and `URL`.
   - Field: **Intro video URL** (YouTube/Vimeo/local/drive-compatible input).
-- **Visibility & status**
-  - Field: **Status** – `Draft`, `Published`, `Scheduled`, `Private`.
-  - Field: **Published date/time** (displayed in course list).
-  - Field: **Scheduled publish date/time** (used when status = `Scheduled`).
-  - Toggle: **Featured course** (show in highlighted sections).
-  - Toggle: **Allow comments**.
-  - Toggle: **Certificate enabled** (course awards certificate on completion).
+- **Visibility, status & schedule**
+  - Dropdown: **Visibility** – `Public`, `Unlisted`, `Private`, `Internal only`.
+    - **Public** – appears in public/student catalog and is reachable via direct URL.
+    - **Unlisted** – hidden from catalog/search but accessible via direct URL (good for invite-only campaigns).
+    - **Private** – only admins/instructors + already-enrolled students see it; not listed anywhere else.
+    - **Internal only** (future) – visible only inside authenticated dashboard, not public site.
+  - Dropdown: **Course status** – `Draft`, `Published`, `Archived` (UI may label `Published` as `Live`).
+    - **Draft** – never visible to students regardless of visibility/enrollment settings; only admins/instructors can preview.
+    - **Published** – course is live and uses the visibility + enrollment rules below.
+    - **Archived** – course is read‑only; no new enrollments; existing students may keep read access (configurable in future).
+  - Section: **Schedule**
+    - Toggle: **Schedule course go‑live**.
+    - When ON:
+      - Field: **Scheduled date** (separate date picker).
+      - Field: **Scheduled time** (separate time picker).
+      - Both are required and must be in the future.
+      - Field: **Published date/time** is auto‑set when the course actually goes live; for scheduled courses this is `scheduledAt`, for immediate publish it is “now”.
+      - Checkbox: **Show “Coming soon” in course list & details page** while `now < scheduledAt`.
+      - Field: **Coming soon thumbnail** upload (optional) – used instead of normal featured image on catalog cards while coming‑soon is active; if empty, fall back to featured image.
+      - Checkbox: **Preview course curriculum** – when checked, non‑enrolled students can see the full topic/lesson outline but cannot open locked lessons until the course is live.
+    - When OFF:
+      - Course either stays Draft or becomes immediately Published depending on the main status dropdown.
+      - Any previous `scheduledAt` value is cleared.
+  - Behaviour/corner cases:
+    - Draft courses are never visible to students, even if Visibility is Public or enrollment is Open.
+    - If schedule is ON and **Show “Coming soon”** is unchecked, the course stays completely hidden from students until the go‑live moment (admins/instructors can still preview).
+    - If schedule is ON but either date or time is missing, inline validation errors are shown and the form cannot be saved in Published state.
+    - If schedule date/time is in the past, show a clear error and ask the admin to either turn scheduling off or pick a future time.
+  - Toggles:
+    - Toggle: **Featured course** (show in highlighted sections).
+    - Toggle: **Allow comments**.
+    - Toggle: **Certificate enabled** (course awards certificate on completion).
+- **Enrollment settings (same Settings tab)**
+  - Field: **Maximum students** – numeric; `0` or empty = no limit.
+    - When the limit is reached, self‑enrollment via catalog is blocked with a “Course full” message; admins can still manually enroll students.
+  - Field: **Default access duration (days)** – numeric; `0` or empty = lifetime access.
+    - On new enrollment, this sets the default `expiresAt` for `CourseEnrollment` (existing enrollments are not retroactively changed).
+  - Section: **Course enrollment period**
+    - Toggle: **Limit enrollment to a date range**.
+    - When ON:
+      - Field: **Enrollment start date/time** – from when students can self‑enroll.
+      - Field: **Enrollment end date/time** (optional) – after this, self‑enrollment automatically closes.
+      - Validation: end must be on/after start; if schedule is also enabled, the UI should warn if enrollment ends before the course start date.
+  - Checkbox: **Pause enrollment** – immediate override that prevents new enrollments regardless of dates or max students.
+    - While paused, existing students keep access; new students see a friendly message like “Enrollment is currently paused by the instructor”.
 - **SEO & marketing**
   - Field: **Meta title**.
   - Field: **Meta description**.
@@ -412,4 +450,3 @@
   - Enrollment management, auto invoice generation, and progress tracking.
   - Student catalog browsing, enrollment, content viewing, completion, and progress tracking.
 - The system also records important actions for **audit/logging purposes** (e.g., course deletion, bulk unenroll), even though the storage format is outside the scope of this non-technical document.
-

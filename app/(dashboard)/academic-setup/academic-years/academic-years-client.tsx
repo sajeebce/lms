@@ -1,13 +1,22 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, Archive, Star, MoreVertical, Calendar, Lock } from 'lucide-react'
-import { format } from 'date-fns'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from "react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Archive,
+  Star,
+  MoreVertical,
+  Calendar,
+  Lock,
+} from "lucide-react";
+import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,14 +24,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,15 +41,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -49,240 +58,264 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { toast } from 'sonner'
-import { SearchableDropdown } from '@/components/ui/searchable-dropdown'
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import { SearchableDropdown } from "@/components/ui/searchable-dropdown";
 import {
   createAcademicYear,
   updateAcademicYear,
   deleteAcademicYear,
   archiveAcademicYear,
   setAsCurrent,
-  removeFromCurrent
-} from './actions'
+  removeFromCurrent,
+} from "./actions";
 
 // Form validation schema with character limits
-const formSchema = z.object({
-  name: z.string()
-    .min(1, 'Year name is required')
-    .max(100, 'Year name must be 100 characters or less'),
-  code: z.string()
-    .min(1, 'Code is required')
-    .max(20, 'Code must be 20 characters or less'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  state: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'ARCHIVED']),
-}).refine((data) => {
-  // Validate end date > start date
-  if (data.startDate && data.endDate) {
-    return new Date(data.endDate) > new Date(data.startDate)
-  }
-  return true
-}, {
-  message: 'End date must be after start date',
-  path: ['endDate'],
-})
+const formSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, "Year name is required")
+      .max(100, "Year name must be 100 characters or less"),
+    code: z
+      .string()
+      .min(1, "Code is required")
+      .max(20, "Code must be 20 characters or less"),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().min(1, "End date is required"),
+    state: z.enum(["PLANNED", "ACTIVE", "COMPLETED", "ARCHIVED"]),
+  })
+  .refine(
+    (data) => {
+      // Validate end date > start date
+      if (data.startDate && data.endDate) {
+        return new Date(data.endDate) > new Date(data.startDate);
+      }
+      return true;
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
+    }
+  );
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 // Helper function to calculate current state from dates
 function getCurrentStateFromDates(startDate: string, endDate: string): string {
-  const now = new Date()
-  const start = new Date(startDate)
-  const end = new Date(endDate)
+  const now = new Date();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
   if (now < start) {
-    return '📋 Planned (not started yet)'
+    return "📋 Planned (not started yet)";
   } else if (now >= start && now <= end) {
-    return '🎓 Active (currently running)'
+    return "🎓 Active (currently running)";
   } else {
-    return '✅ Completed (ended)'
+    return "✅ Completed (ended)";
   }
 }
 
 // Helper function to get status badge color
 function getStatusBadgeClass(state: string): string {
   switch (state) {
-    case 'PLANNED':
-      return 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400'
-    case 'ACTIVE':
-      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-    case 'COMPLETED':
-      return 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300'
-    case 'ARCHIVED':
-      return 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400'
+    case "PLANNED":
+      return "bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400";
+    case "ACTIVE":
+      return "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300";
+    case "COMPLETED":
+      return "bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300";
+    case "ARCHIVED":
+      return "bg-neutral-200 text-neutral-500 dark:bg-neutral-800/30 dark:text-neutral-400";
     default:
-      return 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400'
+      return "bg-neutral-100 text-neutral-600 dark:bg-neutral-800/30 dark:text-neutral-400";
   }
 }
 
 // Helper function to get status icon
 function getStatusIcon(state: string): string {
   switch (state) {
-    case 'PLANNED':
-      return '📋'
-    case 'ACTIVE':
-      return '🎓'
-    case 'COMPLETED':
-      return '✅'
-    case 'ARCHIVED':
-      return '📦'
+    case "PLANNED":
+      return "📋";
+    case "ACTIVE":
+      return "🎓";
+    case "COMPLETED":
+      return "✅";
+    case "ARCHIVED":
+      return "📦";
     default:
-      return '📋'
+      return "📋";
   }
 }
 
 // Helper function to get status label
 function getStatusLabel(state: string): string {
   switch (state) {
-    case 'PLANNED':
-      return 'Planned'
-    case 'ACTIVE':
-      return 'Active'
-    case 'COMPLETED':
-      return 'Completed'
-    case 'ARCHIVED':
-      return 'Archived'
+    case "PLANNED":
+      return "Planned";
+    case "ACTIVE":
+      return "Active";
+    case "COMPLETED":
+      return "Completed";
+    case "ARCHIVED":
+      return "Archived";
     default:
-      return state
+      return state;
   }
 }
 
 type AcademicYear = {
-  id: string
-  name: string
-  code: string
-  startDate: Date
-  endDate: Date
-  state: 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'
-  isCurrent: boolean
+  id: string;
+  name: string;
+  code: string;
+  startDate: Date;
+  endDate: Date;
+  state: "PLANNED" | "ACTIVE" | "COMPLETED" | "ARCHIVED";
+  isCurrent: boolean;
   _count: {
-    cohorts: number
-  }
-}
+    cohorts: number;
+  };
+};
 
-export function AcademicYearsClient({ academicYears }: { academicYears: AcademicYear[] }) {
-  const [open, setOpen] = useState(false)
-  const [editingYear, setEditingYear] = useState<AcademicYear | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [yearToDelete, setYearToDelete] = useState<AcademicYear | null>(null)
-  const [yearToArchive, setYearToArchive] = useState<AcademicYear | null>(null)
+export function AcademicYearsClient({
+  academicYears,
+}: {
+  academicYears: AcademicYear[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [editingYear, setEditingYear] = useState<AcademicYear | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [yearToDelete, setYearToDelete] = useState<AcademicYear | null>(null);
+  const [yearToArchive, setYearToArchive] = useState<AcademicYear | null>(null);
 
   // React Hook Form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      code: '',
-      startDate: '',
-      endDate: '',
-      state: 'PLANNED',
+      name: "",
+      code: "",
+      startDate: "",
+      endDate: "",
+      state: "PLANNED",
     },
-  })
+  });
 
   const onSubmit = async (values: FormValues) => {
     const result = editingYear
       ? await updateAcademicYear(editingYear.id, values)
-      : await createAcademicYear(values)
+      : await createAcademicYear(values);
 
     if (result.success) {
       toast.success(
-        editingYear ? 'Academic year updated successfully' : 'Academic year created successfully'
-      )
-      setOpen(false)
-      resetForm()
+        editingYear
+          ? "Academic year updated successfully"
+          : "Academic year created successfully"
+      );
+      setOpen(false);
+      resetForm();
     } else {
-      toast.error(result.error || 'An error occurred')
+      toast.error(result.error || "An error occurred");
     }
-  }
+  };
 
   const confirmDelete = async () => {
-    if (!yearToDelete) return
+    if (!yearToDelete) return;
 
-    const result = await deleteAcademicYear(yearToDelete.id)
+    const result = await deleteAcademicYear(yearToDelete.id);
     if (result.success) {
-      toast.success('Academic year deleted successfully')
+      toast.success("Academic year deleted successfully");
     } else {
-      toast.error(result.error || 'Failed to delete academic year')
+      toast.error(result.error || "Failed to delete academic year");
     }
-    setDeleteDialogOpen(false)
-    setYearToDelete(null)
-  }
+    setDeleteDialogOpen(false);
+    setYearToDelete(null);
+  };
 
   const confirmArchive = async () => {
-    if (!yearToArchive) return
+    if (!yearToArchive) return;
 
-    const result = await archiveAcademicYear(yearToArchive.id)
+    const result = await archiveAcademicYear(yearToArchive.id);
     if (result.success) {
-      toast.success('Academic year archived successfully')
+      toast.success("Academic year archived successfully");
     } else {
-      toast.error(result.error || 'Failed to archive academic year')
+      toast.error(result.error || "Failed to archive academic year");
     }
-    setArchiveDialogOpen(false)
-    setYearToArchive(null)
-  }
+    setArchiveDialogOpen(false);
+    setYearToArchive(null);
+  };
 
   const handleSetAsCurrent = async (id: string) => {
-    const result = await setAsCurrent(id)
+    const result = await setAsCurrent(id);
     if (result.success) {
-      toast.success('Year marked as current')
+      toast.success("Year marked as current");
     } else {
-      toast.error(result.error || 'Failed to set as current')
+      toast.error(result.error || "Failed to set as current");
     }
-  }
+  };
 
   const handleRemoveFromCurrent = async (id: string) => {
-    const result = await removeFromCurrent(id)
+    const result = await removeFromCurrent(id);
     if (result.success) {
-      toast.success('Removed from current')
+      toast.success("Removed from current");
     } else {
-      toast.error(result.error || 'Failed to remove from current')
+      toast.error(result.error || "Failed to remove from current");
     }
-  }
+  };
 
   const handleEdit = (year: AcademicYear) => {
-    setEditingYear(year)
+    setEditingYear(year);
     form.reset({
       name: year.name,
       code: year.code,
-      startDate: format(new Date(year.startDate), 'yyyy-MM-dd'),
-      endDate: format(new Date(year.endDate), 'yyyy-MM-dd'),
+      startDate: format(new Date(year.startDate), "yyyy-MM-dd"),
+      endDate: format(new Date(year.endDate), "yyyy-MM-dd"),
       state: year.state,
-    })
-    setOpen(true)
-  }
+    });
+    setOpen(true);
+  };
 
   const resetForm = () => {
-    setEditingYear(null)
+    setEditingYear(null);
     form.reset({
-      name: '',
-      code: '',
-      startDate: '',
-      endDate: '',
-      state: 'PLANNED',
-    })
-  }
+      name: "",
+      code: "",
+      startDate: "",
+      endDate: "",
+      state: "PLANNED",
+    });
+  };
 
   return (
     <div className="bg-card rounded-lg border border-border">
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-card-foreground">All Academic Years</h2>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
+        <h2 className="text-lg font-semibold text-card-foreground">
+          All Academic Years
+        </h2>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Academic Year
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingYear ? 'Edit Academic Year' : 'Add New Academic Year'}
+                {editingYear ? "Edit Academic Year" : "Add New Academic Year"}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 {/* Name Field */}
                 <FormField
                   control={form.control}
@@ -368,10 +401,10 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                       <FormControl>
                         <SearchableDropdown
                           options={[
-                            { value: 'PLANNED', label: '📋 Planned' },
-                            { value: 'ACTIVE', label: '🎓 Active' },
-                            { value: 'COMPLETED', label: '✅ Completed' },
-                            { value: 'ARCHIVED', label: '📦 Archived' },
+                            { value: "PLANNED", label: "📋 Planned" },
+                            { value: "ACTIVE", label: "🎓 Active" },
+                            { value: "COMPLETED", label: "✅ Completed" },
+                            { value: "ARCHIVED", label: "📦 Archived" },
                           ]}
                           value={field.value}
                           onChange={field.onChange}
@@ -387,13 +420,15 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                 />
 
                 {/* Current State Logic (NEW!) */}
-                {form.watch('startDate') && form.watch('endDate') && (
+                {form.watch("startDate") && form.watch("endDate") && (
                   <div className="rounded-lg border border-border bg-muted/50 p-4">
                     <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">Current state based on dates:</span>{' '}
+                      <span className="font-medium">
+                        Current state based on dates:
+                      </span>{" "}
                       {getCurrentStateFromDates(
-                        form.watch('startDate'),
-                        form.watch('endDate')
+                        form.watch("startDate"),
+                        form.watch("endDate")
                       )}
                     </p>
                   </div>
@@ -401,11 +436,12 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
 
                 {/* Submit Button Only */}
                 <div className="flex justify-end pt-4">
-                  <Button
-                    type="submit"
-                    disabled={form.formState.isSubmitting}
-                  >
-                    {form.formState.isSubmitting ? 'Saving...' : editingYear ? 'Update Year' : 'Create Year'}
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting
+                      ? "Saving..."
+                      : editingYear
+                      ? "Update Year"
+                      : "Create Year"}
                   </Button>
                 </div>
               </form>
@@ -417,18 +453,32 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
       <Table>
         <TableHeader>
           <TableRow className="bg-violet-50/50 dark:bg-slate-800/50">
-            <TableHead className="text-foreground dark:text-slate-200">Year Name</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">Code</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">Date Range</TableHead>
-            <TableHead className="text-foreground dark:text-slate-200">State</TableHead>
-            <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Year Name
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Code
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              Date Range
+            </TableHead>
+            <TableHead className="text-foreground dark:text-slate-200">
+              State
+            </TableHead>
+            <TableHead className="text-right text-foreground dark:text-slate-200">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {academicYears.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground dark:text-slate-400 py-8">
-                No academic years found. Create your first academic year to get started.
+              <TableCell
+                colSpan={5}
+                className="text-center text-muted-foreground dark:text-slate-400 py-8"
+              >
+                No academic years found. Create your first academic year to get
+                started.
               </TableCell>
             </TableRow>
           ) : (
@@ -444,9 +494,12 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground dark:text-slate-300">{year.code}</TableCell>
                 <TableCell className="text-muted-foreground dark:text-slate-300">
-                  {format(new Date(year.startDate), 'dd/MM/yyyy')} → {format(new Date(year.endDate), 'dd/MM/yyyy')}
+                  {year.code}
+                </TableCell>
+                <TableCell className="text-muted-foreground dark:text-slate-300">
+                  {format(new Date(year.startDate), "dd/MM/yyyy")} →{" "}
+                  {format(new Date(year.endDate), "dd/MM/yyyy")}
                 </TableCell>
                 <TableCell>
                   <Badge className={getStatusBadgeClass(year.state)}>
@@ -467,22 +520,26 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                       </DropdownMenuItem>
 
                       {year.isCurrent ? (
-                        <DropdownMenuItem onClick={() => handleRemoveFromCurrent(year.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleRemoveFromCurrent(year.id)}
+                        >
                           Remove from Current
                         </DropdownMenuItem>
                       ) : (
-                        <DropdownMenuItem onClick={() => handleSetAsCurrent(year.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleSetAsCurrent(year.id)}
+                        >
                           Set as Current
                         </DropdownMenuItem>
                       )}
 
                       <DropdownMenuSeparator />
 
-                      {year.state !== 'ARCHIVED' && (
+                      {year.state !== "ARCHIVED" && (
                         <DropdownMenuItem
                           onClick={() => {
-                            setYearToArchive(year)
-                            setArchiveDialogOpen(true)
+                            setYearToArchive(year);
+                            setArchiveDialogOpen(true);
                           }}
                           className="text-amber-600 dark:text-amber-400"
                         >
@@ -494,20 +551,25 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
                       <DropdownMenuItem
                         onClick={() => {
                           if (year._count.cohorts > 0) {
-                            toast.error('Cannot Delete', {
+                            toast.error("Cannot Delete", {
                               description: `This year has ${year._count.cohorts} cohort(s) linked. Please remove them first.`,
-                            })
-                            return
+                            });
+                            return;
                           }
-                          setYearToDelete(year)
-                          setDeleteDialogOpen(true)
+                          setYearToDelete(year);
+                          setDeleteDialogOpen(true);
                         }}
-                        className={year._count.cohorts > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}
+                        className={
+                          year._count.cohorts > 0
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-red-600 dark:text-red-400"
+                        }
                       >
                         {year._count.cohorts > 0 ? (
                           <>
                             <Lock className="h-4 w-4 mr-2" />
-                            Locked ({year._count.cohorts} cohort{year._count.cohorts > 1 ? 's' : ''})
+                            Locked ({year._count.cohorts} cohort
+                            {year._count.cohorts > 1 ? "s" : ""})
                           </>
                         ) : (
                           <>
@@ -531,7 +593,8 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Academic Year</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this academic year? This action cannot be undone.
+              Are you sure you want to delete this academic year? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -552,7 +615,8 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Academic Year</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive this academic year? Archived years can be restored later.
+              Are you sure you want to archive this academic year? Archived
+              years can be restored later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -567,5 +631,5 @@ export function AcademicYearsClient({ academicYears }: { academicYears: Academic
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

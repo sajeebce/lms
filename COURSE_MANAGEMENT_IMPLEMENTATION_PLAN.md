@@ -160,20 +160,31 @@ model Course {
   featuredImage     String?       // File path
   introVideoUrl     String?       // YouTube/Vimeo URL
 
-  // Visibility & Status
-  status            CourseStatus  @default(DRAFT) // DRAFT, PUBLISHED, SCHEDULED, PRIVATE
-  publishedAt       DateTime?
-  scheduledAt       DateTime?
+  // Visibility, schedule & access
+  status                   CourseStatus           @default(DRAFT)   // lifecycle: draft/live/archive (SCHEDULED used internally for future go-live)
+  visibility               CourseVisibility       @default(PUBLIC)  // who can see the course in catalog/search
+  publishedAt              DateTime?
+  scheduledAt              DateTime?
+  showComingSoon           Boolean                @default(false)   // when true and now < scheduledAt, show "Coming soon" pill/thumbnail
+  comingSoonImage          String?                                // optional override thumbnail while coming soon
+  allowCurriculumPreview   Boolean                @default(false)   // allow non-enrolled users to see curriculum outline
 
   // SEO & Meta
-  metaTitle         String?
-  metaDescription   String?
-  metaKeywords      String?
+  metaTitle                String?
+  metaDescription          String?
+  metaKeywords             String?
 
   // Settings
-  isFeatured        Boolean       @default(false)
-  allowComments     Boolean       @default(true)
-  certificateEnabled Boolean      @default(false)
+  isFeatured               Boolean                @default(false)
+  allowComments            Boolean                @default(true)
+  certificateEnabled       Boolean                @default(false)
+
+  // Enrollment configuration (course-level defaults)
+  maxStudents                     Int?     // null = unlimited; used for self-enrollment capacity
+  enrollmentStartAt               DateTime?
+  enrollmentEndAt                 DateTime?
+  enrollmentStatus                CourseEnrollmentStatus @default(OPEN) // OPEN, PAUSED, CLOSED, INVITE_ONLY
+  defaultEnrollmentDurationDays   Int?     // null/0 = lifetime; used to compute CourseEnrollment.expiresAt
 
   // Stats (computed)
   totalTopics       Int           @default(0)
@@ -205,7 +216,7 @@ model Course {
 - ✅ Featured courses
 - ✅ Certificate support
 - ✅ Auto-computed statistics
-- ✅ Draft/Published/Scheduled/Private status
+- ✅ Rich status & access model (draft/live + visibility + schedule + enrollment settings)
 
 **Character Limits:**
 
@@ -635,7 +646,6 @@ app/(dashboard)/
 - Add optional **fakeEnrollmentCount** integer to the Course model + form + list rendering for social proof.
 - Refactor the single course form to use **React Hook Form + Zod + shadcn Form** instead of raw `useState`, following the global form standards (character limits, `FormMessage`, toast errors, etc.).
 
-
 **Deliverables:**
 
 - `/course-management/courses/new` page
@@ -946,6 +956,20 @@ enum CourseStatus {
   PRIVATE
 }
 
+enum CourseVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+  INTERNAL_ONLY
+}
+
+enum CourseEnrollmentStatus {
+  OPEN
+  PAUSED
+  CLOSED
+  INVITE_ONLY
+}
+
 enum LessonType {
   VIDEO_YOUTUBE
   VIDEO_VIMEO
@@ -967,6 +991,111 @@ enum ActivityType {
   ASSIGNMENT
   EXAM
 }
+
+### Course Settings  Visibility, Schedule & Enrollment
+
+**Goal:** Make the Settings tab the single place where an admin controls **who can see the course**, **when it appears/live**, and **how/when students can enroll**. This separates three ideas that were previously mixed:
+
+1. **Lifecycle**  draft vs published vs archived (`Course.status`).
+2. **Visibility**  public vs unlisted vs private (`Course.visibility`).
+3. **Enrollment**  open vs paused vs closed, with max seat + date range (`CourseEnrollmentStatus`, `maxStudents`, `enrollmentStartAt`, `enrollmentEndAt`).
+
+#### 1) Visibility & Lifecycle Card
+
+- Rightside card with a modern dashboard look (soft surface + accent border, not flat gray):
+  - **Visibility dropdown** (`Course.visibility`):
+    - `Public`  shown in catalog/search and accessible via URL.
+    - `Unlisted`  hidden from catalog/search, only accessible via direct link.
+    - `Private`  only admins/instructors + alreadyenrolled students can see it.
+    - `Internal only` (future)  visible only inside staff dashboards.
+  - **Status dropdown** (`Course.status`):
+    - Primary options in UI: `Draft`, `Published`, `Archived`.
+    - Implementation detail: `SCHEDULED` may still exist internally; UI shows it as `Published (scheduled)` badge when schedule is enabled and `now < scheduledAt`.
+  - Meta line: Last updated by {user} on {date} in small, muted text.
+  - Status pill row showing combined state: e.g. `Public · Coming soon · Enrollment open` using colorful rounded chips.
+
+**Rules / edge cases:**
+
+- Draft overrides everything  even if visibility = Public and enrollment = Open, students never see the course.
+- Archived  no new enrollments, course hidden from catalog; existing students may keep readonly access (implementation detail later).
+- Switching back from Published/Archived to Draft should optionally show a warning if students are already enrolled.
+
+#### 2) Schedule Card (Golive + Coming Soon)
+
+- Inside Settings tab but visually a separate card under Visibility.
+- Controls:
+  - Toggle: **Schedule course golive**.
+  - When ON:
+    - `Date` input (type=`date`).
+    - `Time` input (type=`time`).
+    - Helper text: Course will go live on {date} at {time}.
+    - Checkbox: **Show Coming soon before start date** (`showComingSoon`).
+    - File input: **Coming soon thumbnail** (`comingSoonImage`)  optional override card image.
+    - Toggle: **Preview curriculum for guests** (`allowCurriculumPreview`).
+  - When OFF:
+    - `scheduledAt` cleared; course either stays Draft or is immediately live depending on `status`.
+
+**Validation / edge cases:**
+
+- If schedule is ON and either date or time is empty  show inline error chip below the specific field and block saving Published status.
+- If scheduled datetime is in the past:
+  - Show a strong warning chip: Scheduled date/time must be in the future.
+  - Offer quick fix in copy: Turn off schedule or Set to now (future enhancement).
+- While `now < scheduledAt`:
+  - If `showComingSoon = true`: course appears in catalog with a `Coming soon` pill + optional comingsoon thumbnail; enroll button behaviour depends on enrollment rules below.
+  - If `showComingSoon = false`: course is completely hidden from students (but admins can preview).
+- If schedule is turned OFF after it was ON:
+  - Do **not** autoarchive; keep `status` as Draft or Published as chosen.
+  - Clear `scheduledAt` and show a small note that schedule was removed.
+
+#### 3) Enrollment Card (Capacity + Window + Pause)
+
+- Same Settings tab, another card titled **Enrollment settings** with a subtle accent header.
+- Fields:
+  - **Maximum students** (`maxStudents`):
+    - `0` or empty = unlimited.
+    - When limit reached, selfenrollment is blocked with `Course full` chip/button state; admins can still manually enroll via Enrollments page.
+  - **Default access duration (days)** (`defaultEnrollmentDurationDays`):
+    - On new enrollment, compute `CourseEnrollment.expiresAt` = `now + N days` (or `null` for lifetime).
+  - **Enrollment period** section:
+    - Toggle: **Limit enrollment to a date range**.
+    - When ON:
+      - `Enrollment start date/time` (`enrollmentStartAt`).
+      - `Enrollment end date/time` (`enrollmentEndAt`, optional).
+      - Inline summary text like: Students can enroll from 1 Feb, 10:00 AM to 15 Feb, 11:59 PM.
+  - **Pause enrollment** checkbox (`enrollmentStatus = PAUSED`):
+    - Immediate override; takes precedence over date range and max students.
+    - UI copy: Enrollment is paused. Existing students keep access, new students cannot join.
+
+**Rules / edge cases:**
+
+- `canSelfEnroll` logic (high level):
+  - Course must be `status = PUBLISHED` (or scheduled + now >= scheduledAt).
+  - Visibility must allow the current context:
+    - Catalog listing requires `visibility = PUBLIC` or `UNLISTED`.
+    - Direct link may still work for `UNLISTED` and `PRIVATE` (if the user has permission / invite).
+  - `enrollmentStatus` must be `OPEN`.
+  - If `maxStudents` is set, current active enrollments must be `< maxStudents`.
+  - If date range is enabled:
+    - `now >= enrollmentStartAt`.
+    - `enrollmentEndAt` is `null` OR `now <= enrollmentEndAt`.
+- If enrollment end is **before** scheduled course start:
+  - Show a warning chip on the form: Enrollment ends before the course is live. Students may never see the course.
+- If course is **Coming soon** (scheduled in future) but enrollment is **OPEN now**:
+  - Allowed pattern for presale: students can enroll early, see curriculum (if preview allowed), but cannot start locked lessons until golive.
+  - UI should make this clear using label like `Coming soon · Enrolling now`.
+- Changing `maxStudents` after enrollments exist:
+  - Increasing the limit simply allows more students.
+  - Decreasing the limit **does not auto-drop** existing students; the new limit only affects future enrollments.
+- Pausing enrollment with existing students:
+  - Students keep access; only new enrollments are blocked.
+
+All of these behaviours should be reflected in:
+
+- **Settings tab UI** (chips, helper texts, warnings).
+- **Catalog & course card** chips (e.g., `Coming soon`, `Enrollment closed`, `Full`, `Invite only`).
+- **Student view** (what happens when trying to enroll or open a course in each state).
+
 
 enum EnrollmentType {
   PAID

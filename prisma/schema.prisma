@@ -604,27 +604,38 @@ model Course {
   introVideoUrl        String?
   introVideoAutoplay   Boolean  @default(false)
 
-  // Visibility & Status
-  status               String   @default("DRAFT") // DRAFT, PUBLISHED, SCHEDULED, PRIVATE
-  publishedAt          DateTime?
-  scheduledAt          DateTime?
+  // Visibility, schedule & status
+  status                     CourseStatus           @default(DRAFT)
+  visibility                 CourseVisibility       @default(PUBLIC)
+  publishedAt                DateTime?
+  scheduledAt                DateTime?
+  showComingSoon             Boolean                @default(false)
+  comingSoonImage            String?
+  allowCurriculumPreview     Boolean                @default(false)
 
   // SEO & Meta
-  metaTitle            String?
-  metaDescription      String?
-  metaKeywords         String?
-  fakeEnrollmentCount  Int?     // Optional fake enrollment count for marketing/social proof
+  metaTitle                  String?
+  metaDescription            String?
+  metaKeywords               String?
+  fakeEnrollmentCount        Int?                   // Optional fake enrollment count for marketing/social proof
 
   // Settings
-  isFeatured           Boolean  @default(false)
-  allowComments        Boolean  @default(true)
-  certificateEnabled   Boolean  @default(false)
+  isFeatured                 Boolean                @default(false)
+  allowComments              Boolean                @default(true)
+  certificateEnabled         Boolean                @default(false)
+
+  // Enrollment configuration (course-level defaults)
+  maxStudents                   Int?
+  enrollmentStartAt             DateTime?
+  enrollmentEndAt               DateTime?
+  enrollmentStatus              CourseEnrollmentStatus @default(OPEN)
+  defaultEnrollmentDurationDays Int?
 
   // Stats (computed)
-  totalTopics          Int      @default(0)
-  totalLessons         Int      @default(0)
-  totalDuration        Int      @default(0)
-  totalEnrollments     Int      @default(0)
+  totalTopics                Int                    @default(0)
+  totalLessons               Int                    @default(0)
+  totalDuration              Int                    @default(0)
+  totalEnrollments           Int                    @default(0)
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -647,6 +658,27 @@ model Course {
   @@index([categoryId])
   @@index([tenantId, classId, subjectId, streamId])
   @@map("courses")
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  PRIVATE
+}
+
+enum CourseVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+  INTERNAL_ONLY
+}
+
+enum CourseEnrollmentStatus {
+  OPEN
+  PAUSED
+  CLOSED
+  INVITE_ONLY
 }
 
 // Course Topic

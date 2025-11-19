@@ -1,30 +1,30 @@
-import { getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Edit, BookOpen, Users, Calendar } from 'lucide-react'
+import { getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Edit, BookOpen, Users, Calendar } from "lucide-react";
 
 export const metadata = {
-  title: 'Course Details | LMS',
-  description: 'View course details',
-}
+  title: "Course Details | LMS",
+  description: "View course details",
+};
 
 type Props = {
-  params: Promise<{ id: string }>
-}
+  params: Promise<{ id: string }>;
+};
 
 export default async function CourseDetailsPage({ params }: Props) {
-  const { id } = await params
-  const tenantId = await getTenantId()
+  const { id } = await params;
+  const tenantId = await getTenantId();
 
   const course = await prisma.course.findFirst({
     where: { id, tenantId },
     include: {
       category: true,
       faqs: {
-        orderBy: { order: 'asc' },
+        orderBy: { order: "asc" },
       },
       _count: {
         select: {
@@ -33,25 +33,39 @@ export default async function CourseDetailsPage({ params }: Props) {
         },
       },
     },
-  })
+  });
 
   if (!course) {
-    notFound()
+    notFound();
   }
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      DRAFT: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-      PUBLISHED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-      SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-      PRIVATE: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-    }
+      DRAFT:
+        "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
+      PUBLISHED:
+        "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      SCHEDULED:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      PRIVATE:
+        "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+    };
     return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status as keyof typeof styles] || styles.DRAFT}`}>
+      <span
+        className={`px-3 py-1 rounded-full text-sm font-medium ${
+          styles[status as keyof typeof styles] || styles.DRAFT
+        }`}
+      >
         {status}
       </span>
-    )
-  }
+    );
+  };
+
+  const formatDateTime = (value: Date | string | null | undefined) => {
+    if (!value) return "";
+    const date = typeof value === "string" ? new Date(value) : value;
+    return date.toLocaleString();
+  };
 
   return (
     <div className="space-y-6">
@@ -92,7 +106,9 @@ export default async function CourseDetailsPage({ params }: Props) {
                 <BookOpen className="h-6 w-6 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Topics</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Topics
+                </p>
                 <p className="text-2xl font-bold">{course._count.topics}</p>
               </div>
             </div>
@@ -106,9 +122,13 @@ export default async function CourseDetailsPage({ params }: Props) {
                 <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Students (Displayed)</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Students (Displayed)
+                </p>
                 <p className="text-2xl font-bold">
-                  {(course.fakeEnrollmentCount ?? course._count.enrollments).toLocaleString()}
+                  {(
+                    course.fakeEnrollmentCount ?? course._count.enrollments
+                  ).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -122,8 +142,20 @@ export default async function CourseDetailsPage({ params }: Props) {
                 <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">Status</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Status
+                </p>
                 <div className="mt-1">{getStatusBadge(course.status)}</div>
+                {course.status === "PUBLISHED" && course.publishedAt && (
+                  <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                    Published at: {formatDateTime(course.publishedAt)}
+                  </p>
+                )}
+                {course.status === "SCHEDULED" && course.scheduledAt && (
+                  <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                    Scheduled for: {formatDateTime(course.scheduledAt)}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -138,18 +170,28 @@ export default async function CourseDetailsPage({ params }: Props) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Category</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Category
+              </p>
               <p className="font-medium">
-                {course.category ? `${course.category.icon || '📚'} ${course.category.name}` : 'No category'}
+                {course.category
+                  ? `${course.category.icon || "📚"} ${course.category.name}`
+                  : "No category"}
               </p>
             </div>
             <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Slug</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Slug
+              </p>
               <p className="font-medium font-mono text-sm">{course.slug}</p>
             </div>
             <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Short Description</p>
-              <p className="text-sm">{course.shortDescription || 'No description'}</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Short Description
+              </p>
+              <p className="text-sm">
+                {course.shortDescription || "No description"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -160,19 +202,29 @@ export default async function CourseDetailsPage({ params }: Props) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Payment Type</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Payment Type
+              </p>
               <p className="font-medium">{course.paymentType}</p>
             </div>
-            {course.paymentType !== 'FREE' && (
+            {course.paymentType !== "FREE" && (
               <>
                 <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Regular Price</p>
-                  <p className="font-medium">{course.currency} {course.regularPrice || 0}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Regular Price
+                  </p>
+                  <p className="font-medium">
+                    {course.currency} {course.regularPrice || 0}
+                  </p>
                 </div>
                 {course.offerPrice && (
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Offer Price</p>
-                    <p className="font-medium text-green-600">{course.currency} {course.offerPrice}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      Offer Price
+                    </p>
+                    <p className="font-medium text-green-600">
+                      {course.currency} {course.offerPrice}
+                    </p>
                   </div>
                 )}
               </>
@@ -203,7 +255,10 @@ export default async function CourseDetailsPage({ params }: Props) {
           </CardHeader>
           <CardContent className="space-y-4">
             {course.faqs.map((faq, index) => (
-              <div key={faq.id} className="border-b last:border-0 pb-4 last:pb-0">
+              <div
+                key={faq.id}
+                className="border-b last:border-0 pb-4 last:pb-0"
+              >
                 <p className="font-medium mb-2">
                   {index + 1}. {faq.question}
                 </p>
@@ -216,6 +271,5 @@ export default async function CourseDetailsPage({ params }: Props) {
         </Card>
       )}
     </div>
-  )
+  );
 }
-

@@ -1,13 +1,14 @@
-'use server'
+"use server";
 
-import { requireRole, getTenantId } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { requireRole, getTenantId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 export async function deleteCourse(id: string) {
   try {
-    await requireRole('ADMIN')
-    const tenantId = await getTenantId()
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
 
     // Check if course has enrollments
     const course = await prisma.course.findFirst({
@@ -17,75 +18,126 @@ export async function deleteCourse(id: string) {
           select: { enrollments: true },
         },
       },
-    })
+    });
 
     if (!course) {
-      return { success: false, error: 'Course not found' }
+      return { success: false, error: "Course not found" };
     }
 
     if (course._count.enrollments > 0) {
       return {
         success: false,
         error: `Cannot delete course with ${course._count.enrollments} active enrollments`,
-      }
+      };
     }
 
     // Delete course (cascade will delete topics, lessons, FAQs)
     await prisma.course.delete({
       where: { id },
-    })
+    });
 
-    revalidatePath('/course-management/courses')
-    return { success: true }
+    revalidatePath("/course-management/courses");
+    return { success: true };
   } catch (error) {
-    console.error('Delete course error:', error)
-    return { success: false, error: 'Failed to delete course' }
+    console.error("Delete course error:", error);
+    return { success: false, error: "Failed to delete course" };
   }
 }
 
-
 export async function publishCourse(id: string) {
   try {
-    await requireRole('ADMIN')
-    const tenantId = await getTenantId()
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
 
     const course = await prisma.course.findFirst({
       where: { id, tenantId },
-    })
+    });
 
     if (!course) {
-      return { success: false, error: 'Course not found' }
+      return { success: false, error: "Course not found" };
     }
 
-    if (course.status === 'PUBLISHED') {
-      return { success: true, alreadyPublished: true }
+    if (course.status === "PUBLISHED") {
+      return { success: true, alreadyPublished: true };
     }
 
     await prisma.course.update({
       where: { id },
       data: {
-        status: 'PUBLISHED',
+        status: "PUBLISHED",
         publishedAt: course.publishedAt ?? new Date(),
         scheduledAt: null,
       },
-    })
+    });
 
-    revalidatePath('/course-management/courses')
-    revalidatePath(`/course-management/courses/${id}`)
+    revalidatePath("/course-management/courses");
+    revalidatePath(`/course-management/courses/${id}`);
 
-    return { success: true, alreadyPublished: false }
+    return { success: true, alreadyPublished: false };
   } catch (error) {
-    console.error('Publish course error:', error)
-    return { success: false, error: 'Failed to publish course' }
+    console.error("Publish course error:", error);
+    return { success: false, error: "Failed to publish course" };
   }
 }
 
+const updateCourseStatusSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["DRAFT", "PUBLISHED", "SCHEDULED", "PRIVATE"]),
+});
 
+export async function updateCourseStatus(
+  input: z.infer<typeof updateCourseStatusSchema>
+) {
+  try {
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
+
+    const { id, status } = updateCourseStatusSchema.parse(input);
+
+    const course = await prisma.course.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!course) {
+      return { success: false, error: "Course not found" };
+    }
+
+    // Prevent setting Scheduled from the list view without a scheduled time
+    if (status === "SCHEDULED" && !course.scheduledAt) {
+      return {
+        success: false,
+        error:
+          "Please set a scheduled publish date & time from the course Settings tab before switching to Scheduled.",
+      };
+    }
+
+    await prisma.course.update({
+      where: { id },
+      data: {
+        status,
+        ...(status === "PUBLISHED"
+          ? {
+              publishedAt: course.publishedAt ?? new Date(),
+              scheduledAt: null,
+            }
+          : {}),
+      },
+    });
+
+    revalidatePath("/course-management/courses");
+    revalidatePath(`/course-management/courses/${id}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Update course status error:", error);
+    return { success: false, error: "Failed to update course status" };
+  }
+}
 
 export async function duplicateCourse(id: string) {
   try {
-    await requireRole('ADMIN')
-    const tenantId = await getTenantId()
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
 
     // Fetch original course with topics, lessons and FAQs
     const original = await prisma.course.findFirst({
@@ -95,24 +147,24 @@ export async function duplicateCourse(id: string) {
           include: {
             lessons: true,
           },
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
-        faqs: { orderBy: { order: 'asc' } },
+        faqs: { orderBy: { order: "asc" } },
       },
-    })
+    });
 
     if (!original) {
-      return { success: false, error: 'Course not found' }
+      return { success: false, error: "Course not found" };
     }
 
     // Ensure slug stays within 200 characters (matches form validation)
-    const suffix = `-copy-${Date.now().toString(36)}`
-    const maxSlugLength = 200
-    let baseSlug = original.slug
+    const suffix = `-copy-${Date.now().toString(36)}`;
+    const maxSlugLength = 200;
+    let baseSlug = original.slug;
     if (baseSlug.length + suffix.length > maxSlugLength) {
-      baseSlug = baseSlug.slice(0, maxSlugLength - suffix.length)
+      baseSlug = baseSlug.slice(0, maxSlugLength - suffix.length);
     }
-    const newSlug = `${baseSlug}${suffix}`
+    const newSlug = `${baseSlug}${suffix}`;
 
     // Deep clone course + topics + lessons + FAQs (+ bundle children if bundle)
     const duplicated = await prisma.$transaction(async (tx) => {
@@ -141,7 +193,7 @@ export async function duplicateCourse(id: string) {
           featuredImage: original.featuredImage,
           introVideoUrl: original.introVideoUrl,
           introVideoAutoplay: original.introVideoAutoplay,
-          status: 'DRAFT',
+          status: "DRAFT",
           publishedAt: null,
           scheduledAt: null,
           metaTitle: original.metaTitle,
@@ -156,7 +208,7 @@ export async function duplicateCourse(id: string) {
           totalDuration: original.totalDuration,
           totalEnrollments: 0,
         },
-      })
+      });
 
       for (const topic of original.topics) {
         const newTopic = await tx.courseTopic.create({
@@ -167,7 +219,7 @@ export async function duplicateCourse(id: string) {
             description: topic.description,
             order: topic.order,
           },
-        })
+        });
 
         for (const lesson of topic.lessons) {
           await tx.courseLesson.create({
@@ -188,7 +240,7 @@ export async function duplicateCourse(id: string) {
               accessType: lesson.accessType,
               password: lesson.password,
             },
-          })
+          });
         }
       }
 
@@ -201,18 +253,18 @@ export async function duplicateCourse(id: string) {
             answer: faq.answer,
             order: faq.order,
           },
-        })
+        });
       }
 
       // If this is a bundle course, duplicate its child relations
-      if (original.courseType === 'BUNDLE') {
+      if (original.courseType === "BUNDLE") {
         const bundleItems = await tx.bundleCourse.findMany({
           where: {
             tenantId,
             bundleId: original.id,
           },
-          orderBy: { order: 'asc' },
-        })
+          orderBy: { order: "asc" },
+        });
 
         for (const item of bundleItems) {
           await tx.bundleCourse.create({
@@ -222,21 +274,21 @@ export async function duplicateCourse(id: string) {
               courseId: item.courseId,
               order: item.order,
             },
-          })
+          });
         }
       }
 
-      return newCourse
-    })
+      return newCourse;
+    });
 
-    revalidatePath('/course-management/courses')
+    revalidatePath("/course-management/courses");
 
     return {
       success: true,
       courseId: duplicated.id,
-    }
+    };
   } catch (error) {
-    console.error('Duplicate course error:', error)
-    return { success: false, error: 'Failed to duplicate course' }
+    console.error("Duplicate course error:", error);
+    return { success: false, error: "Failed to duplicate course" };
   }
 }

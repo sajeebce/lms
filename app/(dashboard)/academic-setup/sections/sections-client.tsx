@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, ShieldAlert, Lock } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
+import { useState, useMemo } from "react";
+import { Plus, Pencil, Trash2, ShieldAlert, Lock } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,14 +13,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   Form,
   FormControl,
@@ -39,88 +39,84 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { toast } from 'sonner'
-import { createSection, updateSection, deleteSection } from './actions'
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { createSection, updateSection, deleteSection } from "./actions";
 
 // Form validation schema with character limits
 const formSchema = z.object({
-  name: z.string()
-    .min(1, 'Section name is required')
-    .max(100, 'Section name must be 100 characters or less'),
-  capacity: z.number()
-    .min(0, 'Capacity must be 0 or greater')
-    .max(9999999, 'Capacity must be 9999999 or less'),
-  note: z.string()
-    .max(500, 'Note must be 500 characters or less')
-    .optional(),
-})
+  name: z
+    .string()
+    .min(1, "Section name is required")
+    .max(100, "Section name must be 100 characters or less"),
+  capacity: z
+    .number()
+    .min(0, "Capacity must be 0 or greater")
+    .max(9999999, "Capacity must be 9999999 or less"),
+  note: z.string().max(500, "Note must be 500 characters or less").optional(),
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 type Section = {
-  id: string
-  name: string
-  capacity: number
-  note: string | null
+  id: string;
+  name: string;
+  capacity: number;
+  note: string | null;
   cohortSections: Array<{
-    id: string
+    id: string;
     cohort: {
-      id: string
-      name: string
-      year: { id: string; name: string }
-      class: { id: string; name: string }
-      branch: { id: string; name: string }
-    }
-  }>
+      id: string;
+      name: string;
+      year: { id: string; name: string };
+      class: { id: string; name: string };
+      branch: { id: string; name: string };
+    };
+  }>;
   _count: {
-    enrollments: number
-    routines: number
-    cohortSections: number
-  }
-}
+    enrollments: number;
+    routines: number;
+    cohortSections: number;
+  };
+};
 
-export function SectionsClient({
-  sections,
-}: {
-  sections: Section[]
-}) {
-  const [open, setOpen] = useState(false)
-  const [editingSection, setEditingSection] = useState<Section | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+export function SectionsClient({ sections }: { sections: Section[] }) {
+  const [open, setOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<Section | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // React Hook Form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      name: "",
       capacity: 40,
-      note: '',
+      note: "",
     },
-  })
+  });
 
   // Simple search filter
   const filteredSections = useMemo(() => {
-    if (!searchQuery) return sections
+    if (!searchQuery) return sections;
 
-    const query = searchQuery.toLowerCase()
+    const query = searchQuery.toLowerCase();
     return sections.filter((section) =>
       section.name.toLowerCase().includes(query)
-    )
-  }, [sections, searchQuery])
+    );
+  }, [sections, searchQuery]);
 
   const onSubmit = async (values: FormValues) => {
     const result = editingSection
@@ -131,52 +127,52 @@ export function SectionsClient({
       : await createSection({
           ...values,
           note: values.note || undefined,
-        })
+        });
 
     if (result.success) {
       toast.success(
         editingSection
-          ? 'Section updated successfully'
-          : 'Section created successfully'
-      )
-      setOpen(false)
-      resetForm()
+          ? "Section updated successfully"
+          : "Section created successfully"
+      );
+      setOpen(false);
+      resetForm();
     } else {
-      toast.error(result.error || 'An error occurred')
+      toast.error(result.error || "An error occurred");
     }
-  }
+  };
 
   const confirmDelete = async () => {
-    if (!sectionToDelete) return
+    if (!sectionToDelete) return;
 
-    const result = await deleteSection(sectionToDelete.id)
+    const result = await deleteSection(sectionToDelete.id);
     if (result.success) {
-      toast.success('Section deleted successfully')
+      toast.success("Section deleted successfully");
     } else {
-      toast.error(result.error || 'Failed to delete section')
+      toast.error(result.error || "Failed to delete section");
     }
-    setDeleteDialogOpen(false)
-    setSectionToDelete(null)
-  }
+    setDeleteDialogOpen(false);
+    setSectionToDelete(null);
+  };
 
   const handleEdit = (section: Section) => {
-    setEditingSection(section)
+    setEditingSection(section);
     form.reset({
       name: section.name,
       capacity: section.capacity,
-      note: section.note || '',
-    })
-    setOpen(true)
-  }
+      note: section.note || "",
+    });
+    setOpen(true);
+  };
 
   const resetForm = () => {
-    setEditingSection(null)
+    setEditingSection(null);
     form.reset({
-      name: '',
+      name: "",
       capacity: 40,
-      note: '',
-    })
-  }
+      note: "",
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -184,7 +180,9 @@ export function SectionsClient({
       <div className="bg-card dark:bg-slate-800/50 rounded-lg border border-border dark:border-slate-700 p-4">
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <Label className="text-xs text-foreground dark:text-slate-300">Search Sections</Label>
+            <Label className="text-xs text-foreground dark:text-slate-300">
+              Search Sections
+            </Label>
             <Input
               placeholder="Search by section name..."
               value={searchQuery}
@@ -204,8 +202,8 @@ export function SectionsClient({
           <Dialog
             open={open}
             onOpenChange={(o) => {
-              setOpen(o)
-              if (!o) resetForm()
+              setOpen(o);
+              if (!o) resetForm();
             }}
           >
             <DialogTrigger asChild>
@@ -214,14 +212,17 @@ export function SectionsClient({
                 Add Section
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingSection ? 'Edit Section' : 'Add New Section'}
+                  {editingSection ? "Edit Section" : "Add New Section"}
                 </DialogTitle>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   {/* Section Name */}
                   <FormField
                     control={form.control}
@@ -258,7 +259,9 @@ export function SectionsClient({
                             min="0"
                             max="9999999"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
                         <FormDescription>
@@ -286,7 +289,8 @@ export function SectionsClient({
                           />
                         </FormControl>
                         <FormDescription>
-                          Additional information about this section (max 500 characters)
+                          Additional information about this section (max 500
+                          characters)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -299,7 +303,11 @@ export function SectionsClient({
                       type="submit"
                       disabled={form.formState.isSubmitting}
                     >
-                      {form.formState.isSubmitting ? 'Saving...' : editingSection ? 'Update Section' : 'Create Section'}
+                      {form.formState.isSubmitting
+                        ? "Saving..."
+                        : editingSection
+                        ? "Update Section"
+                        : "Create Section"}
                     </Button>
                   </div>
                 </form>
@@ -311,38 +319,62 @@ export function SectionsClient({
         <Table>
           <TableHeader>
             <TableRow className="bg-cyan-50/50 dark:bg-slate-800/50">
-              <TableHead className="text-foreground dark:text-slate-200">Section Name</TableHead>
-              <TableHead className="text-foreground dark:text-slate-200">Capacity</TableHead>
-              <TableHead className="text-foreground dark:text-slate-200">Enrollments</TableHead>
-              <TableHead className="text-foreground dark:text-slate-200">Routines</TableHead>
-              <TableHead className="text-foreground dark:text-slate-200">Linked Cohort</TableHead>
-              <TableHead className="text-right text-foreground dark:text-slate-200">Actions</TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">
+                Section Name
+              </TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">
+                Capacity
+              </TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">
+                Enrollments
+              </TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">
+                Routines
+              </TableHead>
+              <TableHead className="text-foreground dark:text-slate-200">
+                Linked Cohort
+              </TableHead>
+              <TableHead className="text-right text-foreground dark:text-slate-200">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSections.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground dark:text-slate-400 py-8">
+                <TableCell
+                  colSpan={6}
+                  className="text-center text-muted-foreground dark:text-slate-400 py-8"
+                >
                   No sections found. Create your first section to get started.
                 </TableCell>
               </TableRow>
             ) : (
               filteredSections.map((section) => (
                 <TableRow key={section.id} className="dark:border-slate-700">
-                  <TableCell className="font-medium text-foreground dark:text-slate-200">{section.name}</TableCell>
+                  <TableCell className="font-medium text-foreground dark:text-slate-200">
+                    {section.name}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
-                      {section.capacity === 0 ? '∞ Unlimited' : `${section.capacity} students`}
+                    <Badge
+                      variant="outline"
+                      className="dark:border-slate-600 dark:text-slate-300"
+                    >
+                      {section.capacity === 0
+                        ? "∞ Unlimited"
+                        : `${section.capacity} students`}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300">
-                      {section._count.enrollments} student{section._count.enrollments !== 1 ? 's' : ''}
+                      {section._count.enrollments} student
+                      {section._count.enrollments !== 1 ? "s" : ""}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className="bg-purple-50 text-purple-700 hover:bg-purple-50 dark:bg-purple-900/30 dark:text-purple-300">
-                      {section._count.routines} routine{section._count.routines !== 1 ? 's' : ''}
+                      {section._count.routines} routine
+                      {section._count.routines !== 1 ? "s" : ""}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -358,7 +390,9 @@ export function SectionsClient({
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Independent</span>
+                      <span className="text-xs text-muted-foreground">
+                        Independent
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -375,33 +409,57 @@ export function SectionsClient({
                         size="sm"
                         onClick={() => {
                           // Check if section has dependencies
-                          const messages = []
+                          const messages = [];
                           if (section._count.cohortSections > 0) {
-                            messages.push(`linked to ${section._count.cohortSections} cohort${section._count.cohortSections > 1 ? 's' : ''}`)
+                            messages.push(
+                              `linked to ${
+                                section._count.cohortSections
+                              } cohort${
+                                section._count.cohortSections > 1 ? "s" : ""
+                              }`
+                            );
                           }
                           if (section._count.enrollments > 0) {
-                            messages.push(`${section._count.enrollments} student${section._count.enrollments > 1 ? 's' : ''} enrolled`)
+                            messages.push(
+                              `${section._count.enrollments} student${
+                                section._count.enrollments > 1 ? "s" : ""
+                              } enrolled`
+                            );
                           }
                           if (section._count.routines > 0) {
-                            messages.push(`${section._count.routines} routine${section._count.routines > 1 ? 's' : ''} linked`)
+                            messages.push(
+                              `${section._count.routines} routine${
+                                section._count.routines > 1 ? "s" : ""
+                              } linked`
+                            );
                           }
                           if (messages.length > 0) {
-                            toast.error('Cannot Delete', {
-                              description: `This section is ${messages.join(' and has ')}. Please remove dependencies first.`,
-                            })
-                            return
+                            toast.error("Cannot Delete", {
+                              description: `This section is ${messages.join(
+                                " and has "
+                              )}. Please remove dependencies first.`,
+                            });
+                            return;
                           }
-                          setSectionToDelete(section)
-                          setDeleteDialogOpen(true)
+                          setSectionToDelete(section);
+                          setDeleteDialogOpen(true);
                         }}
-                        disabled={section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0}
+                        disabled={
+                          section._count.cohortSections > 0 ||
+                          section._count.enrollments > 0 ||
+                          section._count.routines > 0
+                        }
                         className={
-                          section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0
-                            ? 'cursor-not-allowed'
-                            : ''
+                          section._count.cohortSections > 0 ||
+                          section._count.enrollments > 0 ||
+                          section._count.routines > 0
+                            ? "cursor-not-allowed"
+                            : ""
                         }
                       >
-                        {section._count.cohortSections > 0 || section._count.enrollments > 0 || section._count.routines > 0 ? (
+                        {section._count.cohortSections > 0 ||
+                        section._count.enrollments > 0 ||
+                        section._count.routines > 0 ? (
                           <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         ) : (
                           <Trash2 className="h-4 w-4 text-red-600" />
@@ -424,10 +482,16 @@ export function SectionsClient({
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
                 <ShieldAlert className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
-              <AlertDialogTitle className="text-xl">Delete Section</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl">
+                Delete Section
+              </AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-base">
-              Are you sure you want to delete <span className="font-semibold text-foreground">{sectionToDelete?.name}</span>? This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                {sectionToDelete?.name}
+              </span>
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
@@ -442,5 +506,5 @@ export function SectionsClient({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

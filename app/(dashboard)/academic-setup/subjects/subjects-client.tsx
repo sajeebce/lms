@@ -322,7 +322,7 @@ export default function SubjectsClient({
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="dark:bg-slate-900 max-w-2xl">
+        <DialogContent className="dark:bg-slate-900 max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="dark:text-slate-100">
               Add Subject
@@ -334,7 +334,7 @@ export default function SubjectsClient({
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="dark:bg-slate-900 max-w-2xl">
+        <DialogContent className="dark:bg-slate-900 max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="dark:text-slate-100">
               Edit Subject

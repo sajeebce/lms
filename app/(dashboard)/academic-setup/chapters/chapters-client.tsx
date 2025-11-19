@@ -355,7 +355,7 @@ export default function ChaptersClient({
 
       {/* Add/Edit Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-2xl dark:bg-slate-900 dark:border-slate-700">
+        <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto dark:bg-slate-900 dark:border-slate-700">
           <DialogHeader>
             <DialogTitle className="dark:text-slate-100">
               {editingChapter ? "Edit Chapter" : "Add Chapter"}

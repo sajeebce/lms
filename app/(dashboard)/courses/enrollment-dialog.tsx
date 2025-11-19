@@ -1,39 +1,43 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { toast } from 'sonner'
-import { searchStudents, getStudentsByFilters, enrollStudentsInCourse } from './actions'
-import { Users } from 'lucide-react'
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import {
+  searchStudents,
+  getStudentsByFilters,
+  enrollStudentsInCourse,
+} from "./actions";
+import { Users } from "lucide-react";
 
-type Course = { id: string; name: string }
+type Course = { id: string; name: string };
 type Student = {
-  id: string
-  user: { name: string; email: string; phone?: string }
-  enrollments: any[]
-}
-type Branch = { id: string; name: string }
-type Cohort = { id: string; name: string }
-type AcademicYear = { id: string; name: string }
-type Class = { id: string; name: string }
-type Section = { id: string; name: string }
+  id: string;
+  user: { name: string; email: string; phone?: string };
+  enrollments: any[];
+};
+type Branch = { id: string; name: string };
+type Cohort = { id: string; name: string };
+type AcademicYear = { id: string; name: string };
+type Class = { id: string; name: string };
+type Section = { id: string; name: string };
 
 export function EnrollmentDialog({
   course,
@@ -46,109 +50,114 @@ export function EnrollmentDialog({
   open,
   onOpenChange,
 }: {
-  course: Course
-  academicYears: AcademicYear[]
-  classes: Class[]
-  sections: Section[]
-  branches?: Branch[]
-  cohorts?: Cohort[]
-  enableCohorts: boolean
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  course: Course;
+  academicYears: AcademicYear[];
+  classes: Class[];
+  sections: Section[];
+  branches?: Branch[];
+  cohorts?: Cohort[];
+  enableCohorts: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [mode, setMode] = useState<'search' | 'filter'>('search')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [students, setStudents] = useState<Student[]>([])
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(false)
+  const [mode, setMode] = useState<"search" | "filter">("search");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
+    new Set()
+  );
+  const [loading, setLoading] = useState(false);
 
   // Filter mode states
-  const [yearId, setYearId] = useState('')
-  const [classId, setClassId] = useState('')
-  const [sectionId, setSectionId] = useState('')
-  const [branchId, setBranchId] = useState('')
-  const [cohortId, setCohortId] = useState('')
-  const [availableCohorts, setAvailableCohorts] = useState<Cohort[]>([])
+  const [yearId, setYearId] = useState("");
+  const [classId, setClassId] = useState("");
+  const [sectionId, setSectionId] = useState("");
+  const [branchId, setBranchId] = useState("");
+  const [cohortId, setCohortId] = useState("");
+  const [availableCohorts, setAvailableCohorts] = useState<Cohort[]>([]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      toast.error('Please enter a search query')
-      return
+      toast.error("Please enter a search query");
+      return;
     }
 
-    setLoading(true)
-    const result = await searchStudents(searchQuery)
-    setLoading(false)
+    setLoading(true);
+    const result = await searchStudents(searchQuery);
+    setLoading(false);
 
     if (result.success) {
-      setStudents(result.data as Student[])
-      setSelectedStudents(new Set())
+      setStudents(result.data as Student[]);
+      setSelectedStudents(new Set());
     } else {
-      toast.error(result.error || 'Failed to search students')
+      toast.error(result.error || "Failed to search students");
     }
-  }
+  };
 
   const handleFilterStudents = async () => {
     if (!yearId || !classId || !sectionId) {
-      toast.error('Please select all filters')
-      return
+      toast.error("Please select all filters");
+      return;
     }
 
-    setLoading(true)
-    const result = await getStudentsByFilters(yearId, classId, sectionId)
-    setLoading(false)
+    setLoading(true);
+    const result = await getStudentsByFilters(yearId, classId, sectionId);
+    setLoading(false);
 
     if (result.success) {
-      setStudents(result.data as Student[])
-      setSelectedStudents(new Set())
+      setStudents(result.data as Student[]);
+      setSelectedStudents(new Set());
     } else {
-      toast.error(result.error || 'Failed to fetch students')
+      toast.error(result.error || "Failed to fetch students");
     }
-  }
+  };
 
   const handleSelectAll = () => {
     if (selectedStudents.size === students.length) {
-      setSelectedStudents(new Set())
+      setSelectedStudents(new Set());
     } else {
-      setSelectedStudents(new Set(students.map((s) => s.id)))
+      setSelectedStudents(new Set(students.map((s) => s.id)));
     }
-  }
+  };
 
   const handleToggleStudent = (studentId: string) => {
-    const newSelected = new Set(selectedStudents)
+    const newSelected = new Set(selectedStudents);
     if (newSelected.has(studentId)) {
-      newSelected.delete(studentId)
+      newSelected.delete(studentId);
     } else {
-      newSelected.add(studentId)
+      newSelected.add(studentId);
     }
-    setSelectedStudents(newSelected)
-  }
+    setSelectedStudents(newSelected);
+  };
 
   const handleEnroll = async () => {
     if (selectedStudents.size === 0) {
-      toast.error('Please select at least one student')
-      return
+      toast.error("Please select at least one student");
+      return;
     }
 
-    setLoading(true)
-    const result = await enrollStudentsInCourse(course.id, Array.from(selectedStudents))
-    setLoading(false)
+    setLoading(true);
+    const result = await enrollStudentsInCourse(
+      course.id,
+      Array.from(selectedStudents)
+    );
+    setLoading(false);
 
     if (result.success && result.stats) {
       toast.success(`Enrolled ${result.stats.enrolledCount} student(s)! 🎉`, {
         description: `Skipped ${result.stats.skippedCount} already enrolled.`,
-      })
-      setStudents([])
-      setSelectedStudents(new Set())
-      onOpenChange(false)
+      });
+      setStudents([]);
+      setSelectedStudents(new Set());
+      onOpenChange(false);
     } else {
-      toast.error(result.error || 'Failed to enroll students')
+      toast.error(result.error || "Failed to enroll students");
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Enroll Students in {course.name}</DialogTitle>
           <DialogDescription>
@@ -160,21 +169,21 @@ export function EnrollmentDialog({
           {/* Mode Selection */}
           <div className="flex gap-4">
             <Button
-              variant={mode === 'search' ? 'default' : 'outline'}
+              variant={mode === "search" ? "default" : "outline"}
               onClick={() => {
-                setMode('search')
-                setStudents([])
-                setSelectedStudents(new Set())
+                setMode("search");
+                setStudents([]);
+                setSelectedStudents(new Set());
               }}
             >
               Search by Name/Email/Phone
             </Button>
             <Button
-              variant={mode === 'filter' ? 'default' : 'outline'}
+              variant={mode === "filter" ? "default" : "outline"}
               onClick={() => {
-                setMode('filter')
-                setStudents([])
-                setSelectedStudents(new Set())
+                setMode("filter");
+                setStudents([]);
+                setSelectedStudents(new Set());
               }}
             >
               Filter by Class/Section
@@ -182,7 +191,7 @@ export function EnrollmentDialog({
           </div>
 
           {/* Search Mode */}
-          {mode === 'search' && (
+          {mode === "search" && (
             <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
@@ -190,7 +199,7 @@ export function EnrollmentDialog({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter') handleSearch()
+                    if (e.key === "Enter") handleSearch();
                   }}
                 />
                 <Button onClick={handleSearch} disabled={loading}>
@@ -201,7 +210,7 @@ export function EnrollmentDialog({
           )}
 
           {/* Filter Mode */}
-          {mode === 'filter' && (
+          {mode === "filter" && (
             <div className="space-y-4">
               {enableCohorts ? (
                 <>
@@ -272,7 +281,11 @@ export function EnrollmentDialog({
                     </div>
                   </div>
 
-                  <Button onClick={handleFilterStudents} disabled={loading} className="w-full">
+                  <Button
+                    onClick={handleFilterStudents}
+                    disabled={loading}
+                    className="w-full"
+                  >
                     Load Students
                   </Button>
                 </>
@@ -329,7 +342,11 @@ export function EnrollmentDialog({
                     </div>
                   </div>
 
-                  <Button onClick={handleFilterStudents} disabled={loading} className="w-full">
+                  <Button
+                    onClick={handleFilterStudents}
+                    disabled={loading}
+                    className="w-full"
+                  >
                     Load Students
                   </Button>
                 </>
@@ -344,12 +361,10 @@ export function EnrollmentDialog({
                 <h3 className="font-semibold">
                   Students ({selectedStudents.size}/{students.length})
                 </h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
-                  {selectedStudents.size === students.length ? 'Deselect All' : 'Select All'}
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  {selectedStudents.size === students.length
+                    ? "Deselect All"
+                    : "Select All"}
                 </Button>
               </div>
 
@@ -387,12 +402,12 @@ export function EnrollmentDialog({
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               <Users className="h-4 w-4 mr-2" />
-              Enroll {selectedStudents.size > 0 ? `(${selectedStudents.size})` : ''}
+              Enroll{" "}
+              {selectedStudents.size > 0 ? `(${selectedStudents.size})` : ""}
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

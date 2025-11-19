@@ -1,148 +1,198 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, Save } from 'lucide-react'
-import Link from 'next/link'
-import { toast } from 'sonner'
-import BasicInfoTab from './tabs/basic-info-tab'
-import PricingTab from './tabs/pricing-tab'
-import MediaTab from './tabs/media-tab'
-import SeoTab from './tabs/seo-tab'
-import SettingsTab from './tabs/settings-tab'
-import FaqTab from './tabs/faq-tab'
-import { createSingleCourse } from './actions'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Save } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import BasicInfoTab from "./tabs/basic-info-tab";
+import PricingTab from "./tabs/pricing-tab";
+import MediaTab from "./tabs/media-tab";
+import SeoTab from "./tabs/seo-tab";
+import SettingsTab from "./tabs/settings-tab";
+import FaqTab from "./tabs/faq-tab";
+import { createSingleCourse } from "./actions";
 
 type Category = {
-  id: string
-  name: string
-  slug: string
-  icon: string | null
-  color: string | null
-  parentId: string | null
-}
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  color: string | null;
+  parentId: string | null;
+};
 
 type Subject = {
-  id: string
-  name: string
-  code: string | null
-  icon: string | null
-}
+  id: string;
+  name: string;
+  code: string | null;
+  icon: string | null;
+};
 
 type Class = {
-  id: string
-  name: string
-  alias: string | null
-  order: number
-}
+  id: string;
+  name: string;
+  alias: string | null;
+  order: number;
+};
 
 type Stream = {
-  id: string
-  name: string
-}
+  id: string;
+  name: string;
+};
 
 type Props = {
-  categories: Category[]
-  subjects: Subject[]
-  classes: Class[]
-  streams: Stream[]
-}
+  categories: Category[];
+  subjects: Subject[];
+  classes: Class[];
+  streams: Stream[];
+};
 
 export type CourseFormData = {
   // Basic Info
-  title: string
-  slug: string
-  categoryId?: string
-  description?: string
-  shortDescription?: string
+  title: string;
+  slug: string;
+  categoryId?: string;
+  description?: string;
+  shortDescription?: string;
 
   // Academic Integration (Optional)
-  classId?: string
-  subjectId?: string
-  streamId?: string
+  classId?: string;
+  subjectId?: string;
+  streamId?: string;
 
   // Authors & Instructors (UI-only stub, not yet persisted)
-  authors?: string[]
-  instructors?: string[]
+  authors?: string[];
+  instructors?: string[];
 
   // Pricing
-  paymentType: 'FREE' | 'ONE_TIME' | 'SUBSCRIPTION'
-  invoiceTitle?: string
-  regularPrice?: number
-  offerPrice?: number
-  currency: string
-  subscriptionDuration?: number
-  subscriptionType?: 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM'
-  autoGenerateInvoice: boolean
+  paymentType: "FREE" | "ONE_TIME" | "SUBSCRIPTION";
+  invoiceTitle?: string;
+  regularPrice?: number;
+  offerPrice?: number;
+  currency: string;
+  subscriptionDuration?: number;
+  subscriptionType?: "MONTHLY" | "QUARTERLY" | "YEARLY" | "CUSTOM";
+  autoGenerateInvoice: boolean;
 
   // Media
-  featuredImage?: string
-  introVideoUrl?: string
-  introVideoAutoplay: boolean
+  featuredImage?: string;
+  introVideoUrl?: string;
+  introVideoAutoplay: boolean;
 
   // SEO
-  metaTitle?: string
-  metaDescription?: string
-  metaKeywords?: string
-  fakeEnrollmentCount?: number
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  fakeEnrollmentCount?: number;
 
   // Settings
-  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'PRIVATE'
-  publishedAt?: Date
-  scheduledAt?: Date
-  isFeatured: boolean
-  allowComments: boolean
-  certificateEnabled: boolean
+  status: "DRAFT" | "PUBLISHED" | "SCHEDULED" | "PRIVATE";
+  visibility: "PUBLIC" | "UNLISTED" | "PRIVATE" | "INTERNAL_ONLY";
+  publishedAt?: Date;
+  scheduledAt?: Date;
+  // UI helper fields for schedule inputs (date & time kept separately)
+  scheduledDate?: string;
+  scheduledTime?: string;
+  showComingSoon: boolean;
+  comingSoonImage?: string;
+  allowCurriculumPreview: boolean;
+  isFeatured: boolean;
+  allowComments: boolean;
+  certificateEnabled: boolean;
+
+  // Enrollment (course-level defaults)
+  maxStudents?: number;
+  enrollmentStartAt?: Date;
+  enrollmentEndAt?: Date;
+  enrollmentStatus: "OPEN" | "PAUSED" | "CLOSED" | "INVITE_ONLY";
+  defaultEnrollmentDurationDays?: number;
 
   // FAQ
-  faqs: Array<{ id?: string; clientId?: string; question: string; answer: string }>
-}
+  faqs: Array<{
+    id?: string;
+    clientId?: string;
+    question: string;
+    answer: string;
+  }>;
+};
 
-export default function SingleCourseForm({ categories, subjects, classes, streams }: Props) {
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState('basic')
-  const [saving, setSaving] = useState(false)
-  
+export default function SingleCourseForm({
+  categories,
+  subjects,
+  classes,
+  streams,
+}: Props) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("basic");
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState<CourseFormData>({
-    title: '',
-    slug: '',
-    paymentType: 'FREE',
-    currency: 'BDT',
+    title: "",
+    slug: "",
+    paymentType: "FREE",
+    currency: "BDT",
     autoGenerateInvoice: true,
-    status: 'DRAFT',
+    status: "DRAFT",
+    visibility: "PUBLIC",
+    showComingSoon: false,
+    allowCurriculumPreview: false,
     isFeatured: false,
     allowComments: true,
     certificateEnabled: false,
     introVideoAutoplay: false,
+    enrollmentStatus: "OPEN",
     authors: [],
     instructors: [],
     faqs: [],
-  })
+  });
 
   const updateFormData = (data: Partial<CourseFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }))
-  }
+    setFormData((prev) => ({ ...prev, ...data }));
+  };
 
-  const handleSave = async (status: 'DRAFT' | 'PUBLISHED') => {
-    setSaving(true)
-    
+  const handleSave = async (action: "DRAFT" | "PUBLISHED") => {
+    setSaving(true);
+
+    const finalStatus =
+      action === "DRAFT"
+        ? "DRAFT"
+        : formData.status === "DRAFT"
+        ? "PUBLISHED"
+        : formData.status;
+
     const result = await createSingleCourse({
       ...formData,
-      status,
-    })
+      status: finalStatus,
+    });
 
     if (result.success) {
-      toast.success(`Course ${status === 'DRAFT' ? 'saved as draft' : 'published'} successfully! 🎉`)
-      router.push('/course-management/courses')
+      const message =
+        finalStatus === "PUBLISHED"
+          ? "published"
+          : finalStatus === "SCHEDULED"
+          ? "scheduled"
+          : finalStatus === "PRIVATE"
+          ? "saved as private"
+          : "saved as draft";
+
+      toast.success(`Course ${message} successfully! 🎉`);
+      router.push("/course-management/courses");
     } else {
-      toast.error(result.error || 'Failed to create course')
+      toast.error(result.error || "Failed to create course");
     }
-    
-    setSaving(false)
-  }
+
+    setSaving(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -168,14 +218,14 @@ export default function SingleCourseForm({ categories, subjects, classes, stream
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => handleSave('DRAFT')}
+              onClick={() => handleSave("DRAFT")}
               disabled={saving || !formData.title || !formData.slug}
             >
               <Save className="h-4 w-4 mr-2" />
               Save as Draft
             </Button>
             <Button
-              onClick={() => handleSave('PUBLISHED')}
+              onClick={() => handleSave("PUBLISHED")}
               disabled={saving || !formData.title || !formData.slug}
             >
               <Save className="h-4 w-4 mr-2" />
@@ -237,31 +287,44 @@ export default function SingleCourseForm({ categories, subjects, classes, stream
         <Button
           variant="outline"
           onClick={() => {
-            const tabs = ['basic', 'pricing', 'media', 'seo', 'settings', 'faq']
-            const currentIndex = tabs.indexOf(activeTab)
+            const tabs = [
+              "basic",
+              "pricing",
+              "media",
+              "seo",
+              "settings",
+              "faq",
+            ];
+            const currentIndex = tabs.indexOf(activeTab);
             if (currentIndex > 0) {
-              setActiveTab(tabs[currentIndex - 1])
+              setActiveTab(tabs[currentIndex - 1]);
             }
           }}
-          disabled={activeTab === 'basic'}
+          disabled={activeTab === "basic"}
         >
           Previous
         </Button>
-        
+
         <Button
           onClick={() => {
-            const tabs = ['basic', 'pricing', 'media', 'seo', 'settings', 'faq']
-            const currentIndex = tabs.indexOf(activeTab)
+            const tabs = [
+              "basic",
+              "pricing",
+              "media",
+              "seo",
+              "settings",
+              "faq",
+            ];
+            const currentIndex = tabs.indexOf(activeTab);
             if (currentIndex < tabs.length - 1) {
-              setActiveTab(tabs[currentIndex + 1])
+              setActiveTab(tabs[currentIndex + 1]);
             }
           }}
-          disabled={activeTab === 'faq'}
+          disabled={activeTab === "faq"}
         >
           Next
         </Button>
       </div>
     </div>
-  )
+  );
 }
-
