@@ -170,31 +170,34 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground border border-border/60 mb-3">
                 <Sparkles className="h-3 w-3 text-primary" />
-                Smart builder works best with Subject linked
+                Syllabus import works best when a Subject is selected
               </div>
               <h2 className="text-xl font-semibold mb-2">
-                Start with custom chapters – or link a Subject for syllabus import
+                Link a Subject to start from syllabus — or build your own chapters
               </h2>
               <p className="text-sm text-muted-foreground max-w-xl">
-                This course is not yet linked to an academic Subject. You can still
-                create free-form chapters and lessons, or go back to Basic Info and
-                set Class/Stream/Subject for one-click syllabus import.
+                This course is not linked to any academic Subject yet. You can
+                continue with custom chapters and lessons only, or open the course
+                Basic info to select Class / Stream / Subject for one-click syllabus
+                import.
               </p>
             </div>
             <div className="flex flex-col gap-2 w-full md:w-auto">
               <Button
                 variant="outline"
                 className="w-full md:w-auto"
-                onClick={() => router.push(`/course-management/courses/${course.id}/edit`)}
+                onClick={() =>
+                  router.push(`/course-management/courses/${course.id}/edit`)
+                }
               >
-                Link Subject &amp; Class
+                Select Subject &amp; import
               </Button>
               <Button
                 className="w-full md:w-auto"
                 onClick={() => setChapterDialogOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Start with custom chapter
+                Continue with custom chapters only
               </Button>
             </div>
           </CardContent>
@@ -208,15 +211,12 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground border border-border/60 mb-3">
               <Sparkles className="h-3 w-3 text-primary" />
-              Supercharge from syllabus
+              Start from syllabus?
             </div>
-            <h2 className="text-xl font-semibold mb-2">
-              Import chapters from syllabus or build your own path
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Start from syllabus?</h2>
             <p className="text-sm text-muted-foreground max-w-xl">
-              Based on the selected Class/Stream/Subject, you can pull ready-made
-              chapters from the academic syllabus. Or ignore that and design a
-              completely custom course structure.
+              You can import chapters from the Subject  Chapter  Topic tree or
+              create custom chapters only for this course.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               {course.subject && (
@@ -251,7 +251,7 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
               onClick={() => setChapterDialogOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Start with custom chapter
+              Start with custom chapters
             </Button>
           </div>
         </CardContent>
