@@ -9,12 +9,17 @@ const topicSchema = z.object({
   title: z
     .string()
     .min(1, "Title is required")
-    .max(100, "Title must be 100 characters or less"),
+    .max(200, "Title must be 200 characters or less"),
   description: z
     .string()
     .max(500, "Description must be 500 characters or less")
     .optional(),
   order: z.number().min(0).max(9999).optional(),
+  // Optional syllabus linking
+  subjectId: z.string().optional(),
+  chapterId: z.string().optional(),
+  topicId: z.string().optional(),
+  sourceType: z.enum(["CUSTOM", "QUESTION_BANK"]).optional(),
 });
 
 type TopicInput = z.infer<typeof topicSchema>;
@@ -65,6 +70,10 @@ export async function createCourseTopic(courseId: string, data: TopicInput) {
       title: validated.title,
       description: validated.description,
       order,
+      subjectId: validated.subjectId,
+      chapterId: validated.chapterId,
+      topicId: validated.topicId,
+      sourceType: validated.sourceType || "CUSTOM",
     },
   });
 
@@ -94,6 +103,10 @@ export async function updateCourseTopic(id: string, data: TopicInput) {
       title: validated.title,
       description: validated.description,
       order: validated.order ?? existing.order,
+      subjectId: validated.subjectId,
+      chapterId: validated.chapterId,
+      topicId: validated.topicId,
+      sourceType: validated.sourceType,
     },
   });
 
@@ -136,4 +149,3 @@ export async function deleteCourseTopic(id: string) {
 
   return { success: true } as const;
 }
-

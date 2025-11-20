@@ -689,14 +689,27 @@ model CourseTopic {
   title       String
   description String?
   order       Int      @default(0)
+
+  // Optional mapping to academic/question bank hierarchy
+  subjectId   String?  // Link to Subject (from Academic Setup)
+  chapterId   String?  // Link to Chapter (from Question Bank)
+  topicId     String?  // Link to Topic (from Question Bank)
+  sourceType  String   @default("CUSTOM") // "CUSTOM" | "QUESTION_BANK"
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  subject     Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  chapter     Chapter?       @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  topic       Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
   lessons     CourseLesson[]
 
   @@index([courseId])
+  @@index([tenantId, subjectId])
+  @@index([tenantId, chapterId])
+  @@index([tenantId, topicId])
   @@map("course_topics")
 }
 
@@ -895,9 +908,10 @@ model Subject {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  courses  Course[]
-  chapters Chapter[]
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  courses      Course[]
+  chapters     Chapter[]
+  courseTopics CourseTopic[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, order])
@@ -924,10 +938,11 @@ model Chapter {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
-  topics  Topic[]
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subject      Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class        Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  topics       Topic[]
+  courseTopics CourseTopic[]
 
   @@unique([tenantId, subjectId, classId, name])
   @@unique([tenantId, subjectId, classId, order])
@@ -953,9 +968,10 @@ model Topic {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  chapter   Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  questions Question[]
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chapter      Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions    Question[]
+  courseTopics CourseTopic[]
 
   @@unique([tenantId, chapterId, name])
   @@unique([tenantId, chapterId, order])
