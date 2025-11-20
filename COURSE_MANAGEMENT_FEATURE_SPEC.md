@@ -307,7 +307,7 @@
 
 > **Implementation Status:** This feature has been fully implemented and tested. The wizard successfully imports chapters from the Question Bank syllabus structure into course chapters.
 
-#### 5.2.3 Chapter Rows & Per-Row Actions
+#### 5.2.3 Chapter Rows & Per-Row Actions ✅ **COMPLETED**
 
 - Button at the bottom/right: **"+ Add Chapter"** (opens simple add/edit form with title and description).
 - Each chapter row shows:
@@ -325,6 +325,17 @@
 - Adding a chapter supports two modes (when a Subject exists):
   - **"Use existing Chapter/Topic"** – teacher chooses from the syllabus tree; the selected name is copied into the chapter title and a link is stored.
   - **"Create custom chapter"** – standalone chapter with no external mapping.
+
+**Implementation Status:**
+
+- ✅ Add/Edit chapter form with title and description
+- ✅ Chapter rows with title, description, and lesson count chips
+- ✅ Drag handle visual (GripVertical icon) - actual drag-and-drop can be added later with dnd-kit library
+- ✅ Edit, Delete, + Add Lesson buttons per chapter
+- ✅ Delete guard with lesson count warning
+- ✅ Schema support for syllabus linking (subjectId, chapterId, topicId, sourceType fields)
+- ⏳ UI for two-mode chapter creation (syllabus vs custom) - can be added when needed
+- ⏳ + Add Activity button - will be implemented with Activity Management module
 
 ### 5.3 Lesson Management (Text / Document / Video)
 
