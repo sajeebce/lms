@@ -267,98 +267,199 @@
   - **"Preview Course"**.
   - **"Publish Course"** (same core action as in course form).
 
-### 5.2 Topic Management
+### 5.2 Chapters (Topics) & Syllabus Integration
 
-- Button: **"+ Add Topic"** (opens add topic form).
-- Per topic row:
-  - Displays **Topic title** and **description**.
+> Terminology: in the UI we refer to course-level containers as **Chapters**. Internally they map to "topics" in the data model, but this detail is hidden from users.
+
+#### 5.2.1 Initial State & Syllabus Source Card
+
+- When the builder first loads and the course has **no chapters yet**:
+  - If the course has a **Subject** (and optionally Class/Stream) set:
+    - Show a prominent card at the top with title **"Start from syllabus?"**.
+    - Card body text explains: _"You can import chapters from the **Subject → Chapter → Topic** tree or create custom chapters only for this course."_.
+    - Primary button: **"Import chapters from syllabus"**.
+    - Secondary link/button: **"Start with custom chapters"**.
+  - If the course has **no Subject**:
+    - Show a similar card explaining that syllabus import works best when a Subject is chosen.
+    - Buttons:
+      - **"Select Subject & import"** – opens a side-panel or navigates back to the course edit form focused on the Academic section.
+      - **"Continue with custom chapters only"**.
+
+#### 5.2.2 Syllabus Import Wizard
+
+- Clicking **"Import chapters from syllabus"** opens a 3-step wizard (visual style similar to the Academic Year Wizard):
+  - **Step 1 – Confirm scope**
+    - Shows the current **Class**, **Stream**, and **Subject** (read-only chips).
+    - Optional info text like _"Questions and topics will be filtered using this scope in the Question Bank."_.
+  - **Step 2 – Select chapters**
+    - Displays a table/list of chapters from the selected subject:
+      - Columns: `Chapter name`, `# Topics`, `# Questions`.
+      - Checkbox per row and a **"Select all"** checkbox.
+    - Already-imported chapters (if any) show a muted chip: **"Already in course"** and are **pre-selected but disabled**.
+  - **Step 3 – Preview & confirm**
+    - Summary text: _"You are about to create N chapters in this course."_.
+    - Preview list: `Chapter 1 – Algebra → will create a chapter with 0 lessons / 0 activities`.
+    - Conflict behaviour:
+      - If a selected chapter name already exists inside this course, show chip **"Will be skipped (duplicate title)"**.
+- **Generate** button:
+  - Creates all missing chapters in one go.
+  - Returns the user to the builder with the new chapters visible and briefly highlighted.
+
+#### 5.2.3 Chapter Rows & Per-Row Actions
+
+- Button at the bottom/right: **"+ Add Chapter"** (opens simple add/edit form with title and description).
+- Each chapter row shows:
+  - **Chapter title** and short description.
+  - Small chips such as:
+    - `Linked to syllabus` (when mapped to a Subject/Chapter/Topic item).
+    - `3 lessons · 2 activities`.
+  - A drag handle allowing chapters to be **reordered**.
+- Per chapter actions:
   - Buttons: `Edit`, `Delete`, `+ Add Lesson`, `+ Add Activity`.
-  - Drag handle to **reorder topics**.
-- Topic behaviour:
-  - Topics can be **custom** (course-only) or **linked** to existing Subject/Chapter/Topic from Academic Setup/Question Bank.
-  - Adding a topic supports:
-    - Option: **"Use existing Chapter/Topic"** (maps to existing syllabus item but copies the current name into the topic title).
-    - Option: **"Create custom topic"** (no external mapping).
+  - Delete guard:
+    - If the chapter contains lessons or activities, show a warning dialog:
+      - _"This chapter has X lessons and Y activities. You can archive or move them before deleting, or delete everything together."_.
+    - If any graded exams under this chapter have student attempts, **hard delete is blocked**; show: _"Chapters with graded attempts cannot be deleted. Archive instead."_.
+- Adding a chapter supports two modes (when a Subject exists):
+  - **"Use existing Chapter/Topic"** – teacher chooses from the syllabus tree; the selected name is copied into the chapter title and a link is stored.
+  - **"Create custom chapter"** – standalone chapter with no external mapping.
 
-### 5.3 Lesson Management
+### 5.3 Lesson Management (Text / Document / Video)
 
-- Each topic contains a list of lessons with icons and details.
-- Supported **lesson types**:
-  - `YouTube video`.
-  - `Vimeo video`.
-  - `Local uploaded video`.
-  - `Google Drive video`.
-  - `Document` (PDF, DOC, PPT, etc.).
-  - `Text` lesson (rich text article).
-  - `Iframe` embed.
-- Per lesson or activity row:
-  - Shows icon, title, and (for videos) **duration** where applicable.
-  - Buttons: `Edit`, `Delete`, `Preview`; for assessments (online exams/quizzes, assignments) there can also be **"View Results"** / **"View Submissions"** shortcuts that open the relevant reporting page.
-  - Drag handle to **reorder lessons and activities** within a topic.
-- Lesson-level settings:
+- Each chapter contains a list of **lessons** and **activities** displayed in order.
+- Per row:
+  - Shows icon, title, lesson type (e.g. `Video`, `PDF`, `Text`), and (for videos) **duration** if provided.
+  - Hover/ellipsis menu with: `Edit`, `Duplicate`, `Delete`, `Preview`.
+  - Drag handle to **reorder lessons and activities** within the chapter.
+
+#### 5.3.1 Adding a Lesson
+
+- Clicking **"+ Add Lesson"** on a chapter opens a small **lesson type chooser** (popover or mini-dialog) with options:
+  - **Text lesson** – rich text article.
+  - **PDF / Document** – upload or attach a document file.
+  - **Video lesson** – primary focus on a single video source.
+  - **Advanced / Mixed content** – full content editor supporting multiple blocks (text, images, embeds).
+- After selecting a type, a **lesson editor** opens in the right-hand panel or full-screen:
+  - Common fields:
+    - **Title** (required).
+    - **Short description** (optional helper text).
+  - Type-specific main fields:
+    - **Text lesson**:
+      - Uses the same rich text editor as the Question Bank (with `Upload / Server Files / Recent / URL` for images).
+    - **PDF / Document**:
+      - Upload area for PDF/DOC/PPT etc. using `StorageService` (tenant-scoped).
+      - Auto-fills the lesson title from the file name, but teacher can edit.
+    - **Video lesson**:
+      - Tabs or radio buttons for:
+        - `YouTube`, `Vimeo`, `VdoCipher`, `Google Drive / URL`, `Local upload`.
+      - Depending on source, either a URL box or upload picker.
+      - Optional **Estimated duration** field (minutes:seconds).
+    - **Advanced / Mixed content**:
+      - Same rich editor as Text lesson plus attachments and embed blocks.
+
+#### 5.3.2 Lesson-Level Settings & Protection
+
+- All lesson types share a configuration section:
   - Access control: `Public`, `Password`, `Enrolled only`.
-  - Password field (when password-protected).
+  - Password field when `Password` is selected.
   - Scheduled release date/time.
   - Attachments list (e.g., PDFs, images, links) with `Add` / `Remove` controls.
-  - Toggle: **"Allow download"**.
-  - Toggle: **"Mark as preview"** (free sample lesson).
-- Content protection / viewing behaviour (best effort, non-DRM):
+  - Toggle: **"Allow download"** (affects document/video download buttons).
+  - Toggle: **"Mark as preview"** (makes the lesson free to view without enrollment if the course allows previews).
+- Content protection / viewing behaviour (best-effort, non-DRM):
   - **Document lessons** default to a **protected view-only mode**:
-    - Students normally see a **"View"** button that opens the document in a secure viewer instead of getting a raw file link.
-    - The **"Allow download"** toggle explicitly controls whether a separate **"Download"** action is shown for that lesson.
-  - Document viewer and video player screens overlay a subtle, per-student **watermark** (e.g., name, code, timestamp) to discourage casual leaks and make the source traceable.
-  - Locally hosted / Drive-proxied videos are played through a streaming player rather than a simple direct file download, and YouTube embeds use a **restricted UI** (no obvious "Watch on YouTube" / share buttons) to make copying harder.
+    - Students see a **"View"** button opening a document viewer instead of a raw file URL.
+    - The **"Allow download"** toggle explicitly controls whether a separate **"Download"** action is visible.
+  - Document viewer and video player screens overlay a subtle, per-student **watermark** (e.g., name, code, timestamp).
+  - Locally hosted / Drive-proxied videos use a streaming player, and YouTube embeds use a **restricted UI** (no obvious "Watch on YouTube" / share buttons) to make copying harder.
   - The system does **not** promise 100% prevention against advanced screen recording or download tools, but is designed to make copying significantly harder for normal users.
 
-### 5.4 Activities & Resources (Add Activity/Resource Modal)
+### 5.4 Activities (Online Exams, Practice Quizzes, Assignments)
 
-- Triggered from `+ Add Lesson` or `+ Add Activity` on a topic.
-- Dialog title: **"Add an activity or resource"**.
-- Primary tiles/cards:
-  - **Lesson**
-    - Description: _"Add text / image / video / URL"_.
-    - Opens a rich content editor with title, short description, content blocks, and attachments.
-  - **PDF Resource**
-    - Description: _"Upload or attach a PDF file"_.
-    - Quick create: upload PDF, auto-fill title from filename; can reorder within topic.
-  - **Video-only Lesson**
-    - Description: _"Add a single video with optional notes"_.
-    - Quick create: paste video URL or upload, optional short description; video-first layout.
-  - **Online**
-    - Description: _"Exam / practice"_.
-    - After selecting, teacher chooses:
-      - **Question source**: `Create new` or `Import from question bank`.
-      - **Mode**: `Exam` (timed, graded) or `Practice` (no time limit, instant feedback).
-    - **Exam mode – student preview**:
-      - Full-page exam layout with top bar showing breadcrumb, exam title, remaining time (`Time left` countdown), and prominent **"Submit"** button.
-      - Colored instruction banner with total marks, negative marking, and rules.
-      - Question cards listed vertically with clear options.
-      - Right-side **"Question Navigation"** panel with numbered pills and legend for `Answered`/`Unanswered`.
-      - Timer and navigation stay visible while scrolling.
-      - Admin `Preview` opens this layout in read-only mode.
-    - **Practice mode – student preview**:
-      - Top bar with topic name, **"Submit"** button, and **"Time passed"** counter (count-up only; **no time limit and no "Time left"** countdown).
-      - Summary chips: `Total`, `Correct`, `Wrong`.
-      - Green instruction banner describing marks and negative marking.
-      - Each question card visually highlights selected and correct options with colors.
-      - Button per question: **"Show answer & solution"** to expand the explanation panel.
-      - Score chips update live as answers are marked; optional future "hint" and per-question retry behaviour.
-  - **Assignment / Homework**
-    - Description: _"Collect submissions and grade"_.
-    - Fields: title, instructions, due date/time, maximum marks, submission type (`File upload`, `Text answer`, or both), allowed file types, late submission policy.
-  - **Offline**
-    - Description: _"Create offline question / sheet"_.
-    - Fields: exam name, exam date/time, instructions, maximum marks, optional question paper file.
-  - **SCORM / Package (coming soon)**
-    - Description: _"Upload SCORM / xAPI content package"_.
-    - Behaviour: launches in dedicated player and records completion/score into course progress; marked as **"Coming soon"** in the UI.
-- Footer actions:
-  - Button: **"Import from another course"** – pick source course and select topics/lessons/activities to clone.
+#### 5.4.1 Add Activity Palette
+
+- Clicking **"+ Add Activity"** on a chapter (or choosing an assessment option from **"+ Add Lesson"**) opens an **"Add activity"** modal.
+- The modal shows tiles/cards grouped under `Content`, `Assessments`, and `Offline`:
+  - Assessments focus for this phase:
+    - **Online MCQ Exam** (timed, graded).
+    - **Practice MCQ Quiz** (untimed practice with explanations).
+  - Additional tiles (same behaviour as earlier spec):
+    - **Assignment / Homework** – collect submissions and grade.
+    - **Offline Exam** – record details of an exam held outside the system.
+    - **SCORM / Package (coming soon)** – future support for SCORM/xAPI content.
+- Each tile displays an icon, title, short description, and category label. Selecting a tile immediately closes the modal and opens the relevant activity editor.
+
+#### 5.4.2 Online MCQ Exam (graded)
+
+- Purpose: formal, timed exam that contributes to course completion and grades.
+- Core settings (right-side panel):
+  - Time limit (required).
+  - Attempts allowed (`1` by default, configurable).
+  - Question order shuffle and option shuffle toggles.
+  - Grading:
+    - Pass mark (percentage or marks).
+    - Global negative marking value (e.g. `-0.25`) or "no negative marks".
+  - Availability:
+    - Start date/time and optional end date/time.
+    - Toggle for allowing or blocking late attempts.
+  - Result visibility:
+    - Show score only, or
+    - Show detailed review with correct answers after exam window closes.
+- Question source & selection:
+  - Teacher chooses between:
+    - **"Create new questions"** – opens the Question Bank question form in a side-panel; newly created questions are saved to the bank and added to this exam.
+    - **"Import from Question Bank"** – opens a selection view that reuses the existing Question Bank filters.
+  - Question selection view:
+    - Filters down by the course's **Subject**, **Class**, and **current Chapter** by default (but can be changed).
+    - Supports Topic filters, difficulty chips, source and exam year filters, mirroring the Question Bank UI.
+    - Middle area lists questions with stem preview and meta chips; right side lists **Selected questions** with drag-to-reorder and per-question mark override (optional future).
+    - Summary footer shows: `X questions · Y total marks`.
+- Student exam experience (preview behaviour):
+  - Full-page layout with top bar showing breadcrumb, exam title, and `Time left` countdown plus a prominent **"Submit"** button.
+  - Colored instruction banner summarizing total marks, negative marking, and rules.
+  - Question cards stacked vertically with clearly separated options.
+  - Right-side **"Question Navigation"** panel with numbered pills and legend for `Answered` / `Unanswered`.
+  - Timer and navigation remain visible while scrolling; admin **Preview** opens the same layout in read-only mode.
+
+#### 5.4.3 Practice MCQ Quiz (untimed practice)
+
+- Purpose: low-pressure practice that helps students learn using instant feedback and explanations.
+- Core settings:
+  - No strict time limit (only an optional "Suggested time" field).
+  - Attempts: unlimited by default; optional limit per day or per student.
+  - Behavioural options:
+    - Immediate correctness feedback vs. requiring a **"Check answer"** click.
+    - Toggle: **"Allow re-attempt for entire quiz"**.
+- Question selection:
+  - Uses the same Question Bank selection UI as Online MCQ Exam.
+  - By default, practice quizzes can share questions with exams; they do not affect grading, only progress/completion rules.
+- Student practice experience:
+  - Top bar shows topic name, a **"Submit"** or **"Finish practice"** button, and a **"Time passed"** counter (count-up only; **no countdown timer**).
+  - Summary chips (`Total`, `Correct`, `Wrong`) update live as students answer.
+  - Instruction banner explains that this is practice and may include note about negative marking if configured.
+  - Each question card visually highlights selected and correct options with colors.
+  - Per-question button: **"Show answer & solution"** expands an explanation panel.
+  - Optional future behaviour: per-question retry / hints.
+
+#### 5.4.4 Other Activity Types
+
+- **Assignment / Homework**
+  - Description: _"Collect submissions and grade"_.
+  - Fields: title, instructions, due date/time, maximum marks, submission type (`File upload`, `Text answer`, or both), allowed file types, late submission policy.
+- **Offline Exam**
+  - Description: _"Create an entry for an exam conducted offline"_.
+  - Fields: exam name, exam date/time, instructions, maximum marks, optional question paper file for record.
+- **SCORM / Package (coming soon)**
+  - Description: _"Upload SCORM / xAPI content package"_.
+  - Behaviour: launches in a dedicated player and records completion/score into course progress; clearly marked as **"Coming soon"** in the UI so admins know it is not fully available yet.
+- Footer actions (inside the Add activity modal or editor):
+
+  - **"Import from another course"** – pick a source course and select chapters/lessons/activities to clone.
   - Future: **"Import from template library"** for reusable templates.
+
 - UX details:
-  - Tiles are styled as modern cards with icon, title, short description, and small category labels (`Content`, `Assessment`, `Offline`).
-  - Optional filter chips at top: `All`, `Content`, `Assessments`, `Offline`.
-  - Keyboard navigation: arrow keys move between tiles; `Enter` to choose; `Esc` to close.
+  - The Add activity modal supports keyboard navigation (`Arrow` keys to move between tiles, `Enter` to select, `Esc` to close).
+  - Activity rows inside the chapter list use consistent icons and colored pills (`Exam`, `Practice`, `Assignment`, `Offline`) so teachers can quickly scan the curriculum.
 
 ---
 
@@ -439,23 +540,88 @@
 
 ### 7.2 Student Course Player
 
-- Layout is split into **sidebar (curriculum)** and **main content (lesson player)**.
-- Top bar shows course title and a **Progress indicator** (e.g., `Progress: 45%` + progress bar).
-- Sidebar features:
-  - List of topics with expand/collapse.
-  - Within each topic, lessons/activities with icons and status states:
-    - `✅` Completed.
-    - `▶️` In progress / available.
-    - `🔒` Locked.
-- Main content area (for a lesson):
-  - For video lessons: a video player with controls (play/pause, next/previous, volume, settings, fullscreen).
-  - Lesson title and duration.
-  - Lesson description/body content.
-  - Navigation buttons: **"Previous Lesson"**, **"Mark Complete"**, **"Next"**.
-  - Attachments section with file links and **"Download"** actions; for protected document lessons, students instead see a dedicated viewer (with watermark) unless the teacher has explicitly allowed downloads.
-- Behaviour:
-  - Completing lessons updates the **progress percentage**.
-  - When all required lessons/activities are completed and certificate is enabled, the course can mark the student as **Completed** and expose the certificate download/link.
+- Layout is split into **sidebar (curriculum)** and **main content (player)**.
+- Top bar shows:
+  - Course title.
+  - A **Progress indicator** (e.g., `Progress: 45%` + progress bar).
+  - Optional "Back to My Courses" link/button.
+
+#### 7.2.1 Sidebar – Chapters, Lessons, Activities
+
+- Sidebar label: **"Curriculum"**.
+- Groups items by **Chapter** (the same chapters defined in the Course Builder):
+  - Each chapter row shows title and a small completion chip (e.g., `3 / 7 items`)
+  - Chapters can expand/collapse to show inner items.
+- Inside each chapter:
+  - Lessons and activities appear in the same order as in the builder.
+  - Each item shows:
+    - Icon + small type pill: `Video`, `PDF`, `Text`, `Exam`, `Practice`, `Assignment`, `Offline`.
+    - Title and an optional small duration/marks chip (e.g., `12 min`, `30 marks`).
+    - Status indicator:
+      - `✅` Completed.
+      - `▶️` Available / in progress.
+      - `🔒` Locked (hover tooltip shows reason – not yet released, or prerequisites not met).
+  - For **Online MCQ Exams**, sidebar may additionally show a small chip like `1 attempt left` or `Graded`.
+  - For **Practice MCQ Quizzes**, a chip like `Practice` helps distinguish from graded exams.
+
+#### 7.2.2 Main Content – Lessons (Text / PDF / Video)
+
+- When a **Video lesson** is selected:
+  - Main area shows a unified video player UI (play/pause, seek, volume, settings, fullscreen).
+  - Under the hood the source may be YouTube, Vimeo, VdoCipher, Google Drive, or locally uploaded video, but the player controls stay consistent for students.
+  - Below the player:
+    - Lesson title and (if set) duration.
+    - Short description and body content (notes, summary, links).
+- When a **Text lesson** is selected:
+  - Main area shows the rich text content with headings, images, lists, and inline math if supported.
+  - Optional estimated reading time can be shown near the title.
+- When a **PDF / Document lesson** is selected:
+  - Main area shows a **document viewer** with page thumbnails/controls, zoom, and scroll.
+  - A subtle watermark (name / student code / timestamp) is overlaid.
+  - If the teacher enabled "Allow download", a `Download` button appears; otherwise only view mode is available.
+
+#### 7.2.3 Main Content – Activities (Exam / Practice / Others)
+
+- When an **Online MCQ Exam** item is opened:
+  - The player uses the exam layout defined in 5.4.2:
+    - Top bar with breadcrumb, exam title, and `Time left` countdown plus **Submit**.
+    - Instructions banner with total marks, negative marking, and attempt rules.
+    - Question list with numbered cards and options.
+    - Right-side **Question Navigation** panel with status legend.
+  - On submit, students see either:
+    - Score only, or
+    - Detailed review with correct answers, depending on teacher settings.
+- When a **Practice MCQ Quiz** item is opened:
+  - The player uses the practice layout defined in 5.4.3:
+    - Top bar with chapter/quiz title, **"Finish practice"** button, and `Time passed` (count-up).
+    - Live score chips (`Total`, `Correct`, `Wrong`).
+    - Per-question **"Show answer & solution"** actions with explanation panels.
+  - Practice attempts typically do not affect formal grades but can still count towards course completion rules.
+- When an **Assignment / Homework** item is opened:
+  - Shows title, instructions, due date/time, and maximum marks.
+  - If submissions are enabled:
+    - Upload area for files and/or text answer box.
+    - Status text: `Not submitted`, `Submitted`, or `Graded` with score.
+- When an **Offline Exam** item is opened:
+  - Shows exam details and any attached question paper or instructions.
+  - May show a `Marks recorded` chip once the teacher enters scores.
+
+#### 7.2.4 Navigation & Progress Behaviour
+
+- Below the main content, navigation buttons:
+  - **"Previous"**, **"Mark Complete"**, **"Next"**.
+  - For graded exams, **Mark Complete** is automatic on successful submission.
+- Completion rules:
+  - Each item has a `Required for completion` flag configured in the builder.
+  - Required lessons/activities must be marked complete or submitted/passed for overall course completion.
+  - Optional items can still be opened but do not block certificate eligibility.
+- Progress updates:
+  - When a lesson or activity is completed, the sidebar status updates instantly and the top progress bar recalculates.
+  - For video lessons, there is room in the design for an optional auto-complete rule (e.g., mark complete when 90% watched), but exact percentage logic can be tuned later.
+- Locked behaviour:
+  - Clicking a locked item shows an inline message instead of a hard error page:
+    - Example: "Available on 20 Aug, 10:00 AM" or "Complete previous chapter to unlock this exam".
+  - This keeps the player feeling guided rather than broken.
 
 ---
 
