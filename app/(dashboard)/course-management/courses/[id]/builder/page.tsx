@@ -27,9 +27,28 @@ export default async function CourseBuilderPage({ params }: Props) {
       stream: { select: { id: true, name: true } },
       topics: {
         orderBy: { order: "asc" },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          order: true,
+          subjectId: true,
+          chapterId: true,
+          topicId: true,
+          sourceType: true,
           lessons: {
             orderBy: { order: "asc" },
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              lessonType: true,
+              videoUrl: true,
+              documentPath: true,
+              textContent: true,
+              duration: true,
+              order: true,
+            },
           },
         },
       },
@@ -57,8 +76,10 @@ export default async function CourseBuilderPage({ params }: Props) {
         bgColor="bg-slate-900/80"
         iconBgColor="bg-gradient-to-br from-cyan-500 to-violet-500"
       />
-      <CourseBuilderClient course={course} syllabusChapters={syllabusChapters} />
+      <CourseBuilderClient
+        course={course}
+        syllabusChapters={syllabusChapters}
+      />
     </div>
   );
 }
-

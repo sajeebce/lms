@@ -325,6 +325,35 @@
 - Adding a chapter supports two modes (when a Subject exists):
   - **"Use existing Chapter/Topic"** – teacher chooses from the syllabus tree; the selected name is copied into the chapter title and a link is stored.
   - **"Create custom chapter"** – standalone chapter with no external mapping.
+- **2. "Add Chapter" UX – Course Builder**
+  - Button: Add chapter → opens a Dialog / Sheet:
+  - Option Tabs or Buttons:
+    - "Import from Question Bank"
+    - "Create Custom Chapter"
+  - Import from Question Bank tab e:
+    - Filters pre-filled:
+      - Class = course er class
+      - Subject = course er subject
+      - Stream = course er stream
+      - (i.e. user ke normally filter dewa lagbe na).
+    - Nicher dike chapter list (question bank theke): Columns idea:
+      - Checkbox (multi-select)
+      - Chapter name
+      - Question count in question bank (optional but value added)
+      - Last updated time (optional)
+    - Ja already ei course e imported:
+      - Row ta either:
+        - Disabled + label "Already added", or
+        - Checkbox absent + small chip "In course".
+    - Top-e:
+      - "Select all available" checkbox
+      - "Import selected chapters" button.
+  - Action logic:
+    - User ja ja select kore → server action:
+      - CourseChapter create (with sourceBankChapterId).
+      - Already-existing entries skip (idempotent).
+    - Done hoile:
+      - Course chapter list immediately update (client side refetch / optimistic).
 
 **Implementation Status:**
 
@@ -336,6 +365,22 @@
 - ✅ Schema support for syllabus linking (subjectId, chapterId, topicId, sourceType fields)
 - ⏳ UI for two-mode chapter creation (syllabus vs custom) - can be added when needed
 - ⏳ + Add Activity button - will be implemented with Activity Management module
+
+#### 5.2.4 Manual "Check for new syllabus chapters"
+
+- When the course has a **Subject** (and optionally Class/Stream), the builder header or chapter section shows a small action chip/button: **"Check new syllabus chapters"**.
+- Behaviour:
+  - This check does **not** run automatically on every page load (no hidden auto-sync).
+  - When clicked, it:
+    - Reads the course's current academic mapping (Class, Stream, Subject).
+    - Fetches all active Chapters from the Question Bank matching that scope.
+    - Compares them against existing chapters in this course that are already linked to the syllabus (`sourceType = "QUESTION_BANK"` + `chapterId`).
+  - If new chapters are found:
+    - Show a banner like _"3 new chapters found in Physics 1st Paper"_ with a primary action **"Import new chapters"**.
+    - Clicking the action opens the same syllabus import flow, pre-filtered to only those new chapters (teacher can still multi-select / select all).
+  - If **no** new chapters are found:
+    - Show a lightweight toast/snackbar: _"Everything is up to date. No new chapters in the syllabus."_.
+- This keeps the builder efficient while giving teachers an explicit, easy way to pull in new syllabus chapters whenever needed.
 
 ### 5.3 Lesson Management (Text / Document / Video)
 
@@ -419,6 +464,7 @@
     - Show score only, or
     - Show detailed review with correct answers after exam window closes.
 - Question source & selection:
+
   - Teacher chooses between:
     - **"Create new questions"** – opens the Question Bank question form in a side-panel; newly created questions are saved to the bank and added to this exam.
     - **"Import from Question Bank"** – opens a selection view that reuses the existing Question Bank filters.
@@ -427,6 +473,16 @@
     - Supports Topic filters, difficulty chips, source and exam year filters, mirroring the Question Bank UI.
     - Middle area lists questions with stem preview and meta chips; right side lists **Selected questions** with drag-to-reorder and per-question mark override (optional future).
     - Summary footer shows: `X questions · Y total marks`.
+  - Reuse vs. exclusion of already-used questions:
+    - By default, the list shows **all** questions that match the filters, even if they were used in previous exams/quizzes, so teachers can intentionally reuse questions when they want.
+    - Above the list, provide an optional filter **"Exclude questions used in"** with a multi-select of existing exams/quizzes for this course.
+    - When one or more exams are selected, hide questions that were used there from the main list (future versions may also offer a "Show all questions" toggle to temporarily ignore this filter).
+    - Each question card can show a small chip like `Used in: Midterm 1, Practice 2`; this is informational only and **does not block** selecting that question again.
+  - Performance & UX for question loading:
+    - Question results must be **paginated** (e.g. page size 25–50) with a `Load more` button or infinite scroll; the UI should never load hundreds/thousands of questions in a single response.
+    - Filters and search trigger server-side queries; whenever filters change, the list resets to page 1 and shows a short loading/skeleton state instead of freezing.
+    - Selected questions are tracked in a dedicated "Selected" panel so they are preserved while scrolling, switching pages, or tweaking filters.
+
 - Student exam experience (preview behaviour):
   - Full-page layout with top bar showing breadcrumb, exam title, and `Time left` countdown plus a prominent **"Submit"** button.
   - Colored instruction banner summarizing total marks, negative marking, and rules.

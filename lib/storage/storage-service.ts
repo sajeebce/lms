@@ -187,6 +187,72 @@ export class StorageService {
   }
 
   /**
+   * Upload lesson document (PDF, DOC, PPT, etc.)
+   */
+  async uploadLessonDocument(
+    lessonId: string,
+    file: File
+  ): Promise<{ url: string; fileName: string }> {
+    const storage = await this.getStorageAdapter();
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .toLowerCase();
+    const key = await this.generateKey(
+      "courses",
+      `lessons/${lessonId}/documents/${timestamp}_${sanitizedFileName}`
+    );
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        lessonId,
+        originalFileName: file.name,
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: false, // Lesson documents are private (enrolled students only)
+    });
+
+    return { url: result.url, fileName: file.name };
+  }
+
+  /**
+   * Upload lesson video (local upload)
+   */
+  async uploadLessonVideo(
+    lessonId: string,
+    file: File
+  ): Promise<{ url: string; fileName: string }> {
+    const storage = await this.getStorageAdapter();
+    const extension = file.name.split(".").pop();
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .toLowerCase();
+    const key = await this.generateKey(
+      "courses",
+      `lessons/${lessonId}/videos/${timestamp}_${sanitizedFileName}`
+    );
+
+    const result = await storage.upload({
+      key,
+      file,
+      contentType: file.type,
+      metadata: {
+        lessonId,
+        originalFileName: file.name,
+        uploadedAt: new Date().toISOString(),
+      },
+      isPublic: false, // Lesson videos are private (enrolled students only)
+    });
+
+    return { url: result.url, fileName: file.name };
+  }
+
+  /**
    * Upload course featured image (with database tracking)
    */
   async uploadCourseFeaturedImage(

@@ -9,6 +9,14 @@ import {
   Trash2,
   Edit,
   GripVertical,
+  Link2,
+  FileText,
+  Video,
+  FileType,
+  MoreVertical,
+  Copy,
+  Eye,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,11 +31,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { deleteCourseTopic } from "@/lib/actions/course-topic.actions";
+import {
+  deleteCourseLesson,
+  duplicateCourseLesson,
+} from "@/lib/actions/course-lesson.actions";
 import { publishCourse } from "../../actions";
 import ChapterForm from "./chapter-form";
 import LessonForm from "./lesson-form";
+import { LessonTypeChooser } from "./lesson-type-chooser";
+import { LessonFormEnhanced } from "./lesson-form-enhanced";
 import SyllabusImportDialog from "./syllabus-import-dialog";
 
 type Chapter = Awaited<
@@ -52,6 +73,10 @@ type Course = {
     title: string;
     description: string | null;
     order: number;
+    subjectId: string | null;
+    chapterId: string | null;
+    topicId: string | null;
+    sourceType: string;
     lessons: {
       id: string;
       title: string;
@@ -90,6 +115,17 @@ export default function CourseBuilderClient({
   const [lessonDialogTopicId, setLessonDialogTopicId] = useState<string | null>(
     null
   );
+  const [lessonTypeChooserOpen, setLessonTypeChooserOpen] = useState(false);
+  const [selectedLessonType, setSelectedLessonType] = useState<
+    "TEXT" | "VIDEO_YOUTUBE" | "DOCUMENT" | "ADVANCED" | null
+  >(null);
+  const [editingLesson, setEditingLesson] = useState<
+    Course["topics"][number]["lessons"][number] | null
+  >(null);
+  const [lessonDeleteDialogOpen, setLessonDeleteDialogOpen] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<
+    Course["topics"][number]["lessons"][number] | null
+  >(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -129,7 +165,70 @@ export default function CourseBuilderClient({
 
   const hasAcademicContext = !!course.subjectId;
 
-  const handleDelete = async () => {
+  // Helper function to get lesson type icon
+  const getLessonIcon = (lessonType: string) => {
+    switch (lessonType) {
+      case "TEXT":
+        return <FileText className="h-4 w-4" />;
+      case "VIDEO_YOUTUBE":
+        return <Video className="h-4 w-4" />;
+      case "DOCUMENT":
+        return <FileType className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // Helper function to get lesson type label
+  const getLessonTypeLabel = (lessonType: string) => {
+    switch (lessonType) {
+      case "TEXT":
+        return "Text";
+      case "VIDEO_YOUTUBE":
+        return "Video";
+      case "DOCUMENT":
+        return "PDF";
+      default:
+        return lessonType;
+    }
+  };
+
+  // Helper function to format lesson duration
+  const formatLessonDuration = (minutes: number | null) => {
+    if (!minutes) return null;
+    if (minutes < 60) return `${minutes}m`;
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) return `${hrs}h`;
+    return `${hrs}h ${mins}m`;
+  };
+
+  // Lesson operations
+  const handleDuplicateLesson = async (lessonId: string) => {
+    const result = await duplicateCourseLesson(lessonId);
+    if (result.success) {
+      toast.success("Lesson duplicated successfully");
+      router.refresh();
+    } else {
+      toast.error(result.error || "Failed to duplicate lesson");
+    }
+  };
+
+  const handleDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+
+    const result = await deleteCourseLesson(lessonToDelete.id);
+    if (result.success) {
+      toast.success("Lesson deleted successfully");
+      setLessonDeleteDialogOpen(false);
+      setLessonToDelete(null);
+      router.refresh();
+    } else {
+      toast.error(result.error || "Failed to delete lesson");
+    }
+  };
+
+  const handleDeleteTopic = async () => {
     if (!topicToDelete) return;
     const result = await deleteCourseTopic(topicToDelete.id);
     if (result.success) {
@@ -438,7 +537,22 @@ export default function CourseBuilderClient({
                           {topic.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-3">
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {/* Syllabus link badge */}
+                        {topic.sourceType === "QUESTION_BANK" &&
+                          (topic.subjectId ||
+                            topic.chapterId ||
+                            topic.topicId) && (
+                            <Badge
+                              variant="outline"
+                              className="rounded-full text-xs px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700"
+                            >
+                              <Link2 className="h-3 w-3 mr-1" />
+                              Linked to syllabus
+                            </Badge>
+                          )}
+
+                        {/* Lesson count badge */}
                         <Badge
                           variant="secondary"
                           className="rounded-full text-xs px-3 py-1 bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
@@ -446,6 +560,8 @@ export default function CourseBuilderClient({
                           {topic.lessons.length}{" "}
                           {topic.lessons.length === 1 ? "lesson" : "lessons"}
                         </Badge>
+
+                        {/* Empty chapter warning */}
                         {topic.lessons.length === 0 && (
                           <Badge
                             variant="outline"
@@ -462,7 +578,10 @@ export default function CourseBuilderClient({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setLessonDialogTopicId(topic.id)}
+                        onClick={() => {
+                          setLessonDialogTopicId(topic.id);
+                          setLessonTypeChooserOpen(true);
+                        }}
                         className="bg-white/80 dark:bg-slate-800/80 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:border-violet-300 dark:hover:border-violet-700"
                       >
                         <Plus className="h-4 w-4 mr-1.5" /> Add Lesson
@@ -499,22 +618,85 @@ export default function CourseBuilderClient({
                         {topic.lessons.map((lesson, lessonIndex) => (
                           <div
                             key={lesson.id}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-border/40 hover:border-violet-300 dark:hover:border-violet-700 transition-colors"
+                            className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-border/40 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm transition-all"
                           >
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-muted-foreground">
-                              {lessonIndex + 1}
-                            </span>
+                            {/* Drag Handle */}
+                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+
+                            {/* Lesson Icon */}
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-950/50 dark:to-indigo-950/50 text-violet-600 dark:text-violet-400 shrink-0">
+                              {getLessonIcon(lesson.lessonType)}
+                            </div>
+
+                            {/* Lesson Info */}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground truncate">
                                 {lesson.title}
                               </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <Badge
+                                  variant="outline"
+                                  className="rounded-full text-[10px] px-2 py-0.5"
+                                >
+                                  {getLessonTypeLabel(lesson.lessonType)}
+                                </Badge>
+                                {lesson.duration && (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    {formatLessonDuration(lesson.duration)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className="rounded-full text-[10px] px-2 py-0.5 shrink-0"
-                            >
-                              {lesson.lessonType}
-                            </Badge>
+
+                            {/* Actions Menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setEditingLesson(lesson);
+                                    setLessonDialogTopicId(topic.id);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDuplicateLesson(lesson.id)
+                                  }
+                                >
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Duplicate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem disabled>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Preview
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setLessonToDelete(lesson);
+                                    setLessonDeleteDialogOpen(true);
+                                  }}
+                                  className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         ))}
                       </div>
@@ -536,20 +718,61 @@ export default function CourseBuilderClient({
         }}
         courseId={course.id}
         editingChapter={editingChapter}
+        syllabusChapters={syllabusChapters}
+        hasAcademicContext={hasAcademicContext}
         onCompleted={() => {
           router.refresh();
           setEditingChapter(null);
         }}
       />
 
-      <LessonForm
-        open={!!lessonDialogTopicId}
-        onOpenChange={(open) => {
-          if (!open) setLessonDialogTopicId(null);
+      {/* Lesson Type Chooser */}
+      <LessonTypeChooser
+        open={lessonTypeChooserOpen && !editingLesson}
+        onOpenChange={setLessonTypeChooserOpen}
+        onSelectType={(type) => {
+          setSelectedLessonType(type);
+          setLessonTypeChooserOpen(false);
         }}
-        topicId={lessonDialogTopicId}
-        onCompleted={() => router.refresh()}
       />
+
+      {/* Enhanced Lesson Form (for new lessons with type selected) */}
+      {selectedLessonType && !editingLesson && (
+        <LessonFormEnhanced
+          open={!!selectedLessonType && !!lessonDialogTopicId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedLessonType(null);
+              setLessonDialogTopicId(null);
+            }
+          }}
+          topicId={lessonDialogTopicId}
+          lessonType={selectedLessonType}
+          onCompleted={() => {
+            router.refresh();
+            setSelectedLessonType(null);
+            setLessonDialogTopicId(null);
+          }}
+        />
+      )}
+
+      {/* Old Lesson Form (for editing existing lessons) */}
+      {editingLesson && (
+        <LessonForm
+          open={!!editingLesson}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingLesson(null);
+            }
+          }}
+          topicId={null}
+          editingLesson={editingLesson}
+          onCompleted={() => {
+            router.refresh();
+            setEditingLesson(null);
+          }}
+        />
+      )}
 
       <SyllabusImportDialog
         open={importDialogOpen}
@@ -563,7 +786,7 @@ export default function CourseBuilderClient({
         courseSubject={course.subject}
       />
 
-      {/* Delete confirmation */}
+      {/* Delete chapter confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -586,7 +809,35 @@ export default function CourseBuilderClient({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={handleDeleteTopic}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete lesson confirmation */}
+      <AlertDialog
+        open={lessonDeleteDialogOpen}
+        onOpenChange={setLessonDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete lesson</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete lesson &quot;
+                {lessonToDelete?.title}&quot;?
+              </p>
+              <p className="text-sm">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLesson}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete

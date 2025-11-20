@@ -27,6 +27,12 @@ const lessonSchema = z.object({
   duration: z.number().min(0).max(9999).optional(),
   isPreview: z.boolean().optional(),
   order: z.number().min(0).max(9999).optional(),
+  // Lesson-level settings
+  accessType: z.enum(["PUBLIC", "PASSWORD", "ENROLLED_ONLY"]).optional(),
+  password: z.string().max(100).optional(),
+  allowDownload: z.boolean().optional(),
+  scheduledAt: z.date().optional(),
+  attachmentsJson: z.string().optional(),
 });
 
 type LessonInput = z.infer<typeof lessonSchema>;
@@ -104,6 +110,11 @@ export async function createCourseLesson(topicId: string, data: LessonInput) {
       textContent: validated.textContent,
       duration: validated.duration,
       isPreview: validated.isPreview ?? false,
+      accessType: validated.accessType ?? "ENROLLED_ONLY",
+      password: validated.password,
+      allowDownload: validated.allowDownload ?? true,
+      scheduledAt: validated.scheduledAt,
+      attachmentsJson: validated.attachmentsJson,
       order,
     },
   });
@@ -141,12 +152,19 @@ export async function updateCourseLesson(id: string, data: LessonInput) {
       textContent: validated.textContent,
       duration: validated.duration,
       isPreview: validated.isPreview ?? existing.isPreview,
+      accessType: validated.accessType ?? existing.accessType,
+      password: validated.password,
+      allowDownload: validated.allowDownload ?? existing.allowDownload,
+      scheduledAt: validated.scheduledAt,
+      attachmentsJson: validated.attachmentsJson,
       order: validated.order ?? existing.order,
     },
   });
 
   await recomputeCourseStats(tenantId, existing.topic.courseId);
-  revalidatePath(`/course-management/courses/${existing.topic.courseId}/builder`);
+  revalidatePath(
+    `/course-management/courses/${existing.topic.courseId}/builder`
+  );
 
   return { success: true, data: lesson } as const;
 }
@@ -167,8 +185,150 @@ export async function deleteCourseLesson(id: string) {
   await prisma.courseLesson.delete({ where: { id } });
 
   await recomputeCourseStats(tenantId, existing.topic.courseId);
-  revalidatePath(`/course-management/courses/${existing.topic.courseId}/builder`);
+  revalidatePath(
+    `/course-management/courses/${existing.topic.courseId}/builder`
+  );
 
   return { success: true } as const;
 }
 
+export async function duplicateCourseLesson(id: string) {
+  await requireRole("ADMIN");
+  const tenantId = await getTenantId();
+
+  const existing = await prisma.courseLesson.findFirst({
+    where: { id, tenantId },
+    include: { topic: true },
+  });
+
+  if (!existing) {
+    return { success: false, error: "Lesson not found" } as const;
+  }
+
+  // Get the last order in the topic
+  const last = await prisma.courseLesson.findFirst({
+    where: { tenantId, topicId: existing.topicId },
+    orderBy: { order: "desc" },
+  });
+
+  const newOrder = last ? last.order + 1 : 1;
+
+  // Create duplicate
+  const duplicate = await prisma.courseLesson.create({
+    data: {
+      tenantId,
+      topicId: existing.topicId,
+      title: `${existing.title} (Copy)`,
+      description: existing.description,
+      lessonType: existing.lessonType,
+      videoUrl: existing.videoUrl,
+      documentPath: existing.documentPath,
+      textContent: existing.textContent,
+      duration: existing.duration,
+      isPreview: existing.isPreview,
+      order: newOrder,
+    },
+  });
+
+  await recomputeCourseStats(tenantId, existing.topic.courseId);
+  revalidatePath(
+    `/course-management/courses/${existing.topic.courseId}/builder`
+  );
+
+  return { success: true, data: duplicate } as const;
+}
+
+/**
+ * Upload lesson document (server action)
+ */
+export async function uploadLessonDocument(
+  lessonId: string,
+  formData: FormData
+) {
+  await requireRole("ADMIN");
+  await getTenantId();
+
+  try {
+    const file = formData.get("file") as File;
+    if (!file) {
+      return { success: false, error: "No file provided" } as const;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        error: "Invalid file type. Only PDF, DOC, DOCX, PPT, PPTX are allowed.",
+      } as const;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        error: "File size must be less than 10MB",
+      } as const;
+    }
+
+    const { getStorageService } = await import("@/lib/storage/storage-service");
+    const storageService = getStorageService();
+    const result = await storageService.uploadLessonDocument(lessonId, file);
+
+    return { success: true, data: result } as const;
+  } catch (error) {
+    console.error("Document upload error:", error);
+    return { success: false, error: "Failed to upload document" } as const;
+  }
+}
+
+/**
+ * Upload lesson video (server action)
+ */
+export async function uploadLessonVideo(lessonId: string, formData: FormData) {
+  await requireRole("ADMIN");
+  await getTenantId();
+
+  try {
+    const file = formData.get("file") as File;
+    if (!file) {
+      return { success: false, error: "No file provided" } as const;
+    }
+
+    // Validate file type
+    const allowedTypes = ["video/mp4", "video/webm", "video/ogg"];
+
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        error: "Invalid file type. Only MP4, WebM, OGG are allowed.",
+      } as const;
+    }
+
+    // Validate file size (100MB max)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        error: "File size must be less than 100MB",
+      } as const;
+    }
+
+    const { getStorageService } = await import("@/lib/storage/storage-service");
+    const storageService = getStorageService();
+    const result = await storageService.uploadLessonVideo(lessonId, file);
+
+    return { success: true, data: result } as const;
+  } catch (error) {
+    console.error("Video upload error:", error);
+    return { success: false, error: "Failed to upload video" } as const;
+  }
+}

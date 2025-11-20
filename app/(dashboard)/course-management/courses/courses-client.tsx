@@ -152,10 +152,11 @@ type Props = {
 const formatDateTime = (date: Date | null) => {
   if (!date) return "—";
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    // Use en-US locale for consistent server/client rendering
+    return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "short",
-      day: "2-digit",
+      day: "numeric",
     }).format(date);
   } catch {
     return "—";

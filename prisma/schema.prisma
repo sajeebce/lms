@@ -735,6 +735,9 @@ model CourseLesson {
   isPreview       Boolean  @default(false)
   accessType      String   @default("ENROLLED_ONLY") // PUBLIC, PASSWORD, ENROLLED_ONLY
   password        String?
+  allowDownload   Boolean  @default(true)  // Allow students to download documents/videos
+  scheduledAt     DateTime? // Scheduled release date/time
+  attachmentsJson String?  // JSON array of attachments [{name, url, type, size}]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

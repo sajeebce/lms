@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,8 +22,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCourseLesson } from "@/lib/actions/course-lesson.actions";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  createCourseLesson,
+  updateCourseLesson,
+} from "@/lib/actions/course-lesson.actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -49,8 +58,10 @@ const formSchema = z.object({
     .string()
     .optional()
     .refine(
-      (val) => !val || (!Number.isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 9999),
-      "Duration must be between 0 and 9999 minutes",
+      (val) =>
+        !val ||
+        (!Number.isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 9999),
+      "Duration must be between 0 and 9999 minutes"
     ),
 });
 
@@ -60,6 +71,16 @@ interface LessonFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   topicId: string | null;
+  editingLesson?: {
+    id: string;
+    title: string;
+    description: string | null;
+    lessonType: string;
+    videoUrl: string | null;
+    documentPath: string | null;
+    textContent: string | null;
+    duration: number | null;
+  } | null;
   onCompleted?: () => void;
 }
 
@@ -67,9 +88,11 @@ export default function LessonForm({
   open,
   onOpenChange,
   topicId,
+  editingLesson,
   onCompleted,
 }: LessonFormProps) {
   const [isPending, startTransition] = useTransition();
+  const isEditing = !!editingLesson;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,31 +107,62 @@ export default function LessonForm({
     },
   });
 
-  const handleSubmit = (values: FormValues) => {
-    if (!topicId) return;
+  // Reset form when dialog opens/closes or editing lesson changes
+  useEffect(() => {
+    if (open && editingLesson) {
+      form.reset({
+        title: editingLesson.title,
+        description: editingLesson.description || "",
+        lessonType: editingLesson.lessonType as any,
+        videoUrl: editingLesson.videoUrl || "",
+        documentPath: editingLesson.documentPath || "",
+        textContent: editingLesson.textContent || "",
+        duration: editingLesson.duration?.toString() || "",
+      });
+    } else if (open && !editingLesson) {
+      form.reset({
+        title: "",
+        description: "",
+        lessonType: "TEXT",
+        videoUrl: "",
+        documentPath: "",
+        textContent: "",
+        duration: "",
+      });
+    }
+  }, [open, editingLesson, form]);
 
-    const numericDuration = values.duration ? Number(values.duration) : undefined;
+  const handleSubmit = (values: FormValues) => {
+    if (!topicId && !isEditing) return;
+
+    const numericDuration = values.duration
+      ? Number(values.duration)
+      : undefined;
 
     startTransition(async () => {
-      const result = await createCourseLesson(topicId, {
-        ...values,
-        duration: numericDuration,
-      });
+      const result = isEditing
+        ? await updateCourseLesson(editingLesson.id, {
+            ...values,
+            duration: numericDuration,
+          })
+        : await createCourseLesson(topicId!, {
+            ...values,
+            duration: numericDuration,
+          });
+
       if (result.success) {
-        toast.success("Lesson created successfully");
-        form.reset({
-          title: "",
-          description: "",
-          lessonType: "TEXT",
-          videoUrl: "",
-          documentPath: "",
-          textContent: "",
-          duration: "",
-        });
+        toast.success(
+          isEditing
+            ? "Lesson updated successfully"
+            : "Lesson created successfully"
+        );
+        form.reset();
         onOpenChange(false);
         onCompleted?.();
       } else {
-        toast.error(result.error || "Failed to create lesson");
+        toast.error(
+          result.error || `Failed to ${isEditing ? "update" : "create"} lesson`
+        );
       }
     });
   };
@@ -117,12 +171,15 @@ export default function LessonForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add lesson</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit lesson" : "Add lesson"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="title"
@@ -156,7 +213,9 @@ export default function LessonForm({
                       rows={3}
                     />
                   </FormControl>
-                  <FormDescription>Max 500 characters (optional)</FormDescription>
+                  <FormDescription>
+                    Max 500 characters (optional)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -178,8 +237,12 @@ export default function LessonForm({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="TEXT">Text</SelectItem>
-                        <SelectItem value="VIDEO_YOUTUBE">YouTube Video</SelectItem>
-                        <SelectItem value="DOCUMENT">Document (PDF/DOC)</SelectItem>
+                        <SelectItem value="VIDEO_YOUTUBE">
+                          YouTube Video
+                        </SelectItem>
+                        <SelectItem value="DOCUMENT">
+                          Document (PDF/DOC)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -286,10 +349,12 @@ export default function LessonForm({
               <Button
                 type="submit"
                 disabled={isPending || form.formState.isSubmitting}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
               >
                 {isPending || form.formState.isSubmitting
                   ? "Saving..."
+                  : isEditing
+                  ? "Update lesson"
                   : "Create lesson"}
               </Button>
             </div>
@@ -299,4 +364,3 @@ export default function LessonForm({
     </Dialog>
   );
 }
-

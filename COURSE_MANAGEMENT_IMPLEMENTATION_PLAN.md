@@ -323,6 +323,29 @@ model CourseTopic {
   - Option 1 – "Use existing Chapter/Topic": set `subjectId`/`chapterId`/`topicId` and `sourceType = "QUESTION_BANK"`, copy current Chapter/Topic name into `title` as snapshot.
   - Option 2 – "Create custom topic": only `title`/`description`; leave mapping fields `null` and keep `sourceType = "CUSTOM"`.
 - Changes in Question Bank should **not** auto-edit `CourseTopic.title`; reporting and filters should use the mapping IDs.
+- Manual "check new syllabus chapters" flow:
+  - Implement a dedicated server action (e.g. `checkNewSyllabusChapters(courseId)`), invoked only when the builder UI button is clicked.
+  - The action should:
+    - Read the course's `classId`, `subjectId`, and `streamId`.
+    - Query active `Chapter` records from the Question Bank for that scope (`tenantId` + class/subject/stream).
+    - Compute the set of `chapterId`s already linked to this course via `CourseTopic` where `sourceType = "QUESTION_BANK"`.
+    - Return only the "new" Chapters (those without any matching `CourseTopic` record for this course) plus a simple count for banner messaging.
+  - The result is consumed by the builder to show a "X new chapters found – Import now" banner and to pre-filter the syllabus import dialog to these chapters.
+- "Add Chapter" dialog implementation details:
+  - Clicking "+ Add Chapter" opens a modal/sheet with two options/tabs: "Import from Question Bank" and "Create Custom Chapter".
+  - In **Import from Question Bank** tab:
+    - Pre-fill the filter inputs from `course.classId`, `course.subjectId`, and `course.streamId` so the teacher normally does not need to adjust filters.
+    - Show a table of Question Bank chapters with columns: checkbox (multi-select), chapter name, optional question count (number of active questions under that chapter), and optional last updated time.
+    - For chapters already imported/linked into this course (i.e. an existing `CourseTopic` with same `courseId` + `chapterId` + `sourceType = "QUESTION_BANK"`):
+      - Either disable the row with label "Already added", or
+      - Hide the checkbox and show a small chip "In course".
+    - At the top of the table, provide a "Select all available" checkbox and a primary "Import selected chapters" button.
+  - Server action behaviour:
+    - Accept `courseId` and a list of Question Bank `chapterIds` from the dialog.
+    - For each selected `chapterId`, perform a find-or-create on `CourseTopic`:
+      - If a matching `CourseTopic` already exists for that course and chapter (as described above), skip creation (idempotent behaviour).
+      - Otherwise, create a new `CourseTopic` with mapping fields (`subjectId`, `chapterId`, etc.) set and `title` seeded from the Question Bank chapter name.
+    - After completion, revalidate/refetch the course builder data so the chapter list updates immediately (frontend may also apply an optimistic update for better UX).
 
 ---
 
@@ -1376,6 +1399,22 @@ When the teacher clicks `+ Add Lesson` or `+ Add Activity` inside a topic, open 
 - Keep the same modern, slightly gamified tile style as rest of dashboard: light background, subtle glow border on hover, consistent accent color for active card.
 
 > Implementation note: technically, Lesson/PDF map into the same `CourseLesson` table with different `contentType`, and Online/Offline map into `CourseActivity` with different `activityType`. The UI should hide that complexity and present a simple, friendly choice.
+#### Online exam / practice – Question selection & performance
+
+- Build a dedicated Question Bank search endpoint/server action (e.g. `searchQuestionsForActivity`) that:
+  - Accepts filters: `classId`, `subjectId`, `streamId`, `chapterIds[]`, `topicIds[]`, difficulty, source, examYear, free-text search, etc.
+  - Accepts pagination inputs: `page`, `pageSize` (or cursor/`take` + `cursor`), and returns `items[]` + `totalCount` (or `hasMore`).
+  - Always scopes by `tenantId` and respects Question status (exclude archived/inactive by default).
+- For **reuse / exclusion**:
+  - Maintain a mapping table between exams/quizzes and Question Bank questions (or reuse the existing exam module linkage) so you can efficiently answer "which questions were used in Exam X / Quiz Y".
+  - The question search action should accept an optional list of `excludeExamIds[]` and filter out any questions that appear in those exams' question mappings when requested.
+- Frontend behaviours for smooth UX:
+  - Use debounced filter/search input (≈300–500ms) to avoid firing a request per keystroke.
+  - Implement infinite scroll or a `Load more` pattern instead of traditional numbered pagination; keep the selected question list separate so selections survive pagination and filter tweaks.
+  - When filters change, reset to page 1, show a skeleton/loading state, and scroll back to the top of the list.
+  - For each returned question, include lightweight metadata about previous usage (e.g. list of exam titles where it appears) so the UI can render "Used in: …" chips without extra round-trips.
+
+
 
 ---
 
