@@ -1194,6 +1194,16 @@ export default function CoursesClient({
                                   </span>
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/course-management/courses/${course.id}/builder`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <MonitorSmartphone className="h-3 w-3" />
+                                    Edit curriculum
+                                  </span>
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={duplicatingCourseId === course.id}
                                 onClick={() => handleDuplicate(course)}
