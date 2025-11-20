@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { deleteCourseTopic } from "@/lib/actions/course-topic.actions";
+import { publishCourse } from "../../actions";
 import ChapterForm from "./chapter-form";
 import LessonForm from "./lesson-form";
 import SyllabusImportDialog from "./syllabus-import-dialog";
@@ -36,6 +37,9 @@ type Course = {
   class: { id: string; name: string } | null;
   subject: { id: string; name: string; icon: string | null } | null;
   stream: { id: string; name: string } | null;
+  totalTopics: number | null;
+  totalLessons: number | null;
+  totalDuration: number | null;
   topics: {
     id: string;
     title: string;
@@ -49,6 +53,16 @@ type Course = {
     }[];
   }[];
 };
+const formatDuration = (minutes: number | null | undefined) => {
+  if (!minutes || minutes <= 0) return "";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs && mins) return `${hrs}h ${mins}m`;
+  if (hrs) return `${hrs}h`;
+  return `${mins}m`;
+};
+
+
 
 interface Props {
   course: Course;
@@ -64,6 +78,9 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
   const [chapterDialogOpen, setChapterDialogOpen] = useState(false);
   const [lessonDialogTopicId, setLessonDialogTopicId] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+
 
   const totalChapters = course.topics.length;
   const totalLessons = course.topics.reduce(
@@ -71,7 +88,38 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
     0,
   );
 
+  const topicsForSummary =
+    typeof course.totalTopics === "number" && course.totalTopics > 0
+      ? course.totalTopics
+      : totalChapters;
+
+  const lessonsForSummary =
+    typeof course.totalLessons === "number" && course.totalLessons > 0
+      ? course.totalLessons
+      : totalLessons;
+
+  const durationLabel = formatDuration(course.totalDuration);
+  const summaryParts: string[] = [];
+
+  if (course.class?.name) {
+    summaryParts.push(course.class.name);
+  }
+
+  summaryParts.push(
+    `${topicsForSummary} ${topicsForSummary === 1 ? "Chapter" : "Chapters"}`,
+  );
+  summaryParts.push(
+    `${lessonsForSummary} ${
+      lessonsForSummary === 1 ? "Lesson" : "Lessons"
+    }`,
+  );
+
+  if (durationLabel) {
+    summaryParts.push(durationLabel);
+  }
+
   const hasAcademicContext = !!course.subjectId;
+
 
   const handleDelete = async () => {
     if (!topicToDelete) return;
@@ -85,6 +133,34 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
     setDeleteDialogOpen(false);
     setTopicToDelete(null);
   };
+
+  const handlePublishClick = async () => {
+    if (course.status === "PUBLISHED") {
+      toast.info("Course is already published");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      const result = await publishCourse(course.id);
+      if (result.success) {
+        if (result.alreadyPublished) {
+          toast.success("Course is already published");
+        } else {
+          toast.success("Course published successfully");
+        }
+        router.refresh();
+      } else {
+        toast.error(result.error || "Failed to publish course");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to publish course");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
 
   const renderEmptyState = () => {
     if (!hasAcademicContext) {
@@ -193,14 +269,9 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
               <BookOpen className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">{course.title}</span>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="rounded-full">
-                {totalChapters || 0} Chapters
-              </Badge>
-              <Badge variant="secondary" className="rounded-full">
-                {totalLessons || 0} Lessons
-              </Badge>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {summaryParts.join(" • ")}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -212,9 +283,10 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
             </Button>
             <Button
               size="sm"
-              onClick={() => toast.info("Publish flow coming soon")}
+              onClick={handlePublishClick}
+              disabled={isPublishing}
             >
-              Publish Course
+              {isPublishing ? "Publishing..." : "Publish Course"}
             </Button>
           </div>
         </CardContent>
