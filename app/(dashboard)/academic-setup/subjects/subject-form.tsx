@@ -192,6 +192,7 @@ export default function SubjectForm({
                     type="number"
                     min={0}
                     max={9999}
+                    placeholder="1"
                     className="dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
                     value={field.value ?? ""}
                     onChange={(e) => {
@@ -206,7 +207,7 @@ export default function SubjectForm({
                   />
                 </FormControl>
                 <FormDescription className="dark:text-slate-400">
-                  Display order (1-9999). Leave blank for auto ordering.
+                  Leave blank for auto ordering (1-9999)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -226,7 +227,7 @@ export default function SubjectForm({
                       { value: "ACTIVE", label: "Active" },
                       { value: "INACTIVE", label: "Inactive" },
                     ]}
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                     placeholder="Select status"
                   />

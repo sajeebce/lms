@@ -188,7 +188,9 @@ export default function TopicForm({
                   <SearchableDropdown
                     options={subjects.map((subject) => ({
                       value: subject.id,
-                      label: `${subject.icon || ""} ${subject.name}`,
+                      label: subject.icon
+                        ? `${subject.icon} ${subject.name}`
+                        : subject.name,
                     }))}
                     value={field.value}
                     onChange={field.onChange}
@@ -318,7 +320,7 @@ export default function TopicForm({
                     type="number"
                     min={1}
                     max={9999}
-                    placeholder="Display order (1-9999). Leave blank for auto ordering."
+                    placeholder="1"
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -331,6 +333,9 @@ export default function TopicForm({
                     }}
                   />
                 </FormControl>
+                <FormDescription>
+                  Leave blank for auto ordering (1-9999)
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

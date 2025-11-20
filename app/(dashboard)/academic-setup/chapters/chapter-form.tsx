@@ -270,7 +270,7 @@ export default function ChapterForm({
                     type="number"
                     min={1}
                     max={9999}
-                    placeholder="Display order (1-9999). Leave blank for auto ordering."
+                    placeholder="1"
                     value={field.value ?? ""}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -283,6 +283,9 @@ export default function ChapterForm({
                     }}
                   />
                 </FormControl>
+                <FormDescription>
+                  Leave blank for auto ordering (1-9999)
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
