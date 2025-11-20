@@ -69,6 +69,15 @@ export async function getChapters(options: GetChaptersOptions = {}) {
           topics: true,
         },
       },
+      topics: {
+        select: {
+          _count: {
+            select: {
+              questions: true,
+            },
+          },
+        },
+      },
     },
     orderBy: [
       { classId: "asc" },
@@ -78,7 +87,22 @@ export async function getChapters(options: GetChaptersOptions = {}) {
     ],
   });
 
-  return chapters;
+  // Calculate total question count per chapter
+  const chaptersWithQuestionCount = chapters.map((chapter) => {
+    const totalQuestions = chapter.topics.reduce(
+      (sum, topic) => sum + topic._count.questions,
+      0
+    );
+    return {
+      ...chapter,
+      _count: {
+        ...chapter._count,
+        questions: totalQuestions,
+      },
+    };
+  });
+
+  return chaptersWithQuestionCount;
 }
 
 // ============================================
