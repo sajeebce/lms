@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +22,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCourseTopic } from "@/lib/actions/course-topic.actions";
+import {
+  createCourseTopic,
+  updateCourseTopic,
+} from "@/lib/actions/course-topic.actions";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -42,6 +45,11 @@ interface ChapterFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   courseId: string;
+  editingChapter?: {
+    id: string;
+    title: string;
+    description: string | null;
+  } | null;
   onCompleted?: () => void;
 }
 
@@ -49,9 +57,11 @@ export default function ChapterForm({
   open,
   onOpenChange,
   courseId,
+  editingChapter,
   onCompleted,
 }: ChapterFormProps) {
   const [isPending, startTransition] = useTransition();
+  const isEditing = !!editingChapter;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,16 +71,40 @@ export default function ChapterForm({
     },
   });
 
+  // Reset form when dialog opens/closes or editing chapter changes
+  useEffect(() => {
+    if (open && editingChapter) {
+      form.reset({
+        title: editingChapter.title,
+        description: editingChapter.description || "",
+      });
+    } else if (open && !editingChapter) {
+      form.reset({
+        title: "",
+        description: "",
+      });
+    }
+  }, [open, editingChapter, form]);
+
   const handleSubmit = (values: FormValues) => {
     startTransition(async () => {
-      const result = await createCourseTopic(courseId, values);
+      const result = isEditing
+        ? await updateCourseTopic(editingChapter.id, values)
+        : await createCourseTopic(courseId, values);
+
       if (result.success) {
-        toast.success("Chapter created successfully");
+        toast.success(
+          isEditing
+            ? "Chapter updated successfully"
+            : "Chapter created successfully"
+        );
         form.reset();
         onOpenChange(false);
         onCompleted?.();
       } else {
-        toast.error(result.error || "Failed to create chapter");
+        toast.error(
+          result.error || `Failed to ${isEditing ? "update" : "create"} chapter`
+        );
       }
     });
   };
@@ -79,10 +113,15 @@ export default function ChapterForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create chapter</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit chapter" : "Create chapter"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="title"
@@ -116,7 +155,9 @@ export default function ChapterForm({
                       rows={3}
                     />
                   </FormControl>
-                  <FormDescription>Max 500 characters (optional)</FormDescription>
+                  <FormDescription>
+                    Max 500 characters (optional)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -130,6 +171,8 @@ export default function ChapterForm({
               >
                 {isPending || form.formState.isSubmitting
                   ? "Saving..."
+                  : isEditing
+                  ? "Update chapter"
                   : "Create chapter"}
               </Button>
             </div>
@@ -139,4 +182,3 @@ export default function ChapterForm({
     </Dialog>
   );
 }
-

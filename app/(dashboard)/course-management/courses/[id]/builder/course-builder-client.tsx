@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Sparkles, BookOpen, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Sparkles,
+  BookOpen,
+  Trash2,
+  Edit,
+  GripVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,30 +69,34 @@ const formatDuration = (minutes: number | null | undefined) => {
   return `${mins}m`;
 };
 
-
-
 interface Props {
   course: Course;
   syllabusChapters: Chapter[];
 }
 
-export default function CourseBuilderClient({ course, syllabusChapters }: Props) {
+export default function CourseBuilderClient({
+  course,
+  syllabusChapters,
+}: Props) {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [topicToDelete, setTopicToDelete] = useState<Course["topics"][number] | null>(
-    null,
-  );
+  const [topicToDelete, setTopicToDelete] = useState<
+    Course["topics"][number] | null
+  >(null);
   const [chapterDialogOpen, setChapterDialogOpen] = useState(false);
-  const [lessonDialogTopicId, setLessonDialogTopicId] = useState<string | null>(null);
+  const [editingChapter, setEditingChapter] = useState<
+    Course["topics"][number] | null
+  >(null);
+  const [lessonDialogTopicId, setLessonDialogTopicId] = useState<string | null>(
+    null
+  );
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-
-
 
   const totalChapters = course.topics.length;
   const totalLessons = course.topics.reduce(
     (sum, topic) => sum + topic.lessons.length,
-    0,
+    0
   );
 
   const topicsForSummary =
@@ -106,12 +117,10 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
   }
 
   summaryParts.push(
-    `${topicsForSummary} ${topicsForSummary === 1 ? "Chapter" : "Chapters"}`,
+    `${topicsForSummary} ${topicsForSummary === 1 ? "Chapter" : "Chapters"}`
   );
   summaryParts.push(
-    `${lessonsForSummary} ${
-      lessonsForSummary === 1 ? "Lesson" : "Lessons"
-    }`,
+    `${lessonsForSummary} ${lessonsForSummary === 1 ? "Lesson" : "Lessons"}`
   );
 
   if (durationLabel) {
@@ -119,7 +128,6 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
   }
 
   const hasAcademicContext = !!course.subjectId;
-
 
   const handleDelete = async () => {
     if (!topicToDelete) return;
@@ -161,7 +169,6 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
     }
   };
 
-
   const renderEmptyState = () => {
     if (!hasAcademicContext) {
       return (
@@ -179,15 +186,17 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
                   This course is not linked to any academic Subject yet. You can
-                  continue with custom chapters and lessons only, or open the course
-                  settings to select Class / Stream / Subject for one-click syllabus
-                  import.
+                  continue with custom chapters and lessons only, or open the
+                  course settings to select Class / Stream / Subject for
+                  one-click syllabus import.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Button
                     size="lg"
                     onClick={() =>
-                      router.push(`/course-management/courses/${course.id}/edit`)
+                      router.push(
+                        `/course-management/courses/${course.id}/edit`
+                      )
                     }
                     className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
                   >
@@ -225,25 +234,38 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
               <Sparkles className="h-3.5 w-3.5" />
               Ready to import from syllabus
             </div>
-            <h2 className="text-2xl font-bold mb-3 text-foreground">Start from syllabus or build custom?</h2>
+            <h2 className="text-2xl font-bold mb-3 text-foreground">
+              Start from syllabus or build custom?
+            </h2>
             <p className="text-sm text-muted-foreground max-w-xl">
               You can import chapters from the Subject  Chapter  Topic tree or
               create custom chapters only for this course.
             </p>
             <div className="flex flex-wrap gap-2">
               {course.class && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-3 py-1.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                >
                   Class: {course.class.name}
                 </Badge>
               )}
               {course.stream && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1.5 text-xs bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-3 py-1.5 text-xs bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                >
                   Stream: {course.stream.name}
                 </Badge>
               )}
               {course.subject && (
-                <Badge variant="secondary" className="rounded-full px-3 py-1.5 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  {course.subject.icon && <span className="mr-1.5">{course.subject.icon}</span>}
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-3 py-1.5 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                >
+                  {course.subject.icon && (
+                    <span className="mr-1.5">{course.subject.icon}</span>
+                  )}
                   {course.subject.name}
                 </Badge>
               )}
@@ -291,7 +313,9 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                   <BookOpen className="h-5 w-5" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-foreground">{course.title}</h1>
+                  <h1 className="text-lg font-bold text-foreground">
+                    {course.title}
+                  </h1>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {summaryParts.join(" • ")}
                   </p>
@@ -301,18 +325,29 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
               {(course.class || course.stream || course.subject) && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {course.class && (
-                    <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                    >
                       Class: {course.class.name}
                     </Badge>
                   )}
                   {course.stream && (
-                    <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 py-1 text-xs bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300"
+                    >
                       Stream: {course.stream.name}
                     </Badge>
                   )}
                   {course.subject && (
-                    <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                      {course.subject.icon && <span className="mr-1">{course.subject.icon}</span>}
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full px-3 py-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    >
+                      {course.subject.icon && (
+                        <span className="mr-1">{course.subject.icon}</span>
+                      )}
                       {course.subject.name}
                     </Badge>
                   )}
@@ -353,7 +388,9 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                 <BookOpen className="h-4 w-4" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground">Chapters</h2>
+                <h2 className="text-base font-semibold text-foreground">
+                  Chapters
+                </h2>
                 <p className="text-xs text-muted-foreground">
                   Organize your course content into chapters and lessons
                 </p>
@@ -361,7 +398,10 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
             </div>
             <Button
               size="sm"
-              onClick={() => setChapterDialogOpen(true)}
+              onClick={() => {
+                setEditingChapter(null);
+                setChapterDialogOpen(true);
+              }}
               className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
             >
               <Plus className="h-4 w-4 mr-1.5" /> Add Chapter
@@ -374,14 +414,19 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                 key={topic.id}
                 className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-800/50 shadow-sm hover:shadow-md transition-all duration-200"
               >
+                {/* Drag handle - left edge */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                  <GripVertical className="h-5 w-5 text-muted-foreground" />
+                </div>
+
                 {/* Chapter number badge - floating */}
-                <div className="absolute -left-2 top-6 flex h-12 w-12 items-center justify-center">
+                <div className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-sm shadow-lg">
                     {topic.order}
                   </div>
                 </div>
 
-                <div className="pl-14 pr-6 py-5">
+                <div className="pl-20 pr-6 py-5">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     {/* Left: Title & Description */}
                     <div className="flex-1 min-w-0">
@@ -394,11 +439,18 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                         </p>
                       )}
                       <div className="flex items-center gap-2 mt-3">
-                        <Badge variant="secondary" className="rounded-full text-xs px-3 py-1 bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                          {topic.lessons.length} {topic.lessons.length === 1 ? "lesson" : "lessons"}
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full text-xs px-3 py-1 bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                        >
+                          {topic.lessons.length}{" "}
+                          {topic.lessons.length === 1 ? "lesson" : "lessons"}
                         </Badge>
                         {topic.lessons.length === 0 && (
-                          <Badge variant="outline" className="rounded-full text-xs px-3 py-1 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700">
+                          <Badge
+                            variant="outline"
+                            className="rounded-full text-xs px-3 py-1 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700"
+                          >
                             Empty chapter
                           </Badge>
                         )}
@@ -414,6 +466,17 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                         className="bg-white/80 dark:bg-slate-800/80 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:border-violet-300 dark:hover:border-violet-700"
                       >
                         <Plus className="h-4 w-4 mr-1.5" /> Add Lesson
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingChapter(topic);
+                          setChapterDialogOpen(true);
+                        }}
+                        className="bg-white/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-300 dark:hover:border-blue-700"
+                      >
+                        <Edit className="h-4 w-4 mr-1.5" /> Edit
                       </Button>
                       <Button
                         size="sm"
@@ -446,7 +509,10 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
                                 {lesson.title}
                               </p>
                             </div>
-                            <Badge variant="outline" className="rounded-full text-[10px] px-2 py-0.5 shrink-0">
+                            <Badge
+                              variant="outline"
+                              className="rounded-full text-[10px] px-2 py-0.5 shrink-0"
+                            >
                               {lesson.lessonType}
                             </Badge>
                           </div>
@@ -464,9 +530,16 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
       {/* Modals */}
       <ChapterForm
         open={chapterDialogOpen}
-        onOpenChange={setChapterDialogOpen}
+        onOpenChange={(open) => {
+          setChapterDialogOpen(open);
+          if (!open) setEditingChapter(null);
+        }}
         courseId={course.id}
-        onCompleted={() => router.refresh()}
+        editingChapter={editingChapter}
+        onCompleted={() => {
+          router.refresh();
+          setEditingChapter(null);
+        }}
       />
 
       <LessonForm
@@ -495,14 +568,27 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete chapter</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete chapter &quot;{topicToDelete?.title}&quot;?
-              This action cannot be undone.
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete chapter &quot;
+                {topicToDelete?.title}&quot;?
+              </p>
+              {topicToDelete && topicToDelete.lessons.length > 0 && (
+                <p className="text-amber-600 dark:text-amber-400 font-medium">
+                  ⚠️ This chapter has {topicToDelete.lessons.length}{" "}
+                  {topicToDelete.lessons.length === 1 ? "lesson" : "lessons"}.
+                  All lessons will be deleted.
+                </p>
+              )}
+              <p className="text-sm">This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} variant="destructive">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -511,4 +597,3 @@ export default function CourseBuilderClient({ course, syllabusChapters }: Props)
     </div>
   );
 }
-

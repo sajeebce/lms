@@ -285,7 +285,7 @@
       - **"Select Subject & import"** – opens a side-panel or navigates back to the course edit form focused on the Academic section.
       - **"Continue with custom chapters only"**.
 
-#### 5.2.2 Syllabus Import Wizard
+#### 5.2.2 Syllabus Import Wizard ✅ **COMPLETED**
 
 - Clicking **"Import chapters from syllabus"** opens a 3-step wizard (visual style similar to the Academic Year Wizard):
   - **Step 1 – Confirm scope**
@@ -304,6 +304,8 @@
 - **Generate** button:
   - Creates all missing chapters in one go.
   - Returns the user to the builder with the new chapters visible and briefly highlighted.
+
+> **Implementation Status:** This feature has been fully implemented and tested. The wizard successfully imports chapters from the Question Bank syllabus structure into course chapters.
 
 #### 5.2.3 Chapter Rows & Per-Row Actions
 
