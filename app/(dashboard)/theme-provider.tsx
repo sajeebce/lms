@@ -1,35 +1,39 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect } from "react";
 
-export function ThemeProvider({ 
-  mode, 
-  children 
-}: { 
-  mode: string
-  children: React.ReactNode 
+export function ThemeProvider({
+  mode,
+  children,
+}: {
+  mode: string;
+  children: React.ReactNode;
 }) {
-  const [isDark, setIsDark] = useState(mode === 'dark')
-
   useEffect(() => {
-    if (mode === 'auto') {
+    if (mode === "auto") {
       // Detect system preference
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      setIsDark(mediaQuery.matches)
-      
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const applyTheme = (matches: boolean) => {
+        if (matches) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      };
+
+      // Apply initial theme
+      applyTheme(mediaQuery.matches);
+
       // Listen for system changes
-      const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
-      mediaQuery.addEventListener('change', handler)
-      return () => mediaQuery.removeEventListener('change', handler)
+      const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
+      mediaQuery.addEventListener("change", handler);
+      return () => mediaQuery.removeEventListener("change", handler);
+    } else if (mode === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      setIsDark(mode === 'dark')
+      document.documentElement.classList.remove("dark");
     }
-  }, [mode])
+  }, [mode]);
 
-  return (
-    <div className={isDark ? 'dark' : ''}>
-      {children}
-    </div>
-  )
+  return <>{children}</>;
 }
-

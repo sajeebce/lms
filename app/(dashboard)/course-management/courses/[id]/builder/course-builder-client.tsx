@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   Plus,
   Sparkles,
@@ -39,17 +40,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { deleteCourseTopic } from "@/lib/actions/course-topic.actions";
+import {
+  deleteCourseTopic,
+  reorderTopics,
+} from "@/lib/actions/course-topic.actions";
 import {
   deleteCourseLesson,
   duplicateCourseLesson,
+  reorderLessons,
 } from "@/lib/actions/course-lesson.actions";
 import { publishCourse } from "../../actions";
 import ChapterForm from "./chapter-form";
-import LessonForm from "./lesson-form";
 import { LessonTypeChooser } from "./lesson-type-chooser";
-import { LessonFormEnhanced } from "./lesson-form-enhanced";
 import SyllabusImportDialog from "./syllabus-import-dialog";
+import { checkNewSyllabusChapters } from "@/lib/actions/course-syllabus-import.actions";
+import { LessonPreviewModal } from "./lesson-preview-modal";
 
 type Chapter = Awaited<
   ReturnType<typeof import("@/lib/actions/chapter.actions").getChapters>
@@ -94,14 +99,18 @@ const formatDuration = (minutes: number | null | undefined) => {
   return `${mins}m`;
 };
 
+import type { TenantVideoSettings } from "@/types/video-settings";
+
 interface Props {
   course: Course;
   syllabusChapters: Chapter[];
+  videoSettings: TenantVideoSettings | null;
 }
 
 export default function CourseBuilderClient({
   course,
   syllabusChapters,
+  videoSettings,
 }: Props) {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -116,18 +125,29 @@ export default function CourseBuilderClient({
     null
   );
   const [lessonTypeChooserOpen, setLessonTypeChooserOpen] = useState(false);
-  const [selectedLessonType, setSelectedLessonType] = useState<
-    "TEXT" | "VIDEO_YOUTUBE" | "DOCUMENT" | "ADVANCED" | null
-  >(null);
-  const [editingLesson, setEditingLesson] = useState<
-    Course["topics"][number]["lessons"][number] | null
-  >(null);
   const [lessonDeleteDialogOpen, setLessonDeleteDialogOpen] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<
     Course["topics"][number]["lessons"][number] | null
   >(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isCheckingNewChapters, setIsCheckingNewChapters] = useState(false);
+  const [newChaptersData, setNewChaptersData] = useState<{
+    count: number;
+    chapters: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      order: number;
+    }>;
+    subjectName: string;
+    subjectIcon: string | null;
+  } | null>(null);
+  const [showNewChaptersBanner, setShowNewChaptersBanner] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState<
+    Course["topics"][number]["lessons"][number] | null
+  >(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   const totalChapters = course.topics.length;
   const totalLessons = course.topics.reduce(
@@ -268,11 +288,98 @@ export default function CourseBuilderClient({
     }
   };
 
+  const handleCheckNewChapters = async () => {
+    setIsCheckingNewChapters(true);
+    try {
+      const result = await checkNewSyllabusChapters(course.id);
+      if (result.success) {
+        if (result.newChaptersCount > 0) {
+          setNewChaptersData({
+            count: result.newChaptersCount,
+            chapters: result.newChapters,
+            subjectName: result.subjectName,
+            subjectIcon: result.subjectIcon,
+          });
+          setShowNewChaptersBanner(true);
+        } else {
+          toast.success(
+            "Everything is up to date. No new chapters in the syllabus."
+          );
+        }
+      } else {
+        toast.error(result.error || "Failed to check for new chapters");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to check for new chapters");
+    } finally {
+      setIsCheckingNewChapters(false);
+    }
+  };
+
+  // Handle chapter drag and drop
+  const handleChapterDragEnd = async (result: any) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // Reorder topics array
+    const reorderedTopics = Array.from(course.topics);
+    const [removed] = reorderedTopics.splice(sourceIndex, 1);
+    reorderedTopics.splice(destinationIndex, 0, removed);
+
+    // Get new order of topic IDs
+    const topicIds = reorderedTopics.map((topic) => topic.id);
+
+    // Call server action
+    const reorderResult = await reorderTopics(course.id, topicIds);
+    if (reorderResult.success) {
+      toast.success("Chapters reordered successfully");
+      router.refresh();
+    } else {
+      toast.error(reorderResult.error || "Failed to reorder chapters");
+    }
+  };
+
+  // Handle lesson drag and drop
+  const handleLessonDragEnd = async (result: any, topicId: string) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) return;
+
+    // Find the topic
+    const topic = course.topics.find((t) => t.id === topicId);
+    if (!topic) return;
+
+    // Reorder lessons array
+    const reorderedLessons = Array.from(topic.lessons);
+    const [removed] = reorderedLessons.splice(sourceIndex, 1);
+    reorderedLessons.splice(destinationIndex, 0, removed);
+
+    // Get new order of lesson IDs
+    const lessonIds = reorderedLessons.map((lesson) => lesson.id);
+
+    // Call server action
+    const reorderResult = await reorderLessons(topicId, lessonIds);
+    if (reorderResult.success) {
+      toast.success("Lessons reordered successfully");
+      router.refresh();
+    } else {
+      toast.error(reorderResult.error || "Failed to reorder lessons");
+    }
+  };
+
   const renderEmptyState = () => {
     if (!hasAcademicContext) {
       return (
-        <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-border bg-gradient-to-br from-slate-50 to-violet-50/30 dark:from-slate-900 dark:to-violet-950/20">
-          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.4))] dark:bg-grid-slate-700/25" />
+        <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-border bg-linear-to-br from-slate-50 to-violet-50/30 dark:from-slate-900 dark:to-violet-950/20">
+          <div className="absolute inset-0 bg-grid-slate-100 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.4))] dark:bg-grid-slate-700/25" />
           <div className="relative px-8 py-12">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
               <div className="flex-1">
@@ -297,7 +404,7 @@ export default function CourseBuilderClient({
                         `/course-management/courses/${course.id}/edit`
                       )
                     }
-                    className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
+                    className="bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Select Subject &amp; Import
@@ -314,7 +421,7 @@ export default function CourseBuilderClient({
                 </div>
               </div>
               <div className="hidden md:block">
-                <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 shadow-lg">
+                <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 shadow-lg">
                   <BookOpen className="h-16 w-16 text-violet-600 dark:text-violet-400" />
                 </div>
               </div>
@@ -325,11 +432,11 @@ export default function CourseBuilderClient({
     }
 
     return (
-      <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-violet-950/20 dark:via-slate-900 dark:to-indigo-950/20">
-        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.4))] dark:bg-grid-slate-700/25" />
+      <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-violet-200 dark:border-violet-800 bg-linear-to-br from-violet-50 via-white to-indigo-50 dark:from-violet-950/20 dark:via-slate-900 dark:to-indigo-950/20">
+        <div className="absolute inset-0 bg-grid-slate-100 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.4))] dark:bg-grid-slate-700/25" />
         <div className="relative px-8 py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div className="flex-1">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 px-4 py-1.5 text-xs font-medium text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 mb-4">
+            <div className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 px-4 py-1.5 text-xs font-medium text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 mb-4">
               <Sparkles className="h-3.5 w-3.5" />
               Ready to import from syllabus
             </div>
@@ -374,7 +481,7 @@ export default function CourseBuilderClient({
             <Button
               size="lg"
               onClick={() => setImportDialogOpen(true)}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
+              className="bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               Import from Syllabus
@@ -390,7 +497,7 @@ export default function CourseBuilderClient({
             </Button>
           </div>
           <div className="hidden md:block">
-            <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 shadow-lg">
+            <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-100 to-teal-100 dark:from-emerald-950 dark:to-teal-950 shadow-lg">
               <Sparkles className="h-16 w-16 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
@@ -402,13 +509,13 @@ export default function CourseBuilderClient({
   return (
     <div className="space-y-6">
       {/* Header strip - Enhanced */}
-      <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 shadow-sm">
-        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />
+      <div className="relative overflow-hidden rounded-xl border border-border bg-linear-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-950/30 shadow-sm">
+        <div className="absolute inset-0 bg-grid-slate-100 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25" />
         <div className="relative px-6 py-5">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-violet-600 to-indigo-600 text-white shadow-lg">
                   <BookOpen className="h-5 w-5" />
                 </div>
                 <div>
@@ -454,6 +561,18 @@ export default function CourseBuilderClient({
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              {hasAcademicContext && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCheckNewChapters}
+                  disabled={isCheckingNewChapters}
+                  className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  {isCheckingNewChapters ? "Checking..." : "Check new chapters"}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -466,7 +585,7 @@ export default function CourseBuilderClient({
                 size="sm"
                 onClick={handlePublishClick}
                 disabled={isPublishing}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
+                className="bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
               >
                 {isPublishing ? "Publishing..." : "Publish Course"}
               </Button>
@@ -474,6 +593,64 @@ export default function CourseBuilderClient({
           </div>
         </div>
       </div>
+
+      {/* New Chapters Banner */}
+      {showNewChaptersBanner && newChaptersData && (
+        <div className="relative overflow-hidden rounded-xl border-2 border-emerald-200 dark:border-emerald-800 bg-linear-to-r from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/30 dark:to-cyan-950/30 shadow-sm">
+          <div className="absolute inset-0 bg-grid-emerald-100 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-emerald-900/25" />
+          <div className="relative px-6 py-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-emerald-600 to-teal-600 text-white shadow-lg">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-emerald-900 dark:text-emerald-100">
+                      {newChaptersData.count} new chapter
+                      {newChaptersData.count > 1 ? "s" : ""} found in{" "}
+                      {newChaptersData.subjectIcon && (
+                        <span className="mr-1">
+                          {newChaptersData.subjectIcon}
+                        </span>
+                      )}
+                      {newChaptersData.subjectName}
+                    </h3>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-0.5">
+                      These chapters are available in the syllabus but haven't
+                      been imported yet
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowNewChaptersBanner(false);
+                    setNewChaptersData(null);
+                  }}
+                  className="bg-white/80 dark:bg-slate-800/80"
+                >
+                  Dismiss
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setImportDialogOpen(true);
+                    setShowNewChaptersBanner(false);
+                  }}
+                  className="bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md"
+                >
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                  Import new chapters
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Empty vs list */}
       {course.topics.length === 0 ? (
@@ -483,7 +660,7 @@ export default function CourseBuilderClient({
           {/* Section header */}
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 text-violet-700 dark:text-violet-300">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-950 dark:to-indigo-950 text-violet-700 dark:text-violet-300">
                 <BookOpen className="h-4 w-4" />
               </div>
               <div>
@@ -495,217 +672,331 @@ export default function CourseBuilderClient({
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditingChapter(null);
-                setChapterDialogOpen(true);
-              }}
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Add Chapter
-            </Button>
+            <div className="flex gap-2">
+              {hasAcademicContext && syllabusChapters.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => setImportDialogOpen(true)}
+                  className="bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                >
+                  <Sparkles className="h-4 w-4 mr-1.5" /> Import from Syllabus
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingChapter(null);
+                  setChapterDialogOpen(true);
+                }}
+                className="bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Add Chapter
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {course.topics.map((topic, index) => (
-              <div
-                key={topic.id}
-                className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-800/50 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                {/* Drag handle - left edge */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                </div>
-
-                {/* Chapter number badge - floating */}
-                <div className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-sm shadow-lg">
-                    {topic.order}
-                  </div>
-                </div>
-
-                <div className="pl-20 pr-6 py-5">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    {/* Left: Title & Description */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                        {topic.title}
-                      </h3>
-                      {topic.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
-                          {topic.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        {/* Syllabus link badge */}
-                        {topic.sourceType === "QUESTION_BANK" &&
-                          (topic.subjectId ||
-                            topic.chapterId ||
-                            topic.topicId) && (
-                            <Badge
-                              variant="outline"
-                              className="rounded-full text-xs px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700"
-                            >
-                              <Link2 className="h-3 w-3 mr-1" />
-                              Linked to syllabus
-                            </Badge>
-                          )}
-
-                        {/* Lesson count badge */}
-                        <Badge
-                          variant="secondary"
-                          className="rounded-full text-xs px-3 py-1 bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+          <DragDropContext onDragEnd={handleChapterDragEnd}>
+            <Droppable droppableId="chapters">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-4"
+                >
+                  {course.topics.map((topic, topicIndex) => (
+                    <Draggable
+                      key={topic.id}
+                      draggableId={topic.id}
+                      index={topicIndex}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`group relative overflow-hidden rounded-xl border border-border bg-linear-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-800/50 shadow-sm hover:shadow-md transition-all duration-200 ${
+                            snapshot.isDragging
+                              ? "shadow-lg ring-2 ring-violet-400"
+                              : ""
+                          }`}
                         >
-                          {topic.lessons.length}{" "}
-                          {topic.lessons.length === 1 ? "lesson" : "lessons"}
-                        </Badge>
-
-                        {/* Empty chapter warning */}
-                        {topic.lessons.length === 0 && (
-                          <Badge
-                            variant="outline"
-                            className="rounded-full text-xs px-3 py-1 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700"
-                          >
-                            Empty chapter
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setLessonDialogTopicId(topic.id);
-                          setLessonTypeChooserOpen(true);
-                        }}
-                        className="bg-white/80 dark:bg-slate-800/80 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:border-violet-300 dark:hover:border-violet-700"
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" /> Add Lesson
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingChapter(topic);
-                          setChapterDialogOpen(true);
-                        }}
-                        className="bg-white/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-300 dark:hover:border-blue-700"
-                      >
-                        <Edit className="h-4 w-4 mr-1.5" /> Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                        onClick={() => {
-                          setTopicToDelete(topic);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1.5" /> Delete
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Lessons list (if any) */}
-                  {topic.lessons.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border/60">
-                      <div className="grid gap-2">
-                        {topic.lessons.map((lesson, lessonIndex) => (
+                          {/* Drag handle - left edge */}
                           <div
-                            key={lesson.id}
-                            className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-border/40 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm transition-all"
+                            {...provided.dragHandleProps}
+                            className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
                           >
-                            {/* Drag Handle */}
-                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors">
-                              <GripVertical className="h-4 w-4" />
-                            </div>
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </div>
 
-                            {/* Lesson Icon */}
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-950/50 dark:to-indigo-950/50 text-violet-600 dark:text-violet-400 shrink-0">
-                              {getLessonIcon(lesson.lessonType)}
+                          {/* Chapter number badge - floating */}
+                          <div className="absolute left-6 top-6 flex h-12 w-12 items-center justify-center">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-violet-600 to-indigo-600 text-white font-bold text-sm shadow-lg">
+                              {topic.order}
                             </div>
+                          </div>
 
-                            {/* Lesson Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {lesson.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Badge
-                                  variant="outline"
-                                  className="rounded-full text-[10px] px-2 py-0.5"
-                                >
-                                  {getLessonTypeLabel(lesson.lessonType)}
-                                </Badge>
-                                {lesson.duration && (
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Clock className="h-3 w-3" />
-                                    {formatLessonDuration(lesson.duration)}
-                                  </div>
+                          <div className="pl-20 pr-6 py-5">
+                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                              {/* Left: Title & Description */}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-base font-semibold text-foreground mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                                  {topic.title}
+                                </h3>
+                                {topic.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2 max-w-2xl">
+                                    {topic.description}
+                                  </p>
                                 )}
-                              </div>
-                            </div>
+                                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                  {/* Syllabus link badge */}
+                                  {topic.sourceType === "QUESTION_BANK" &&
+                                    (topic.subjectId ||
+                                      topic.chapterId ||
+                                      topic.topicId) && (
+                                      <Badge
+                                        variant="outline"
+                                        className="rounded-full text-xs px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700"
+                                      >
+                                        <Link2 className="h-3 w-3 mr-1" />
+                                        Linked to syllabus
+                                      </Badge>
+                                    )}
 
-                            {/* Actions Menu */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
+                                  {/* Lesson count badge */}
+                                  <Badge
+                                    variant="secondary"
+                                    className="rounded-full text-xs px-3 py-1 bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                                  >
+                                    {topic.lessons.length}{" "}
+                                    {topic.lessons.length === 1
+                                      ? "lesson"
+                                      : "lessons"}
+                                  </Badge>
+
+                                  {/* Empty chapter warning */}
+                                  {topic.lessons.length === 0 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-full text-xs px-3 py-1 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700"
+                                    >
+                                      Empty chapter
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right: Actions */}
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setLessonDialogTopicId(topic.id);
+                                    setLessonTypeChooserOpen(true);
+                                  }}
+                                  className="bg-white/80 dark:bg-slate-800/80 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:border-violet-300 dark:hover:border-violet-700"
+                                >
+                                  <Plus className="h-4 w-4 mr-1.5" /> Add Lesson
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingChapter(topic);
+                                    setChapterDialogOpen(true);
+                                  }}
+                                  className="bg-white/80 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-300 dark:hover:border-blue-700"
+                                >
+                                  <Edit className="h-4 w-4 mr-1.5" /> Edit
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
+                                  className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                                   onClick={() => {
-                                    setEditingLesson(lesson);
-                                    setLessonDialogTopicId(topic.id);
+                                    setTopicToDelete(topic);
+                                    setDeleteDialogOpen(true);
                                   }}
                                 >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleDuplicateLesson(lesson.id)
+                                  <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Lessons list (if any) */}
+                            {topic.lessons.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-border/60">
+                                <DragDropContext
+                                  onDragEnd={(result) =>
+                                    handleLessonDragEnd(result, topic.id)
                                   }
                                 >
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Duplicate
-                                </DropdownMenuItem>
-                                <DropdownMenuItem disabled>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Preview
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setLessonToDelete(lesson);
-                                    setLessonDeleteDialogOpen(true);
-                                  }}
-                                  className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  <Droppable
+                                    droppableId={`lessons-${topic.id}`}
+                                  >
+                                    {(provided) => (
+                                      <div
+                                        {...provided.droppableProps}
+                                        ref={provided.innerRef}
+                                        className="grid gap-2"
+                                      >
+                                        {topic.lessons.map(
+                                          (lesson, lessonIndex) => (
+                                            <Draggable
+                                              key={lesson.id}
+                                              draggableId={lesson.id}
+                                              index={lessonIndex}
+                                            >
+                                              {(provided, snapshot) => (
+                                                <div
+                                                  ref={provided.innerRef}
+                                                  {...provided.draggableProps}
+                                                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-border/40 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm transition-all ${
+                                                    snapshot.isDragging
+                                                      ? "shadow-lg ring-2 ring-violet-400 dark:ring-violet-600"
+                                                      : ""
+                                                  }`}
+                                                >
+                                                  {/* Drag Handle */}
+                                                  <div
+                                                    {...provided.dragHandleProps}
+                                                    className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                                                  >
+                                                    <GripVertical className="h-4 w-4" />
+                                                  </div>
+
+                                                  {/* Lesson Icon */}
+                                                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-100 to-indigo-100 dark:from-violet-950/50 dark:to-indigo-950/50 text-violet-600 dark:text-violet-400 shrink-0">
+                                                    {getLessonIcon(
+                                                      lesson.lessonType
+                                                    )}
+                                                  </div>
+
+                                                  {/* Lesson Info */}
+                                                  <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-foreground truncate">
+                                                      {lesson.title}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                      <Badge
+                                                        variant="outline"
+                                                        className="rounded-full text-[10px] px-2 py-0.5"
+                                                      >
+                                                        {getLessonTypeLabel(
+                                                          lesson.lessonType
+                                                        )}
+                                                      </Badge>
+                                                      {lesson.duration && (
+                                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                          <Clock className="h-3 w-3" />
+                                                          {formatLessonDuration(
+                                                            lesson.duration
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                      {lesson.scheduledAt &&
+                                                        new Date(
+                                                          lesson.scheduledAt
+                                                        ) > new Date() && (
+                                                          <Badge
+                                                            variant="secondary"
+                                                            className="rounded-full text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                                                          >
+                                                            Scheduled
+                                                          </Badge>
+                                                        )}
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Actions Menu */}
+                                                  <DropdownMenu>
+                                                    <DropdownMenuTrigger
+                                                      asChild
+                                                    >
+                                                      <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                      >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                      </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent
+                                                      align="end"
+                                                      className="w-48"
+                                                    >
+                                                      <DropdownMenuItem
+                                                        onClick={() => {
+                                                          // Navigate to edit lesson page
+                                                          router.push(
+                                                            `/course-management/courses/${course.id}/builder/lessons/${lesson.id}/edit`
+                                                          );
+                                                        }}
+                                                      >
+                                                        <Edit className="h-4 w-4 mr-2" />
+                                                        Edit
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuItem
+                                                        onClick={() =>
+                                                          handleDuplicateLesson(
+                                                            lesson.id
+                                                          )
+                                                        }
+                                                      >
+                                                        <Copy className="h-4 w-4 mr-2" />
+                                                        Duplicate
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuItem
+                                                        onClick={() => {
+                                                          setPreviewLesson(
+                                                            lesson
+                                                          );
+                                                          setPreviewModalOpen(
+                                                            true
+                                                          );
+                                                        }}
+                                                      >
+                                                        <Eye className="h-4 w-4 mr-2" />
+                                                        Preview
+                                                      </DropdownMenuItem>
+                                                      <DropdownMenuSeparator />
+                                                      <DropdownMenuItem
+                                                        onClick={() => {
+                                                          setLessonToDelete(
+                                                            lesson
+                                                          );
+                                                          setLessonDeleteDialogOpen(
+                                                            true
+                                                          );
+                                                        }}
+                                                        className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                                                      >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                      </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                  </DropdownMenu>
+                                                </div>
+                                              )}
+                                            </Draggable>
+                                          )
+                                        )}
+                                        {provided.placeholder}
+                                      </div>
+                                    )}
+                                  </Droppable>
+                                </DragDropContext>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
       )}
 
@@ -728,51 +1019,20 @@ export default function CourseBuilderClient({
 
       {/* Lesson Type Chooser */}
       <LessonTypeChooser
-        open={lessonTypeChooserOpen && !editingLesson}
+        open={lessonTypeChooserOpen}
         onOpenChange={setLessonTypeChooserOpen}
         onSelectType={(type) => {
-          setSelectedLessonType(type);
           setLessonTypeChooserOpen(false);
+          if (lessonDialogTopicId) {
+            // Navigate to new lesson page
+            router.push(
+              `/course-management/courses/${
+                course.id
+              }/builder/lessons/new?topicId=${lessonDialogTopicId}&type=${type.toLowerCase()}`
+            );
+          }
         }}
       />
-
-      {/* Enhanced Lesson Form (for new lessons with type selected) */}
-      {selectedLessonType && !editingLesson && (
-        <LessonFormEnhanced
-          open={!!selectedLessonType && !!lessonDialogTopicId}
-          onOpenChange={(open) => {
-            if (!open) {
-              setSelectedLessonType(null);
-              setLessonDialogTopicId(null);
-            }
-          }}
-          topicId={lessonDialogTopicId}
-          lessonType={selectedLessonType}
-          onCompleted={() => {
-            router.refresh();
-            setSelectedLessonType(null);
-            setLessonDialogTopicId(null);
-          }}
-        />
-      )}
-
-      {/* Old Lesson Form (for editing existing lessons) */}
-      {editingLesson && (
-        <LessonForm
-          open={!!editingLesson}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingLesson(null);
-            }
-          }}
-          topicId={null}
-          editingLesson={editingLesson}
-          onCompleted={() => {
-            router.refresh();
-            setEditingLesson(null);
-          }}
-        />
-      )}
 
       <SyllabusImportDialog
         open={importDialogOpen}
@@ -784,6 +1044,7 @@ export default function CourseBuilderClient({
         courseClass={course.class}
         courseStream={course.stream}
         courseSubject={course.subject}
+        preFilteredChapterIds={newChaptersData?.chapters.map((ch) => ch.id)}
       />
 
       {/* Delete chapter confirmation */}
@@ -845,6 +1106,13 @@ export default function CourseBuilderClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Lesson Preview Modal */}
+      <LessonPreviewModal
+        lesson={previewLesson}
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+      />
     </div>
   );
 }

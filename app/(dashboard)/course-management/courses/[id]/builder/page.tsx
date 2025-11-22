@@ -5,6 +5,7 @@ import { getChapters } from "@/lib/actions/chapter.actions";
 import { PageHeader } from "@/components/page-header";
 import { LayoutDashboard } from "lucide-react";
 import CourseBuilderClient from "./course-builder-client";
+import type { TenantVideoSettings } from "@/types/video-settings";
 
 export const metadata = {
   title: "Course Builder | LMS",
@@ -48,6 +49,10 @@ export default async function CourseBuilderPage({ params }: Props) {
               textContent: true,
               duration: true,
               order: true,
+              accessType: true,
+              password: true,
+              allowDownload: true,
+              isPreview: true,
             },
           },
         },
@@ -57,6 +62,22 @@ export default async function CourseBuilderPage({ params }: Props) {
 
   if (!course) {
     notFound();
+  }
+
+  const tenantSettings = await prisma.tenantSettings.findFirst({
+    where: { tenantId },
+  });
+
+  let videoSettings: TenantVideoSettings | null = null;
+
+  if (tenantSettings?.videoSettings) {
+    try {
+      videoSettings = JSON.parse(
+        tenantSettings.videoSettings
+      ) as TenantVideoSettings;
+    } catch (error) {
+      console.error("Failed to parse videoSettings JSON", error);
+    }
   }
 
   const syllabusChapters = course.subjectId
@@ -74,11 +95,12 @@ export default async function CourseBuilderPage({ params }: Props) {
         description="Organize chapters and lessons for this course. Start from syllabus or build freely."
         icon={LayoutDashboard}
         bgColor="bg-slate-900/80"
-        iconBgColor="bg-gradient-to-br from-cyan-500 to-violet-500"
+        iconBgColor="bg-linear-to-br from-cyan-500 to-violet-500"
       />
       <CourseBuilderClient
         course={course}
         syllabusChapters={syllabusChapters}
+        videoSettings={videoSettings}
       />
     </div>
   );

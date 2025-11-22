@@ -332,3 +332,58 @@ export async function uploadLessonVideo(lessonId: string, formData: FormData) {
     return { success: false, error: "Failed to upload video" } as const;
   }
 }
+
+/**
+ * Reorder lessons within a topic
+ */
+export async function reorderLessons(
+  topicId: string,
+  lessonIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
+
+    // Verify all lessons belong to this topic and tenant
+    const lessons = await prisma.courseLesson.findMany({
+      where: {
+        id: { in: lessonIds },
+        topicId,
+        tenantId,
+      },
+      select: { id: true },
+    });
+
+    if (lessons.length !== lessonIds.length) {
+      return {
+        success: false,
+        error: "Some lessons not found or don't belong to this topic",
+      } as const;
+    }
+
+    // Update order for each lesson
+    await Promise.all(
+      lessonIds.map((lessonId, index) =>
+        prisma.courseLesson.update({
+          where: { id: lessonId, tenantId },
+          data: { order: index + 1 },
+        })
+      )
+    );
+
+    // Get courseId for revalidation
+    const topic = await prisma.courseTopic.findUnique({
+      where: { id: topicId, tenantId },
+      select: { courseId: true },
+    });
+
+    if (topic) {
+      revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
+    }
+
+    return { success: true } as const;
+  } catch (error) {
+    console.error("Reorder lessons error:", error);
+    return { success: false, error: "Failed to reorder lessons" } as const;
+  }
+}

@@ -407,6 +407,9 @@ model TenantSettings {
   storageR2Bucket          String?
   storageR2PublicUrl       String?
 
+  // Video Player Settings (JSON stored as text)
+  videoSettings   String? // JSON: { youtube: {...}, vdocipher: {...} }
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -729,6 +732,11 @@ model CourseLesson {
   documentPath    String?  // PDF/DOC file path
   textContent     String?  // Rich text content
   iframeUrl       String?  // Embed URL
+
+  // VdoCipher specific fields
+  vdoCipherId     String?  // VdoCipher video ID
+  vdoCipherOtp    String?  // One-time playback token
+  vdoCipherPlaybackInfo String? // Playback info JSON
 
   // Settings
   duration        Int?     // In minutes

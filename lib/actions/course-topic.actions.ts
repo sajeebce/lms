@@ -149,3 +149,50 @@ export async function deleteCourseTopic(id: string) {
 
   return { success: true } as const;
 }
+
+/**
+ * Reorder chapters (topics) within a course
+ */
+export async function reorderTopics(
+  courseId: string,
+  topicIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireRole("ADMIN");
+    const tenantId = await getTenantId();
+
+    // Verify all topics belong to this course and tenant
+    const topics = await prisma.courseTopic.findMany({
+      where: {
+        id: { in: topicIds },
+        courseId,
+        tenantId,
+      },
+      select: { id: true },
+    });
+
+    if (topics.length !== topicIds.length) {
+      return {
+        success: false,
+        error: "Some chapters not found or don't belong to this course",
+      } as const;
+    }
+
+    // Update order for each topic
+    await Promise.all(
+      topicIds.map((topicId, index) =>
+        prisma.courseTopic.update({
+          where: { id: topicId, tenantId },
+          data: { order: index + 1 },
+        })
+      )
+    );
+
+    revalidatePath(`/course-management/courses/${courseId}/builder`);
+
+    return { success: true } as const;
+  } catch (error) {
+    console.error("Reorder topics error:", error);
+    return { success: false, error: "Failed to reorder chapters" } as const;
+  }
+}

@@ -8,11 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Check, BookOpen, GraduationCap, Layers } from "lucide-react";
@@ -34,6 +30,7 @@ interface Props {
   courseClass?: { id: string; name: string } | null;
   courseStream?: { id: string; name: string } | null;
   courseSubject?: { id: string; name: string; icon: string | null } | null;
+  preFilteredChapterIds?: string[]; // Optional: pre-filter to show only specific chapters
 }
 
 const STEPS = [
@@ -52,31 +49,37 @@ export default function SyllabusImportDialog({
   courseClass,
   courseStream,
   courseSubject,
+  preFilteredChapterIds,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  // Filter chapters if pre-filtered IDs are provided
+  const displayChapters = preFilteredChapterIds
+    ? chapters.filter((ch) => preFilteredChapterIds.includes(ch.id))
+    : chapters;
+
   const existingTitleSet = new Set(
-    existingTopicTitles.map((t) => t.trim().toLowerCase()),
+    existingTopicTitles.map((t) => t.trim().toLowerCase())
   );
 
   // Auto-select non-duplicate chapters when dialog opens
   useEffect(() => {
-    if (open && chapters.length > 0) {
+    if (open && displayChapters.length > 0) {
       const titleSet = new Set(
         existingTopicTitles.map((t) => t.trim().toLowerCase())
       );
-      const nonDuplicateIds = chapters
+      const nonDuplicateIds = displayChapters
         .filter((ch) => !titleSet.has(ch.name.trim().toLowerCase()))
         .map((ch) => ch.id);
       setSelectedIds(nonDuplicateIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, preFilteredChapterIds]);
 
   const toggleAll = () => {
-    const selectableChapters = chapters.filter(
+    const selectableChapters = displayChapters.filter(
       (ch) => !existingTitleSet.has(ch.name.trim().toLowerCase())
     );
     if (selectedIds.length === selectableChapters.length) {
@@ -88,7 +91,7 @@ export default function SyllabusImportDialog({
 
   const toggleOne = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
@@ -119,7 +122,7 @@ export default function SyllabusImportDialog({
         toast.success(
           `🎉 Imported ${result.createdCount} chapter${
             result.createdCount === 1 ? "" : "s"
-          } into this course`,
+          } into this course`
         );
         setSelectedIds([]);
         setCurrentStep(1);
@@ -137,7 +140,7 @@ export default function SyllabusImportDialog({
     onOpenChange(false);
   };
 
-  const selectedChapters = chapters.filter((ch) =>
+  const selectedChapters = displayChapters.filter((ch) =>
     selectedIds.includes(ch.id)
   );
   const duplicateChapters = selectedChapters.filter((ch) =>
@@ -157,12 +160,13 @@ export default function SyllabusImportDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {chapters.length === 0 ? (
+        {displayChapters.length === 0 ? (
           <Alert className="border-border bg-secondary/60 text-foreground">
             <AlertTitle>No chapters available</AlertTitle>
             <AlertDescription>
-              This subject/class does not have any active chapters in the syllabus
-              yet. You can manage syllabus from the Academic Setup module.
+              This subject/class does not have any active chapters in the
+              syllabus yet. You can manage syllabus from the Academic Setup
+              module.
             </AlertDescription>
           </Alert>
         ) : (
@@ -232,7 +236,7 @@ export default function SyllabusImportDialog({
               )}
               {currentStep === 2 && (
                 <StepTwo
-                  chapters={chapters}
+                  chapters={displayChapters}
                   selectedIds={selectedIds}
                   existingTitleSet={existingTitleSet}
                   toggleAll={toggleAll}
@@ -274,7 +278,11 @@ export default function SyllabusImportDialog({
                     disabled={isPending || newChapters.length === 0}
                     className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
                   >
-                    {isPending ? "Generating..." : `Generate ${newChapters.length} Chapter${newChapters.length === 1 ? "" : "s"}`}
+                    {isPending
+                      ? "Generating..."
+                      : `Generate ${newChapters.length} Chapter${
+                          newChapters.length === 1 ? "" : "s"
+                        }`}
                   </Button>
                 )}
               </div>
@@ -306,7 +314,8 @@ function StepOne({
           Import from Academic Syllabus
         </AlertTitle>
         <AlertDescription className="mt-1 text-xs text-violet-700 dark:text-violet-300">
-          Questions and topics will be filtered using this scope in the Question Bank.
+          Questions and topics will be filtered using this scope in the Question
+          Bank.
         </AlertDescription>
       </Alert>
 
@@ -344,25 +353,39 @@ function StepOne({
 
         {!courseClass && !courseStream && !courseSubject && (
           <p className="text-xs text-muted-foreground">
-            No academic scope set for this course. You can still import chapters, but they won't be filtered by class/stream/subject.
+            No academic scope set for this course. You can still import
+            chapters, but they won't be filtered by class/stream/subject.
           </p>
         )}
       </div>
 
       <div className="mt-6 p-4 rounded-lg bg-secondary/40 border border-border">
-        <h4 className="text-xs font-semibold text-foreground mb-2">What happens next?</h4>
+        <h4 className="text-xs font-semibold text-foreground mb-2">
+          What happens next?
+        </h4>
         <ul className="space-y-1.5 text-xs text-muted-foreground">
           <li className="flex items-start gap-2">
-            <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
+            <span className="text-violet-600 dark:text-violet-400 mt-0.5">
+              •
+            </span>
             <span>Select chapters from the syllabus that match your scope</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
-            <span>Preview which chapters will be created (duplicates will be skipped)</span>
+            <span className="text-violet-600 dark:text-violet-400 mt-0.5">
+              •
+            </span>
+            <span>
+              Preview which chapters will be created (duplicates will be
+              skipped)
+            </span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-violet-600 dark:text-violet-400 mt-0.5">•</span>
-            <span>Generate chapters with 0 lessons (you can add lessons later)</span>
+            <span className="text-violet-600 dark:text-violet-400 mt-0.5">
+              •
+            </span>
+            <span>
+              Generate chapters with 0 lessons (you can add lessons later)
+            </span>
           </li>
         </ul>
       </div>
@@ -394,7 +417,9 @@ function StepTwo({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Select Chapters</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            Select Chapters
+          </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             Choose which chapters to import into this course
           </p>
@@ -418,13 +443,18 @@ function StepTwo({
               <tr className="border-b border-border">
                 <th className="text-left p-3 font-semibold w-12">
                   <Checkbox
-                    checked={selectedIds.length === selectableChapters.length && selectableChapters.length > 0}
+                    checked={
+                      selectedIds.length === selectableChapters.length &&
+                      selectableChapters.length > 0
+                    }
                     onCheckedChange={toggleAll}
                   />
                 </th>
                 <th className="text-left p-3 font-semibold">Chapter Name</th>
                 <th className="text-center p-3 font-semibold w-24"># Topics</th>
-                <th className="text-center p-3 font-semibold w-28"># Questions</th>
+                <th className="text-center p-3 font-semibold w-28">
+                  # Questions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -464,12 +494,18 @@ function StepTwo({
                       </div>
                     </td>
                     <td className="p-3 text-center">
-                      <Badge variant="outline" className="rounded-full text-[10px] px-2 py-[2px]">
+                      <Badge
+                        variant="outline"
+                        className="rounded-full text-[10px] px-2 py-[2px]"
+                      >
                         {topicCount}
                       </Badge>
                     </td>
                     <td className="p-3 text-center">
-                      <Badge variant="outline" className="rounded-full text-[10px] px-2 py-[2px]">
+                      <Badge
+                        variant="outline"
+                        className="rounded-full text-[10px] px-2 py-[2px]"
+                      >
                         {questionCount}
                       </Badge>
                     </td>
@@ -547,7 +583,8 @@ function StepThree({
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 ml-5">
-                              Will create a chapter with 0 lessons / 0 activities
+                              Will create a chapter with 0 lessons / 0
+                              activities
                             </p>
                           </div>
                           <div className="flex gap-1.5">
@@ -610,7 +647,8 @@ function StepThree({
               All selected chapters already exist
             </AlertTitle>
             <AlertDescription className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-              Go back and select different chapters, or continue with custom chapters.
+              Go back and select different chapters, or continue with custom
+              chapters.
             </AlertDescription>
           </Alert>
         )}
@@ -618,4 +656,3 @@ function StepThree({
     </div>
   );
 }
-
