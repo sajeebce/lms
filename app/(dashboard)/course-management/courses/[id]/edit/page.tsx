@@ -12,16 +12,16 @@ export const metadata = {
 }
 
 type Props = {
-  params: Promise<{ id: string }>
+  params: Promise<{ slug: string }>
 }
 
 export default async function EditCoursePage({ params }: Props) {
-  const { id } = await params
+  const { slug } = await params
   const tenantId = await getTenantId()
 
   const [course, categories, subjects, classes, streams] = await Promise.all([
     prisma.course.findFirst({
-      where: { id, tenantId },
+      where: { slug, tenantId },
       include: {
         faqs: {
           orderBy: { order: 'asc' },

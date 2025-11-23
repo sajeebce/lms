@@ -12,15 +12,15 @@ export const metadata = {
 };
 
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
 export default async function CourseDetailsPage({ params }: Props) {
-  const { id } = await params;
+  const { slug } = await params;
   const tenantId = await getTenantId();
 
   const course = await prisma.course.findFirst({
-    where: { id, tenantId },
+    where: { slug, tenantId },
     include: {
       category: true,
       faqs: {
@@ -88,7 +88,7 @@ export default async function CourseDetailsPage({ params }: Props) {
             </p>
           </div>
 
-          <Link href={`/course-management/courses/${course.id}/edit`}>
+          <Link href={`/course-management/courses/${course.slug}/edit`}>
             <Button className="bg-gradient-to-r from-[var(--theme-button-from)] to-[var(--theme-button-to)] hover:opacity-90 text-white">
               <Edit className="h-4 w-4 mr-2" />
               Edit Course

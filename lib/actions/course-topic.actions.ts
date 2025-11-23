@@ -78,7 +78,13 @@ export async function createCourseTopic(courseId: string, data: TopicInput) {
   });
 
   await recomputeCourseStats(tenantId, courseId);
-  revalidatePath(`/course-management/courses/${courseId}/builder`);
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, data: topic } as const;
 }
@@ -111,7 +117,13 @@ export async function updateCourseTopic(id: string, data: TopicInput) {
   });
 
   await recomputeCourseStats(tenantId, existing.courseId);
-  revalidatePath(`/course-management/courses/${existing.courseId}/builder`);
+  const course = await prisma.course.findFirst({
+    where: { id: existing.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, data: topic } as const;
 }
@@ -145,7 +157,13 @@ export async function deleteCourseTopic(id: string) {
   await prisma.courseTopic.delete({ where: { id } });
 
   await recomputeCourseStats(tenantId, existing.courseId);
-  revalidatePath(`/course-management/courses/${existing.courseId}/builder`);
+  const course = await prisma.course.findFirst({
+    where: { id: existing.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true } as const;
 }
@@ -188,7 +206,13 @@ export async function reorderTopics(
       )
     );
 
-    revalidatePath(`/course-management/courses/${courseId}/builder`);
+    const course = await prisma.course.findFirst({
+      where: { id: courseId, tenantId },
+      select: { slug: true },
+    });
+    if (course?.slug) {
+      revalidatePath(`/course-management/courses/${course.slug}/builder`);
+    }
 
     return { success: true } as const;
   } catch (error) {

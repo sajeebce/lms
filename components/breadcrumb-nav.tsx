@@ -43,6 +43,7 @@ export function Breadcrumb() {
     "course-management": "Course Management",
     categories: "Categories",
     courses: "Courses",
+    builder: "Builder",
     // Question Bank module
     "question-bank": "Question Bank",
     questions: "Questions",
@@ -83,6 +84,7 @@ export function Breadcrumb() {
     }
   }, [pathSegments]);
 
+
   // Build breadcrumb path
   let currentPath = "";
   pathSegments.forEach((segment, index) => {
@@ -104,11 +106,23 @@ export function Breadcrumb() {
       return;
     }
 
-    // For student profile pages, use username instead of ID when available
+    // For student profile pages, use username instead of ID
+    const isCourseSlugSegment =
+      pathSegments[0] === "course-management" &&
+      pathSegments[1] === "courses" &&
+      index === 2;
+
     let label = labelMap[segment];
+
     if (!label) {
       if (pathSegments[0] === "students" && index === 1 && studentUsername) {
         label = studentUsername;
+      } else if (isCourseSlugSegment) {
+        // Prettify slug for display: my-awesome-course -> My awesome course
+        label = segment
+          .split("-")
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ");
       } else {
         label = segment.charAt(0).toUpperCase() + segment.slice(1);
       }

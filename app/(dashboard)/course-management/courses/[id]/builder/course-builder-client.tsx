@@ -401,7 +401,7 @@ export default function CourseBuilderClient({
                     size="lg"
                     onClick={() =>
                       router.push(
-                        `/course-management/courses/${course.id}/edit`
+                        `/course-management/courses/${course.slug}/edit`
                       )
                     }
                     className="bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md"
@@ -928,7 +928,7 @@ export default function CourseBuilderClient({
                                                         onClick={() => {
                                                           // Navigate to edit lesson page
                                                           router.push(
-                                                            `/course-management/courses/${course.id}/builder/lessons/${lesson.id}/edit`
+                                                            `/course-management/courses/${course.slug}/builder/lessons/${lesson.id}/edit`
                                                           );
                                                         }}
                                                       >
@@ -1027,7 +1027,7 @@ export default function CourseBuilderClient({
             // Navigate to new lesson page
             router.push(
               `/course-management/courses/${
-                course.id
+                course.slug
               }/builder/lessons/new?topicId=${lessonDialogTopicId}&type=${type.toLowerCase()}`
             );
           }

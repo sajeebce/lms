@@ -131,6 +131,7 @@ export default function EditCourseForm({
   const [formData, setFormData] = useState<CourseFormData>({
     title: course.title,
     slug: course.slug,
+    slugManuallyEdited: true,
     categoryId: course.categoryId || undefined,
     description: course.description || undefined,
     shortDescription: course.shortDescription || undefined,

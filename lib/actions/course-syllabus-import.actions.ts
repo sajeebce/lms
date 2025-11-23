@@ -131,7 +131,13 @@ export async function importChaptersToCourse(input: ImportInput) {
   await prisma.courseTopic.createMany({ data: createData });
 
   await recomputeCourseStats(tenantId, courseId);
-  revalidatePath(`/course-management/courses/${courseId}/builder`);
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, createdCount: createData.length } as const;
 }

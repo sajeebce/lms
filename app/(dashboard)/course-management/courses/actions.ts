@@ -81,6 +81,7 @@ export async function publishCourse(id: string) {
 
     const course = await prisma.course.findFirst({
       where: { id, tenantId },
+      select: { id: true, slug: true, status: true, publishedAt: true, comingSoonImage: true },
     });
 
     if (!course) {
@@ -106,7 +107,7 @@ export async function publishCourse(id: string) {
     });
 
     revalidatePath("/course-management/courses");
-    revalidatePath(`/course-management/courses/${id}`);
+    revalidatePath(`/course-management/courses/${course.slug}`);
 
     return { success: true, alreadyPublished: false };
   } catch (error) {
@@ -131,6 +132,14 @@ export async function updateCourseStatus(
 
     const course = await prisma.course.findFirst({
       where: { id, tenantId },
+      select: {
+        id: true,
+        slug: true,
+        status: true,
+        scheduledAt: true,
+        publishedAt: true,
+        comingSoonImage: true,
+      },
     });
 
     if (!course) {
@@ -165,7 +174,7 @@ export async function updateCourseStatus(
     });
 
     revalidatePath("/course-management/courses");
-    revalidatePath(`/course-management/courses/${id}`);
+    revalidatePath(`/course-management/courses/${course.slug}`);
 
     return { success: true };
   } catch (error) {
@@ -322,6 +331,7 @@ export async function duplicateCourse(id: string) {
     });
 
     revalidatePath("/course-management/courses");
+    revalidatePath(`/course-management/courses/${duplicated.slug}`);
 
     return {
       success: true,

@@ -61,6 +61,8 @@ export type CourseFormData = {
   // Basic Info
   title: string;
   slug: string;
+  // Track if user manually edited slug so we don't overwrite it
+  slugManuallyEdited?: boolean;
   categoryId?: string;
   description?: string;
   shortDescription?: string;
@@ -139,6 +141,7 @@ export default function SingleCourseForm({
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
     slug: "",
+    slugManuallyEdited: false,
     paymentType: "FREE",
     currency: "BDT",
     autoGenerateInvoice: true,

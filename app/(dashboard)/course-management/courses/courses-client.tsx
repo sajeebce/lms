@@ -817,7 +817,7 @@ export default function CoursesClient({
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <Link
-                        href={`/course-management/courses/${course.id}`}
+                        href={`/course-management/courses/${course.slug}`}
                         className="flex-1"
                       >
                         <Button
@@ -830,7 +830,7 @@ export default function CoursesClient({
                         </Button>
                       </Link>
                       <Link
-                        href={`/course-management/courses/${course.id}/edit`}
+                        href={`/course-management/courses/${course.slug}/edit`}
                       >
                         <Button
                           variant="outline"
@@ -997,7 +997,7 @@ export default function CoursesClient({
                             <div className="space-y-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <Link
-                                  href={`/course-management/courses/${course.id}`}
+                                  href={`/course-management/courses/${course.slug}`}
                                   className="font-medium text-foreground dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-300 truncate"
                                 >
                                   {course.title}
@@ -1177,7 +1177,7 @@ export default function CoursesClient({
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/course-management/courses/${course.id}`}
+                                  href={`/course-management/courses/${course.slug}`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Eye className="h-3 w-3" />
@@ -1187,7 +1187,7 @@ export default function CoursesClient({
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/course-management/courses/${course.id}/edit`}
+                                  href={`/course-management/courses/${course.slug}/edit`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <Edit className="h-3 w-3" />
@@ -1197,7 +1197,7 @@ export default function CoursesClient({
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/course-management/courses/${course.id}/builder`}
+                                  href={`/course-management/courses/${course.slug}/builder`}
                                 >
                                   <span className="flex items-center gap-2">
                                     <MonitorSmartphone className="h-3 w-3" />

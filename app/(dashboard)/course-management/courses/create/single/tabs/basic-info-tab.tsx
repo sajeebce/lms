@@ -71,16 +71,20 @@ const getCategoryDepth = (category: Category, all: Category[]): number => {
 }
 
 export default function BasicInfoTab({ data, categories, subjects, classes, streams, onChange }: Props) {
-  // Auto-generate slug from title
+  // Auto-generate slug from title (only if user hasn't manually edited slug)
   useEffect(() => {
-    if (data.title && !data.slug) {
-      const slug = data.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-      onChange({ slug })
+    if (!data.title || data.slugManuallyEdited) return;
+
+    const slug = data.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    // Only update if slug actually changed to avoid infinite loops
+    if (slug !== data.slug) {
+      onChange({ slug });
     }
-  }, [data.title, data.slug, onChange])
+  }, [data.title, data.slug, data.slugManuallyEdited]);
 
   return (
     <div className="space-y-6">
@@ -105,7 +109,7 @@ export default function BasicInfoTab({ data, categories, subjects, classes, stre
             id="slug"
             placeholder="e.g., intro-to-programming"
             value={data.slug}
-            onChange={(e) => onChange({ slug: e.target.value })}
+            onChange={(e) => onChange({ slug: e.target.value, slugManuallyEdited: true })}
             maxLength={200}
           />
           <p className="text-xs text-neutral-500">Auto-generated from title</p>

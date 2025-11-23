@@ -9,6 +9,7 @@ import { LessonFormContent } from "./lesson-form-content";
 
 interface LessonFormPageProps {
   courseId: string;
+  courseSlug: string;
   courseTitle: string;
   topicId: string;
   topicTitle: string;
@@ -35,6 +36,7 @@ interface LessonFormPageProps {
 
 export function LessonFormPage({
   courseId,
+  courseSlug,
   courseTitle,
   topicId,
   topicTitle,
@@ -46,11 +48,11 @@ export function LessonFormPage({
   const isEditing = mode === "edit";
 
   const handleCancel = () => {
-    router.push(`/course-management/courses/${courseId}/builder`);
+    router.push(`/course-management/courses/${courseSlug}/builder`);
   };
 
   const handleCompleted = () => {
-    router.push(`/course-management/courses/${courseId}/builder`);
+    router.push(`/course-management/courses/${courseSlug}/builder`);
   };
 
   return (

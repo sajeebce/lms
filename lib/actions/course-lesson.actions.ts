@@ -120,7 +120,13 @@ export async function createCourseLesson(topicId: string, data: LessonInput) {
   });
 
   await recomputeCourseStats(tenantId, topic.courseId);
-  revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
+  const course = await prisma.course.findFirst({
+    where: { id: topic.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, data: lesson } as const;
 }
@@ -162,9 +168,13 @@ export async function updateCourseLesson(id: string, data: LessonInput) {
   });
 
   await recomputeCourseStats(tenantId, existing.topic.courseId);
-  revalidatePath(
-    `/course-management/courses/${existing.topic.courseId}/builder`
-  );
+  const course = await prisma.course.findFirst({
+    where: { id: existing.topic.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, data: lesson } as const;
 }
@@ -185,9 +195,13 @@ export async function deleteCourseLesson(id: string) {
   await prisma.courseLesson.delete({ where: { id } });
 
   await recomputeCourseStats(tenantId, existing.topic.courseId);
-  revalidatePath(
-    `/course-management/courses/${existing.topic.courseId}/builder`
-  );
+  const course = await prisma.course.findFirst({
+    where: { id: existing.topic.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true } as const;
 }
@@ -231,9 +245,13 @@ export async function duplicateCourseLesson(id: string) {
   });
 
   await recomputeCourseStats(tenantId, existing.topic.courseId);
-  revalidatePath(
-    `/course-management/courses/${existing.topic.courseId}/builder`
-  );
+  const course = await prisma.course.findFirst({
+    where: { id: existing.topic.courseId, tenantId },
+    select: { slug: true },
+  });
+  if (course?.slug) {
+    revalidatePath(`/course-management/courses/${course.slug}/builder`);
+  }
 
   return { success: true, data: duplicate } as const;
 }
@@ -378,7 +396,13 @@ export async function reorderLessons(
     });
 
     if (topic) {
-      revalidatePath(`/course-management/courses/${topic.courseId}/builder`);
+      const course = await prisma.course.findFirst({
+        where: { id: topic.courseId, tenantId },
+        select: { slug: true },
+      });
+      if (course?.slug) {
+        revalidatePath(`/course-management/courses/${course.slug}/builder`);
+      }
     }
 
     return { success: true } as const;

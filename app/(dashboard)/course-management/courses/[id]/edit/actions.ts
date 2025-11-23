@@ -232,6 +232,7 @@ export async function updateCourse(
     // Check if course exists
     const existing = await prisma.course.findFirst({
       where: { id, tenantId },
+      select: { id: true, slug: true, publishedAt: true, comingSoonImage: true },
     });
 
     if (!existing) {
@@ -301,7 +302,7 @@ export async function updateCourse(
     });
 
     revalidatePath("/course-management/courses");
-    revalidatePath(`/course-management/courses/${id}`);
+    revalidatePath(`/course-management/courses/${existing.slug}`);
     return { success: true, data: course };
   } catch (error) {
     console.error("Update course error:", error);

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 export function Breadcrumb() {
   const pathname = usePathname();
   const [studentUsername, setStudentUsername] = useState<string | null>(null);
+  const [courseSlug, setCourseSlug] = useState<string | null>(null);
 
   // Generate breadcrumb items from pathname
   const pathSegments = pathname.split("/").filter(Boolean);
@@ -38,6 +39,7 @@ export function Breadcrumb() {
     "course-management": "Course Management",
     categories: "Categories",
     courses: "Courses",
+    builder: "Builder",
     // Question Bank module
     "question-bank": "Question Bank",
     questions: "Questions",
@@ -78,6 +80,32 @@ export function Breadcrumb() {
     }
   }, [pathSegments]);
 
+  // Fetch course slug if this is a course page
+  useEffect(() => {
+    // Reset course slug when path changes
+    setCourseSlug(null);
+
+    if (
+      pathSegments[0] === "course-management" &&
+      pathSegments[1] === "courses" &&
+      pathSegments[2] &&
+      pathSegments[2] !== "create"
+    ) {
+      const courseId = pathSegments[2];
+      // Fetch course data to get slug
+      fetch(`/api/courses/${courseId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.slug) {
+            setCourseSlug(data.slug);
+          }
+        })
+        .catch(() => {
+          // Silently fail, breadcrumb will show ID
+        });
+    }
+  }, [pathSegments]);
+
   // Build breadcrumb path
   let currentPath = "";
   pathSegments.forEach((segment, index) => {
@@ -100,10 +128,18 @@ export function Breadcrumb() {
     }
 
     // For student profile pages, use username instead of ID
+    // For course pages, use course slug instead of ID
     let label = labelMap[segment];
     if (!label) {
       if (pathSegments[0] === "students" && index === 1 && studentUsername) {
         label = studentUsername;
+      } else if (
+        pathSegments[0] === "course-management" &&
+        pathSegments[1] === "courses" &&
+        index === 2 &&
+        courseSlug
+      ) {
+        label = courseSlug;
       } else {
         label = segment.charAt(0).toUpperCase() + segment.slice(1);
       }

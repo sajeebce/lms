@@ -4,13 +4,29 @@ import { prisma } from "@/lib/prisma";
 import { LessonFormPage } from "../../../lesson-form-page";
 
 interface PageProps {
-  params: Promise<{ id: string; lessonId: string }>;
+  params: Promise<{ slug: string; lessonId: string }>;
 }
 
 export default async function EditLessonPage({ params }: PageProps) {
   await requireRole("ADMIN");
   const tenantId = await getTenantId();
-  const { id: courseId, lessonId } = await params;
+  const { slug, lessonId } = await params;
+
+  // Resolve course by slug for validation and navigation
+  const course = await prisma.course.findFirst({
+    where: {
+      slug,
+      tenantId,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  });
+
+  if (!course) {
+    redirect("/course-management/courses");
+  }
 
   // Fetch lesson with topic and course info
   const lesson = await prisma.courseLesson.findFirst({
@@ -18,7 +34,7 @@ export default async function EditLessonPage({ params }: PageProps) {
       id: lessonId,
       tenantId,
       topic: {
-        courseId,
+        courseId: course.id,
         tenantId,
       },
     },
@@ -39,7 +55,7 @@ export default async function EditLessonPage({ params }: PageProps) {
   });
 
   if (!lesson) {
-    redirect(`/course-management/courses/${courseId}/builder`);
+    redirect(`/course-management/courses/${slug}/builder`);
   }
 
   // Determine form lesson type from database lesson type
@@ -63,8 +79,9 @@ export default async function EditLessonPage({ params }: PageProps) {
 
   return (
     <LessonFormPage
-      courseId={courseId}
-      courseTitle={lesson.topic.course.title}
+      courseId={course.id}
+      courseSlug={slug}
+      courseTitle={course.title}
       topicId={lesson.topic.id}
       topicTitle={lesson.topic.title}
       lessonType={getFormLessonType(lesson.lessonType)}
